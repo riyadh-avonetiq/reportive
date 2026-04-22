@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Avonetiq Reporting",
+      "runtimeExecutable": "/usr/bin/python3",
+      "runtimeArgs": ["/tmp/avonetiq-app/server_tmp.py"],
+      "port": 3101
+    }
+  ]
+}

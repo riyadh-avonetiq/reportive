@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in — Reportive by Avonetiq</title>
+  <link rel="icon" type="image/png" href="assets/img/logo-mark.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy-base:     #0C182C;
+      --navy-surface:  #1C2A3F;
+      --avo-teal:      #00C2B8;
+      --gold-base:     #F8B400;
+      --text-primary:  #FCFCFC;
+      --text-secondary:#94A3B8;
+      --text-muted:    #64748B;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--navy-base);
+      font-family: 'Manrope', system-ui, sans-serif;
+      color: var(--text-primary);
+      overflow: hidden;
+    }
+
+    /* Hex texture removed */
+
+    /* ── Flares — identical keyframes/sizes to main app ── */
+    .avo-flare-container {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    }
+    .avo-flare {
+      position: absolute; border-radius: 50%;
+      transform-origin: center;
+    }
+    .avo-flare-gold {
+      width: 900px; height: 900px;
+      background: radial-gradient(circle at center,
+        rgba(248,180,0,0.45) 0%, rgba(166,105,0,0.18) 40%, transparent 68%);
+      filter: blur(100px);
+      top: -10%; left: 5%;
+      animation: flareGold 16s ease-in-out infinite;
+    }
+    .avo-flare-teal {
+      width: 750px; height: 750px;
+      background: radial-gradient(circle at center,
+        rgba(0,194,184,0.38) 0%, rgba(0,77,73,0.15) 40%, transparent 68%);
+      filter: blur(110px);
+      bottom: -15%; right: -5%;
+      animation: flareTeal 18s ease-in-out infinite;
+    }
+    @keyframes flareGold {
+      0%   { transform: translate(0,0) scale(1); }
+      20%  { transform: translate(18vw,10vh) scale(1.10); }
+      40%  { transform: translate(28vw,22vh) scale(0.94); }
+      60%  { transform: translate(8vw,32vh) scale(1.07); }
+      80%  { transform: translate(-8vw,12vh) scale(0.96); }
+      100% { transform: translate(0,0) scale(1); }
+    }
+    @keyframes flareTeal {
+      0%   { transform: translate(0,0) scale(1); }
+      25%  { transform: translate(-16vw,-12vh) scale(1.08); }
+      50%  { transform: translate(-24vw,-28vh) scale(0.93); }
+      75%  { transform: translate(-6vw,-8vh) scale(1.06); }
+      100% { transform: translate(0,0) scale(1); }
+    }
+
+    /* ── Layout ── */
+    .login-wrap {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100vh; padding: 24px; gap: 28px;
+    }
+
+    /* ── Logo lockup: "Reportive by [mark] Avonetiq" ── */
+    .login-logo {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .logo-product {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(48px, 10vw, 72px);
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -1.5px;
+      line-height: 1;
+    }
+    .logo-byline {
+      display: flex; align-items: center; gap: 12px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      letter-spacing: 0.02em;
+    }
+    .logo-byline img {
+      height: 100px; width: auto;
+    }
+    .logo-byline-brand {
+      color: #FFFFFF;
+      font-weight: 600;
+      font-size: 20px;
+    }
+
+    /* ── Card ── */
+    .login-card {
+      width: 100%; max-width: 420px;
+      background: linear-gradient(145deg, rgba(28,42,63,0.75) 0%, rgba(12,24,44,0.55) 100%);
+      backdrop-filter: blur(48px) saturate(180%);
+      -webkit-backdrop-filter: blur(48px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-top: 1px solid rgba(255,255,255,0.16);
+      border-radius: 20px; padding: 36px 32px;
+      box-shadow:
+        0 24px 64px rgba(0,0,0,0.45),
+        0 4px 16px rgba(0,0,0,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.10);
+    }
+
+    .login-card h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 700;
+      color: var(--text-primary); margin-bottom: 5px; letter-spacing: -0.3px;
+    }
+    .login-card p {
+      font-size: 13px; color: var(--text-secondary);
+      margin-bottom: 24px; line-height: 1.5;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 20px 0; color: var(--text-muted);
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px;
+      background: rgba(255,255,255,0.08);
+    }
+
+    /* ── Guest button ── */
+    .btn-guest {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; width: 100%; padding: 13px 20px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-top-color: rgba(255,255,255,0.18);
+      border-radius: 12px; color: var(--text-primary);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    }
+    .btn-guest:hover {
+      background: rgba(255,255,255,0.10);
+      border-color: rgba(255,255,255,0.22);
+      transform: translateY(-1px);
+    }
+    .btn-guest:active { transform: translateY(0); }
+
+    /* ── Admin section ── */
+    .admin-section label {
+      display: block; font-size: 11px; font-weight: 700;
+      color: var(--text-muted); letter-spacing: 0.08em;
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .input-wrap { position: relative; margin-bottom: 10px; }
+    .input-wrap svg {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%); color: var(--text-muted); pointer-events: none;
+    }
+    .admin-section input {
+      width: 100%; padding: 12px 14px 12px 40px;
+      background: rgba(12,24,44,0.60);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 10px; color: var(--text-primary);
+      font-family: 'Manrope', sans-serif; font-size: 14px; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .admin-section input::placeholder { color: var(--text-muted); }
+    .admin-section input:focus {
+      border-color: rgba(0,194,184,0.45);
+      box-shadow: 0 0 0 3px rgba(0,194,184,0.12);
+    }
+
+    /* ── Admin button ── */
+    .btn-admin {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; width: 100%; padding: 13px 20px;
+      background: linear-gradient(135deg, var(--avo-teal) 0%, #009E96 100%);
+      border: none; border-radius: 12px; color: #0C182C;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: filter 0.2s, transform 0.15s, box-shadow 0.2s;
+      margin-top: 4px;
+      box-shadow: 0 4px 20px rgba(0,194,184,0.30);
+    }
+    .btn-admin:hover {
+      filter: brightness(1.08); transform: translateY(-1px);
+      box-shadow: 0 6px 28px rgba(0,194,184,0.40);
+    }
+    .btn-admin:active { transform: translateY(0); filter: brightness(0.96); }
+
+    /* ── Error ── */
+    .error-msg {
+      display: none; font-size: 12px; color: #F87171;
+      margin-top: 6px; padding: 8px 12px;
+      background: rgba(239,68,68,0.10);
+      border: 1px solid rgba(239,68,68,0.20); border-radius: 8px;
+    }
+    .error-msg.show { display: block; }
+
+    /* ── Footer ── */
+    .login-footer {
+      font-size: 11px; color: var(--text-muted); text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Flares — same as main app -->
+  <div class="avo-flare-container">
+    <div class="avo-flare avo-flare-gold"></div>
+    <div class="avo-flare avo-flare-teal"></div>
+  </div>
+
+  <div class="login-wrap">
+
+    <!-- Logo lockup -->
+    <div class="login-logo">
+      <div class="logo-product">Reportive</div>
+      <div class="logo-byline">
+        by
+        <img src="assets/img/logo-mark-color.png" alt="Avonetiq mark" />
+        <span class="logo-byline-brand">Avonetiq</span>
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div class="login-card">
+      <h2>Sign in</h2>
+      <p>Choose how you'd like to access the reporting dashboard.</p>
+
+      <button class="btn-guest" id="btn-guest">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+        Continue as Guest
+      </button>
+
+      <div class="divider">or sign in as admin</div>
+
+      <div class="admin-section">
+        <label>Admin email</label>
+        <div class="input-wrap">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+          </svg>
+          <input type="email" id="admin-email" placeholder="you@avonetiq.id" autocomplete="email" />
+        </div>
+        <div class="error-msg" id="error-msg">
+          Access denied. Only authorised admin email is allowed.
+        </div>
+        <button class="btn-admin" id="btn-admin">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+          </svg>
+          Sign in as Admin
+        </button>
+      </div>
+    </div>
+
+    <div class="login-footer">Reportive by Avonetiq · Internal Use Only</div>
+  </div>
+
+  <script>
+    const ADMIN_EMAIL = 'riyadh@avonetiq.id';
+
+    document.getElementById('btn-guest').addEventListener('click', () => {
+      sessionStorage.setItem('avo_role', 'guest');
+      window.location.href = 'index.html';
+    });
+
+    function attemptAdminLogin() {
+      const email = document.getElementById('admin-email').value.trim().toLowerCase();
+      const err   = document.getElementById('error-msg');
+      if (email === ADMIN_EMAIL) {
+        err.classList.remove('show');
+        sessionStorage.setItem('avo_role', 'admin');
+        window.location.href = 'index.html';
+      } else {
+        err.classList.add('show');
+        document.getElementById('admin-email').focus();
+      }
+    }
+
+    document.getElementById('btn-admin').addEventListener('click', attemptAdminLogin);
+    document.getElementById('admin-email').addEventListener('keydown', e => {
+      if (e.key === 'Enter') attemptAdminLogin();
+    });
+  </script>
+</body>
+</html>
