@@ -2167,10 +2167,9 @@ body.present-mode .present-kbd-legend.legend-hidden {
   .metric-value { font-size: 22px; }
   .data-table { font-size: 12px; }
   .data-table th, .data-table td { padding: 8px 10px; }
-  /* PSI analyze bar: URL full width di atas, tombol di bawah */
+  /* PSI analyze bar: search full width di atas, tombol di bawah */
   .psi-analyze-bar { flex-wrap: wrap; }
-  .psi-url-wrap { flex: 1 1 100%; order: -1; }
-  .psi-strat-group { flex-shrink: 0; }
+  .psi-search-wrap { flex: 1 1 100%; order: -1; }
   #psi-analyze-btn { flex: 1; justify-content: center; }
   #psi-manage-btn { flex-shrink: 0; }
 }
@@ -5006,7 +5005,7 @@ body.edit-mode .banner-title[contenteditable="true"] {
   border-radius: 12px;
   backdrop-filter: blur(8px);
 }
-.psi-url-wrap {
+.psi-search-wrap {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -5017,8 +5016,8 @@ body.edit-mode .banner-title[contenteditable="true"] {
   padding: 7px 12px;
   transition: border-color 0.15s;
 }
-.psi-url-wrap:focus-within { border-color: rgba(0,194,184,0.5); }
-.psi-url-wrap svg { flex-shrink: 0; color: rgba(255,255,255,0.35); }
+.psi-search-wrap:focus-within { border-color: rgba(0,194,184,0.5); }
+.psi-search-wrap svg { flex-shrink: 0; color: rgba(255,255,255,0.35); }
 .psi-url-field {
   border: none;
   background: transparent;
@@ -5029,24 +5028,36 @@ body.edit-mode .banner-title[contenteditable="true"] {
   color: rgba(255,255,255,0.9);
 }
 .psi-url-field::placeholder { color: rgba(255,255,255,0.25); }
-.psi-strat-group { display: flex; gap: 3px; flex-shrink: 0; }
-.psi-strat-btn {
+/* URL chips row — tampil di bawah analyze bar saat profil cocok */
+.psi-url-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+.psi-url-chip {
   font-size: 11px;
-  font-weight: 600;
-  padding: 5px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.12);
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.15);
   background: rgba(255,255,255,0.07);
   color: rgba(255,255,255,0.55);
   cursor: pointer;
   transition: all 0.15s;
   font-family: inherit;
+  white-space: nowrap;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.psi-strat-btn:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); }
-.psi-strat-btn.active {
-  background: var(--brand-teal);
-  color: #fff;
+.psi-url-chip:hover { border-color: rgba(0,194,184,0.4); color: rgba(255,255,255,0.85); }
+.psi-url-chip.active {
   border-color: var(--brand-teal);
+  background: rgba(0,194,184,0.12);
+  color: var(--brand-teal);
+  font-weight: 600;
 }
 #psi-analyze-btn {
   display: flex;
@@ -5113,8 +5124,8 @@ body.edit-mode .banner-title[contenteditable="true"] {
 #psi-manage-btn {
   display: flex; align-items: center; justify-content: center;
   width: 34px; height: 34px; flex-shrink: 0;
-  border-radius: 8px; border: 1px solid var(--border-default);
-  background: rgba(255,255,255,0.55); color: var(--text-muted);
+  border-radius: 8px; border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.45);
   cursor: pointer; transition: all 0.15s;
   font-family: inherit;
 }
@@ -5203,3 +5214,551 @@ body.edit-mode .banner-title[contenteditable="true"] {
 .psi-profile-save-status { font-size: 11.5px; margin-top: 8px; min-height: 16px; }
 .psi-profile-save-status.ok  { color: #4ade80; }
 .psi-profile-save-status.err { color: #f87171; }
+
+/* ================================================================
+   REPORTIVE DESIGN SYSTEM — v1.0
+   Complete dark navy override — matches Reportive.html handoff.
+   All rules use specificity to override glass/light theme above.
+   ================================================================ */
+
+/* ── Sidebar: Reportive style ──────────────────────────────────── */
+.sidebar {
+  background: rgba(10,20,38,.97) !important;
+  border-right: 1px solid var(--navy-edge) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Sidebar logo section */
+.sidebar-logo {
+  border-bottom: 1px solid var(--navy-edge) !important;
+  padding: 18px 20px 16px !important;
+}
+.sidebar-logo-text {
+  font-family: var(--font-display) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #FCFCFC !important;
+  letter-spacing: -0.01em !important;
+}
+.sidebar-logo-text span {
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  color: var(--text-muted) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+}
+
+/* Nav section label */
+.nav-section-label {
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  color: var(--text-muted) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.12em !important;
+  padding: 8px 8px 6px 8px !important;
+}
+
+/* Nav items — Reportive teal style */
+.nav-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 9px 10px !important;
+  margin: 1px 4px !important;
+  border-radius: 8px !important;
+  color: var(--text-secondary) !important;
+  font-family: var(--font-body) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: background 150ms ease, color 150ms ease !important;
+  border-left: 2px solid transparent !important;
+  overflow: visible !important;
+}
+.nav-item::before {
+  display: none !important;
+}
+.nav-item:hover {
+  background: rgba(0,194,184,.06) !important;
+  color: #FCFCFC !important;
+  border-left-color: transparent !important;
+  box-shadow: none !important;
+}
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(0,194,184,.14), rgba(0,194,184,.02)) !important;
+  border-left: 2px solid var(--avo-teal) !important;
+  color: #FCFCFC !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+.nav-item .nav-icon {
+  width: 15px !important;
+  height: 15px !important;
+  flex-shrink: 0 !important;
+  stroke: currentColor !important;
+}
+
+/* Sidebar footer */
+.sidebar-footer {
+  border-top: 1px solid var(--navy-edge) !important;
+  padding: 12px !important;
+}
+.avatar {
+  background: linear-gradient(135deg, #00C2B8, #7000FF) !important;
+  color: #0C182C !important;
+  font-family: var(--font-display) !important;
+  font-weight: 700 !important;
+}
+.avatar-name {
+  color: #FCFCFC !important;
+  font-family: var(--font-body) !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+}
+.avatar-role {
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: var(--text-muted) !important;
+}
+
+/* ── Header: Reportive topbar ─────────────────────────────────── */
+.header {
+  background: rgba(12,24,44,.88) !important;
+  border-bottom: 1px solid var(--navy-edge) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: none !important;
+}
+
+/* ── Report Banner → Compact page title bar ─────────────────── */
+.report-banner {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 14px 20px !important;
+  margin-bottom: 20px !important;
+  background: rgba(17,29,50,.6) !important;
+  border: 1px solid var(--navy-edge) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+.banner-logo {
+  width: 26px !important;
+  height: 26px !important;
+  opacity: 0.85 !important;
+}
+.banner-title {
+  font-family: var(--font-display) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #FCFCFC !important;
+  letter-spacing: -0.01em !important;
+  flex: 1 !important;
+}
+.banner-date-btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  padding: 6px 12px !important;
+  background: var(--navy-surface) !important;
+  border: 1px solid var(--navy-edge) !important;
+  border-radius: 8px !important;
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  color: #FCFCFC !important;
+  cursor: pointer !important;
+}
+.banner-date-btn:hover {
+  border-color: var(--avo-teal) !important;
+}
+
+/* ── Cards → Dark navy Reportive style ──────────────────────── */
+.card {
+  background: var(--navy-surface) !important;
+  border: 1px solid var(--navy-edge) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.04) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.card-header {
+  background: rgba(17,29,50,.5) !important;
+  border-bottom: 1px solid var(--navy-edge) !important;
+}
+.card-header::before {
+  display: none !important;
+}
+
+.card-title {
+  font-family: var(--font-display) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #FCFCFC !important;
+}
+.card-subtitle {
+  color: var(--text-muted) !important;
+  font-size: 11px !important;
+}
+
+/* ── Metric Cards → Dark Reportive ──────────────────────────── */
+.metric-card {
+  background: var(--navy-surface) !important;
+  border: 1px solid var(--navy-edge) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.04) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Remove glass tinted backgrounds */
+.metric-card.accent-yellow { background: var(--navy-surface) !important; }
+.metric-card.accent-teal   { background: var(--navy-surface) !important; }
+.metric-card.accent-navy   { background: var(--navy-surface) !important; }
+.metric-card.accent-green  { background: var(--navy-surface) !important; }
+.metric-card.accent-red    { background: var(--navy-surface) !important; }
+.metric-card.accent-orange { background: var(--navy-surface) !important; }
+
+/* Top accent bar stays but uses CSS var */
+.metric-card::before {
+  display: block !important;
+  height: 2px !important;
+}
+
+/* Keep text colors */
+.metric-label { color: var(--text-muted) !important; }
+.metric-value { color: #FCFCFC !important; }
+.metric-change.up { color: #16A34A !important; }
+.metric-change.down, .metric-change.trend-down { color: #DC2626 !important; }
+.metric-change.down-good { color: #16A34A !important; }
+
+/* Metric icon backgrounds → dark */
+.metric-icon.yellow { background: rgba(248,180,0,.14) !important; color: var(--gold-base) !important; }
+.metric-icon.teal   { background: rgba(0,194,184,.12) !important; color: var(--avo-teal) !important; }
+.metric-icon.navy   { background: rgba(0,194,184,.08) !important; color: var(--avo-teal) !important; }
+.metric-icon.green  { background: rgba(22,163,74,.12) !important; color: #16A34A !important; }
+.metric-icon.red    { background: rgba(220,38,38,.10) !important; color: #DC2626 !important; }
+.metric-icon.orange { background: rgba(248,180,0,.12) !important; color: var(--gold-base) !important; }
+
+/* ── Section title ─────────────────────────────────────────── */
+.section-title {
+  color: var(--text-secondary) !important;
+  border-bottom: 1px solid var(--navy-edge) !important;
+  font-family: var(--font-mono) !important;
+}
+
+/* ── Insight/Analyst note card ──────────────────────────────── */
+.insight-card {
+  background: var(--navy-surface) !important;
+  border: 1px solid var(--navy-edge) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-image: linear-gradient(135deg, rgba(0,194,184,.04), rgba(248,180,0,.02)) !important;
+}
+.insight-header { border-bottom: 1px solid var(--navy-edge) !important; }
+.insight-point-title { color: #FCFCFC !important; font-family: var(--font-display) !important; }
+.insight-point p { color: var(--text-secondary) !important; }
+
+/* ── Data tables in cards ───────────────────────────────────── */
+.data-table thead th,
+.ads-table thead th,
+.seo-table thead th {
+  background: var(--navy-deep) !important;
+  color: var(--text-muted) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 9.5px !important;
+  border-bottom: 1px solid var(--navy-edge) !important;
+}
+.data-table tbody tr:hover,
+.ads-table tbody tr:hover,
+.seo-table tbody tr:hover {
+  background: var(--navy-elevated) !important;
+}
+.data-table tbody td,
+.ads-table tbody td,
+.seo-table tbody td {
+  border-bottom: 1px solid rgba(51,71,102,.4) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* ── Health score bar → dark ───────────────────────────────── */
+.health-score-bar {
+  background: var(--navy-surface) !important;
+  border: 1px solid var(--navy-edge) !important;
+  backdrop-filter: none !important;
+}
+.health-score-track {
+  background: rgba(51,71,102,.4) !important;
+}
+.health-score-fill {
+  background: var(--avo-teal) !important;
+}
+.health-score-status.good {
+  background: rgba(248,180,0,.14) !important;
+  color: var(--gold-base) !important;
+}
+.health-score-status.excellent {
+  background: rgba(0,194,184,.14) !important;
+  color: var(--avo-teal) !important;
+}
+.health-score-status.needs-work {
+  background: rgba(220,38,38,.12) !important;
+  color: #DC2626 !important;
+}
+.health-score-label { color: var(--text-secondary) !important; }
+.health-score-value { color: #FCFCFC !important; font-family: var(--font-display) !important; }
+.health-score-value span { color: var(--text-muted) !important; }
+
+/* ── Progress bars ─────────────────────────────────────────── */
+.progress-bar { background: var(--navy-elevated) !important; }
+.progress-wrap { color: var(--text-secondary) !important; }
+.progress-val { color: var(--text-secondary) !important; }
+
+/* ── Channel summary rows ──────────────────────────────────── */
+.summary-row {
+  border-top: 1px solid rgba(51,71,102,.4) !important;
+}
+.summary-name { color: #FCFCFC !important; font-family: var(--font-display) !important; font-weight: 600 !important; }
+.summary-sub { color: var(--text-muted) !important; }
+.summary-value { color: #FCFCFC !important; font-family: var(--font-mono) !important; }
+.summary-change.trend-up { color: #16A34A !important; }
+.summary-change.trend-down { color: #DC2626 !important; }
+
+/* ── Source badges ─────────────────────────────────────────── */
+.source-badge { border-radius: 4px !important; font-size: 9.5px !important; font-weight: 600 !important; }
+.source-gads { background: rgba(66,133,244,.14) !important; color: #4285F4 !important; border: none !important; }
+.source-ga4  { background: rgba(249,171,0,.14) !important; color: #F9AB00 !important; border: none !important; }
+.source-gsc  { background: rgba(0,194,184,.14) !important; color: var(--avo-teal) !important; border: none !important; }
+.source-fb   { background: rgba(8,102,255,.14) !important; color: #0866FF !important; border: none !important; }
+
+/* ── Chips ─────────────────────────────────────────────────── */
+.chip { border-radius: 4px !important; font-size: 10px !important; font-weight: 600 !important; font-family: var(--font-mono) !important; }
+.chip-green  { background: rgba(22,163,74,.14) !important; color: #16A34A !important; }
+.chip-orange { background: rgba(248,180,0,.14) !important; color: var(--gold-base) !important; }
+.chip-red    { background: rgba(220,38,38,.12) !important; color: #DC2626 !important; }
+.chip-teal   { background: rgba(0,194,184,.14) !important; color: var(--avo-teal) !important; }
+
+/* ── Tab buttons ────────────────────────────────────────────── */
+.tabs {
+  display: flex !important;
+  gap: 2px !important;
+  background: var(--navy-elevated) !important;
+  border: 1px solid var(--navy-edge) !important;
+  border-radius: 8px !important;
+  padding: 3px !important;
+}
+.tab-btn {
+  padding: 5px 12px !important;
+  border-radius: 6px !important;
+  font-family: var(--font-display) !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  color: var(--text-muted) !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: background 150ms, color 150ms !important;
+}
+.tab-btn.active {
+  background: var(--navy-surface) !important;
+  color: #FCFCFC !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2) !important;
+}
+.tab-btn:hover:not(.active) { color: #FCFCFC !important; background: rgba(255,255,255,.05) !important; }
+
+/* ── Buttons: btn-primary / Export PDF ─────────────────────── */
+.btn-primary, .btn-export-pdf {
+  background: linear-gradient(135deg, #00C2B8, #009E96) !important;
+  color: #0C182C !important;
+  border: none !important;
+  font-family: var(--font-display) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 10px rgba(0,194,184,.25) !important;
+}
+.btn-ghost {
+  background: var(--navy-surface) !important;
+  border: 1px solid var(--navy-edge) !important;
+  color: var(--text-secondary) !important;
+  font-family: var(--font-display) !important;
+}
+.btn-ghost:hover {
+  background: var(--navy-elevated) !important;
+  color: #FCFCFC !important;
+  border-color: rgba(255,255,255,.18) !important;
+}
+.btn-present {
+  background: rgba(0,194,184,.12) !important;
+  color: var(--avo-teal) !important;
+  border: 1px solid rgba(0,194,184,.3) !important;
+}
+.btn-present:hover {
+  background: rgba(0,194,184,.2) !important;
+  color: var(--avo-teal) !important;
+}
+.btn-edit {
+  background: var(--navy-elevated) !important;
+  border: 1px solid var(--navy-edge) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* ── Goal bars ──────────────────────────────────────────────── */
+.goal-row { border-top: 1px solid rgba(51,71,102,.3) !important; }
+.goal-track { background: rgba(51,71,102,.4) !important; }
+.goal-fill { background: var(--avo-teal) !important; }
+
+/* ── Benchmark rows ─────────────────────────────────────────── */
+.benchmark-row { border-top: 1px solid rgba(51,71,102,.3) !important; }
+.benchmark-diff.above { color: #16A34A !important; }
+.benchmark-diff.below { color: #DC2626 !important; }
+
+/* ── Funnel card ────────────────────────────────────────────── */
+.funnel-bar { background: var(--navy-elevated) !important; }
+.funnel-fill { background: linear-gradient(90deg, var(--avo-teal), var(--gold-base)) !important; }
+
+/* ── Modal overlay ──────────────────────────────────────────── */
+.metric-modal-overlay {
+  background: rgba(12,24,44,.7) !important;
+  backdrop-filter: blur(8px) !important;
+}
+.metric-modal-panel {
+  background: var(--navy-surface) !important;
+  border: 1px solid var(--navy-edge) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5) !important;
+  border-radius: 16px !important;
+}
+
+/* ── Def tooltip ────────────────────────────────────────────── */
+.def-tooltip {
+  background: rgba(12,24,44,.95) !important;
+  border: 1px solid var(--navy-edge) !important;
+  color: #FCFCFC !important;
+}
+
+/* ── Customize panel ────────────────────────────────────────── */
+.customize-panel {
+  background: rgba(12,24,44,.97) !important;
+  border: 1px solid var(--navy-edge) !important;
+  box-shadow: -8px 0 32px rgba(0,0,0,.4) !important;
+}
+
+/* ── Editor panel ───────────────────────────────────────────── */
+.editor-panel, .editor-panel-wrap {
+  background: rgba(10,18,34,.97) !important;
+  border-left: 1px solid var(--navy-edge) !important;
+}
+#editor-ds-panel {
+  background: var(--navy-surface) !important;
+  border: 1px solid var(--navy-edge) !important;
+}
+.editor-ds-source-btn {
+  background: var(--navy-elevated) !important;
+  border: 1px solid var(--navy-edge) !important;
+  color: var(--text-secondary) !important;
+}
+.editor-ds-source-btn.active {
+  background: rgba(0,194,184,.12) !important;
+  border-color: var(--avo-teal) !important;
+  color: var(--avo-teal) !important;
+}
+
+/* ── CWV grid items → transparent + border (already fixed v81) */
+.cwv-item {
+  background: transparent !important;
+  border: 1.5px solid rgba(255,255,255,.12) !important;
+  border-radius: var(--radius-md) !important;
+}
+.cwv-item:hover { border-color: rgba(0,194,184,.5) !important; }
+
+/* ── PSI score section ─────────────────────────────────────── */
+.psi-analyze-bar {
+  background: var(--navy-surface) !important;
+  border: 1px solid var(--navy-edge) !important;
+  border-radius: 10px !important;
+}
+#psi-analyze-btn {
+  background: linear-gradient(135deg, #00C2B8, #009E96) !important;
+  color: #0C182C !important;
+  border: none !important;
+  font-family: var(--font-display) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 10px rgba(0,194,184,.2) !important;
+}
+
+/* ── Trend chips ────────────────────────────────────────────── */
+.trend-chip { border-radius: 4px !important; }
+.trend-chip.up    { background: rgba(22,163,74,.14) !important; color: #16A34A !important; }
+.trend-chip.down  { background: rgba(220,38,38,.12) !important; color: #DC2626 !important; }
+.trend-chip.flat  { background: rgba(100,116,139,.12) !important; color: var(--text-muted) !important; }
+
+/* ── Dropdown menus ─────────────────────────────────────────── */
+.dropdown-menu {
+  background: rgba(12,24,44,.97) !important;
+  border: 1px solid var(--navy-edge) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,.4) !important;
+}
+.dropdown-item {
+  color: var(--text-secondary) !important;
+  border-radius: 6px !important;
+}
+.dropdown-item:hover {
+  background: var(--navy-elevated) !important;
+  color: #FCFCFC !important;
+}
+
+/* ── SEO/Keywords rankings table ───────────────────────────── */
+.kw-rank    { color: #FCFCFC !important; font-family: var(--font-display) !important; }
+.kw-keyword { color: #FCFCFC !important; }
+.kw-up      { color: #16A34A !important; }
+.kw-down    { color: #DC2626 !important; }
+
+/* ── Present mode controls ──────────────────────────────────── */
+.present-controls {
+  background: rgba(12,24,44,.95) !important;
+  border: 1px solid var(--navy-edge) !important;
+}
+
+/* ── Freshness dot ──────────────────────────────────────────── */
+.dot-pulse { background: #16A34A !important; }
+.freshness-label { color: var(--text-muted) !important; font-family: var(--font-mono) !important; }
+
+/* ── Nav manage pages ───────────────────────────────────────── */
+.nav-manage-pages {
+  color: var(--text-muted) !important;
+  border-top: 1px solid var(--navy-edge) !important;
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+}
+.nav-manage-pages:hover { color: var(--avo-teal) !important; }
+
+/* ── Page sections: ensure proper bg ───────────────────────── */
+.page { background: transparent !important; }
+.main { background: var(--navy-base) !important; }
+
+/* ── PSI/Integrations nav item ──────────────────────────────── */
+.nav-item[data-page="psi"] .nav-icon,
+.nav-item[data-page="integrations"] .nav-icon { stroke: currentColor; }
+
+/* ── Table search controls ───────────────────────────────────── */
+.table-controls { margin-bottom: 10px; }
+.table-search-wrap {
+  background: var(--navy-elevated) !important;
+  border: 1px solid var(--navy-edge) !important;
+  border-radius: 8px !important;
+}
+.table-search-wrap:focus-within { border-color: var(--avo-teal) !important; }
+.table-search {
+  background: transparent !important;
+  color: #FCFCFC !important;
+}
+.table-search::placeholder { color: var(--text-muted) !important; }
+.table-count { color: var(--text-muted) !important; font-family: var(--font-mono) !important; }
+
+/* ── Sparklines: keep subtle on dark bg ─────────────────────── */
+.metric-sparkline { opacity: 0.85 !important; }
+
+/* v82 bump — cache-bust applied in HTML */
