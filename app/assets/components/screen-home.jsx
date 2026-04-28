@@ -399,7 +399,7 @@ const ConfigurePanel = ({ client, onClose }) => {
                   {/* Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: HS.display, fontSize: 13.5, fontWeight: 700, color: '#FCFCFC' }}>{src.label}</div>
-                    {isOn ? (
+                    {isOn && (
                       <>
                         <div style={{ fontFamily: HS.mono, fontSize: 10.5, color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.5 }}>
                           {src.needsUrl ? 'https://kopisenja.id' : (
@@ -414,8 +414,6 @@ const ConfigurePanel = ({ client, onClose }) => {
                           <span style={{ fontFamily: HS.mono, fontSize: 9.5, color: '#16A34A', letterSpacing: '.08em' }}>CONNECTED</span>
                         </div>
                       </>
-                    ) : (
-                      <div style={{ fontFamily: HS.body, fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{src.desc}</div>
                     )}
                   </div>
                   {/* Action */}
@@ -651,22 +649,24 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
 };
 
 // ─── Top bar ───────────────────────────────────────────────────────
-const HomeTopBar = ({ count, onNavigate, activeTab = 'home' }) => {
-  const navItems = [['Home', 'home'], ['Templates', 'templates'], ['Access', 'access']];
-  return <header style={{ height: 80, minHeight: 80, background: 'rgba(10,18,34,.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', padding: '0 24px', gap: 14, position: 'relative', zIndex: 10, flexShrink: 0 }}>
-    {/* Tab nav (no duplicate logo — sidebar has branding) */}
-    {navItems.map(([l, key]) =>
-      <div key={key} onClick={() => onNavigate && onNavigate(key)} style={{ padding: '6px 12px', borderRadius: 7, cursor: 'pointer', background: key === activeTab ? 'rgba(0,194,184,.1)' : 'transparent', color: key === activeTab ? '#00C2B8' : 'var(--text-secondary)', fontFamily: HS.display, fontSize: 12.5, fontWeight: key === activeTab ? 700 : 500 }}>{l}</div>
-    )}
+const HomeTopBar = ({ count }) =>
+<header style={{ height: 80, minHeight: 80, background: 'rgba(10,18,34,.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', padding: '0 28px', gap: 14, position: 'relative', zIndex: 10, boxSizing: 'border-box' }}>
+    <img src="assets/logo-mark.png" style={{ width: 62, height: 62 }} />
+    <div>
+      <div style={{ fontFamily: HS.display, fontSize: 14, fontWeight: 700, color: '#FCFCFC', letterSpacing: '-.01em' }}>Reportive</div>
+      <div style={{ fontFamily: HS.mono, fontSize: 8.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>by Avonetiq</div>
+    </div>
+    <div style={{ width: 1, height: 20, background: 'var(--navy-edge)' }} />
+    {[['Home', 'active'], ['Templates', ''], ['Access', '']].map(([l, a]) =>
+  <div key={l} style={{ padding: '6px 12px', borderRadius: 7, cursor: 'pointer', background: a ? 'rgba(0,194,184,.1)' : 'transparent', color: a ? '#00C2B8' : 'var(--text-secondary)', fontFamily: HS.display, fontSize: 12.5, fontWeight: a ? 700 : 500 }}>{l}</div>
+  )}
     <div style={{ flex: 1 }} />
-    {/* Search bar */}
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'var(--navy-surface)', border: '1px solid var(--navy-edge)', borderRadius: 8, width: 220 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'var(--navy-surface)', border: '1px solid var(--navy-edge)', borderRadius: 8, width: 200 }}>
       <svg width="13" height="13" fill="none" stroke="var(--text-muted)" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
       <span style={{ fontFamily: HS.body, fontSize: 12, color: 'var(--text-muted)' }}>Search clients…</span>
       <span style={{ marginLeft: 'auto', fontFamily: HS.mono, fontSize: 9, color: 'var(--text-muted)', background: 'var(--navy-elevated)', padding: '1px 5px', borderRadius: 3 }}>⌘K</span>
     </div>
     <div style={{ width: 1, height: 20, background: 'var(--navy-edge)' }} />
-    {/* User avatar */}
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
       <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#00C2B8,#7000FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: HS.display, fontWeight: 700, fontSize: 12, color: '#0C182C' }}>RA</div>
       <div>
@@ -675,7 +675,6 @@ const HomeTopBar = ({ count, onNavigate, activeTab = 'home' }) => {
       </div>
     </div>
   </header>;
-};
 
 
 // ─── Filter bar ───────────────────────────────────────────────────
@@ -721,7 +720,7 @@ const StatStrip = ({ clients }) => {
 };
 
 // ─── ScreenHome ────────────────────────────────────────────────────
-const ScreenHome = ({ onOpenClient, onNavigate }) => {
+const ScreenHome = ({ onOpenClient }) => {
   const [clients, setClients] = React.useState(HOME_CLIENTS);
   const [editTarget, setEditTarget] = React.useState(null);
   const [configTarget, setConfigTarget] = React.useState(null);
@@ -762,7 +761,7 @@ const ScreenHome = ({ onOpenClient, onNavigate }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--navy-base)', position: 'relative' }}>
       <RFlare intensity={0.18} />
-      <HomeTopBar count={filtered.length} onNavigate={onNavigate} />
+      <HomeTopBar count={filtered.length} />
 
       <div style={{ flex: 1, overflow: 'auto', position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '26px 32px 48px' }}>

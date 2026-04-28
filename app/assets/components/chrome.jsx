@@ -7,8 +7,8 @@ const RSidebar = ({ active = 'dashboard' }) => {
     ['dashboard', 'Dashboard', 'M3 12l9-9 9 9v9a2 2 0 01-2 2h-4v-7h-6v7H5a2 2 0 01-2-2z'],
   ];
   return (
-    <aside style={{ width: 240, minWidth: 240, background: 'rgba(10,20,38,.93)', borderRight: '1px solid var(--navy-edge)', display: 'flex', flexDirection: 'column', height: '100%', backdropFilter: 'blur(24px)' }}>
-      <div style={{ height: 80, minHeight: 80, padding: '0 20px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', gap: 10, boxSizing: 'border-box' }}>
+    <aside style={{ width: 240, minWidth: 240, background: 'rgba(10,20,38,.93)', borderRight: '1px solid var(--navy-edge)', display: 'flex', flexDirection: 'column', height: '100%', backdropFilter: 'blur(24px)', boxSizing: 'border-box' }}>
+      <div style={{ height: 80, minHeight: 80, padding: '0 16px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', gap: 10, boxSizing: 'border-box', flexShrink: 0 }}>
         <img src="assets/logo-mark.png" style={{ width: 62, height: 62 }} />
         <div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#FCFCFC', letterSpacing: '-0.01em' }}>Reportive</div>
@@ -44,7 +44,7 @@ const RSidebar = ({ active = 'dashboard' }) => {
 };
 
 const RTopBar = ({ title, subtitle, period = 'Mar 2025' }) => (
-  <header style={{ height: 80, minHeight: 80, borderBottom: '1px solid var(--navy-edge)', background: 'rgba(12,24,44,.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', padding: '0 24px', gap: 16, position: 'relative', zIndex: 2 }}>
+  <header style={{ height: 80, minHeight: 80, borderBottom: '1px solid var(--navy-edge)', background: 'rgba(12,24,44,.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', padding: '0 24px', gap: 16, position: 'relative', zIndex: 2, boxSizing: 'border-box' }}>
     <div style={{ flex: 1 }}>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#FCFCFC' }}>{title}</div>
       {subtitle && <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-muted)' }}>{subtitle}</div>}
@@ -55,6 +55,12 @@ const RTopBar = ({ title, subtitle, period = 'Mar 2025' }) => (
         {period}
         <svg width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 12 12"><path d="M2 4l4 4 4-4"/></svg>
       </div>
+      <button style={{ padding: '6px 14px', background: 'transparent', color: '#FCFCFC', border: '1px solid var(--navy-edge)', borderRadius: 8, fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'background .15s, border-color .15s' }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,194,184,.08)'; e.currentTarget.style.borderColor = 'rgba(0,194,184,.4)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--navy-edge)'; }}>
+        <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4" fill="currentColor"/></svg>
+        Present
+      </button>
       <button style={{ padding: '6px 14px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', color: '#0C182C', border: 'none', borderRadius: 8, fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,194,184,.25)' }}>Export PDF</button>
       <div style={{ width: 1, height: 20, background: 'var(--navy-edge)' }} />
       <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#00C2B8,#7000FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, color: '#0C182C' }}>RA</div>

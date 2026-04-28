@@ -417,10 +417,16 @@ const ScreenAccess = () => {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--navy-base)', fontFamily: AS.body, position: 'relative' }}>
       <RFlare intensity={0.15}/>
 
-      {/* Top bar — no duplicate logo, sidebar handles branding */}
-      <header style={{ height: 80, minHeight: 80, background: 'rgba(10,18,34,.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', padding: '0 24px', gap: 14, position: 'relative', zIndex: 10, flexShrink: 0 }}>
-        {[['Home','home'],['Templates','templates'],['Access','access']].map(([l, key]) => (
-          <div key={l} style={{ padding: '6px 12px', borderRadius: 7, cursor: 'pointer', background: key === 'access' ? 'rgba(0,194,184,.1)' : 'transparent', color: key === 'access' ? '#00C2B8' : 'var(--text-secondary)', fontFamily: AS.display, fontSize: 12.5, fontWeight: key === 'access' ? 700 : 500 }}>{l}</div>
+      {/* Top bar */}
+      <header style={{ height: 80, minHeight: 80, background: 'rgba(10,18,34,.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', padding: '0 28px', gap: 14, position: 'relative', zIndex: 10, flexShrink: 0, boxSizing: 'border-box' }}>
+        <img src="assets/logo-mark.png" style={{ width: 62, height: 62 }}/>
+        <div>
+          <div style={{ fontFamily: AS.display, fontSize: 14, fontWeight: 700, color: '#FCFCFC', letterSpacing: '-.01em' }}>Reportive</div>
+          <div style={{ fontFamily: AS.mono, fontSize: 8.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>by Avonetiq</div>
+        </div>
+        <div style={{ width: 1, height: 20, background: 'var(--navy-edge)' }}/>
+        {[['Home',''],['Templates',''],['Access','active']].map(([l, a]) => (
+          <div key={l} style={{ padding: '6px 12px', borderRadius: 7, cursor: 'pointer', background: a ? 'rgba(0,194,184,.1)' : 'transparent', color: a ? '#00C2B8' : 'var(--text-secondary)', fontFamily: AS.display, fontSize: 12.5, fontWeight: a ? 700 : 500 }}>{l}</div>
         ))}
         <div style={{ flex: 1 }}/>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
