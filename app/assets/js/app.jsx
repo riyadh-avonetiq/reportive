@@ -1,11 +1,12 @@
 // Reportive · App Shell
 // ─────────────────────────────────────────────────────────────────
-// Post-login entry point. Currently mounts the Home screen (client list).
-// Dashboard / Templates / Access / Editor are NOT wired yet — the user is
-// implementing screens incrementally and Home is what's in scope right now.
+// Post-login entry point.
+//   #home         → ScreenHome (client list)
+//   #client/<id>  → ScreenReport (per-client reporting dashboard)
+//   #access       → ScreenAccess (team management)
 //
-// LiveProvider stays in place so when the dashboard is wired later, live
-// Supabase data is already available throughout the tree.
+// LiveProvider wraps everything so Supabase data is available
+// throughout the entire tree.
 
 const { useState, useEffect, useCallback } = React;
 const { LiveProvider, useLive } = window.LIVE;
@@ -16,38 +17,12 @@ const IS_ADMIN = ROLE === 'admin';
 
 // ─────────────────────────────────────────────────────────────────
 // Tiny in-app router (URL hash). Defaults to "home".
-//   #home    → Home (client list)
-//   #client/<id> → placeholder; dashboard not yet implemented
 // ─────────────────────────────────────────────────────────────────
 function parseHash() {
   const h = window.location.hash.replace(/^#/, '') || 'home';
   if (h.startsWith('client/')) return { route: 'client', clientId: h.slice('client/'.length) };
+  if (h === 'access') return { route: 'access' };
   return { route: h };
-}
-
-function ClientPlaceholder({ clientId, onBack }) {
-  return (
-    <div style={{
-      height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--navy-base)', position: 'relative', overflow: 'hidden',
-      flexDirection: 'column', gap: 14, padding: 32,
-    }}>
-      {window.RFlare && <RFlare intensity={0.25}/>}
-      <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 480 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--avo-teal)', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 8 }}>Client · {clientId}</div>
-        <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: '#FCFCFC', letterSpacing: '-0.02em' }}>Dashboard not wired yet</h1>
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-secondary)', marginTop: 10, lineHeight: 1.6 }}>
-          The home screen is in scope right now. The per-client dashboard will be wired next.
-        </p>
-        <button onClick={onBack} style={{
-          marginTop: 18, padding: '10px 18px', background: 'linear-gradient(135deg,#00C2B8,#009E96)',
-          color: '#0C182C', border: 'none', borderRadius: 8,
-          fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-          boxShadow: '0 4px 14px rgba(0,194,184,.25)',
-        }}>← Back to Home</button>
-      </div>
-    </div>
-  );
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -71,14 +46,33 @@ function App() {
   }, [navigate]);
 
   if (route.route === 'client') {
-    return <ClientPlaceholder clientId={route.clientId} onBack={() => navigate('home')}/>;
+    return <ScreenReport clientId={route.clientId} onBack={() => navigate('home')}/>;
+  }
+
+  if (route.route === 'access') {
+    return <ScreenAccess onNavigate={navigate}/>;
   }
 
   // Default: Home
-  return <ScreenHome onOpenClient={onOpenClient}/>;
+  return <ScreenHome onOpenClient={onOpenClient} onNavigate={navigate}/>;
 }
 
+// ── Auth Supabase client (clients table) ───────────────────────
+const _AUTH_SUPA = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(
+      'https://swklfolveiilajdmuenu.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3a2xmb2x2ZWlpbGFqZG11ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NDEwMDAsImV4cCI6MjA5MzAxNzAwMH0.ZuxBQkHGwpY82XwA0NQzjqnvCeJH0WUIcp0Bux2K-84'
+    )
+  : null;
+
 function Root() {
+  // Fetch clients globally so any route can look up a client by ID
+  useEffect(() => {
+    if (!_AUTH_SUPA) return;
+    _AUTH_SUPA.from('clients').select('*').order('created_at', { ascending: false })
+      .then(({ data }) => { if (data && data.length > 0) window._avo_clients = data; });
+  }, []);
+
   // Hide the boot splash on first paint
   useEffect(() => {
     const el = document.getElementById('boot-splash');

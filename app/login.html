@@ -138,6 +138,17 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* ── Password wrapper ───────────────────────────────────── */
+    .input-wrap { position: relative; }
+    .input-wrap .input { padding-right: 42px; }
+    .eye-btn {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; padding: 4px;
+      color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+      transition: color .15s;
+    }
+    .eye-btn:hover { color: var(--avo-teal); }
+
     /* ── Footer ─────────────────────────────────────────────── */
     .copyright {
       position: fixed; bottom: 18px; left: 0; right: 0; text-align: center;
@@ -175,8 +186,16 @@
           <span class="field-label">Password</span>
           <a onclick="forgotPassword()">Forgot password?</a>
         </div>
-        <input id="admin-password" class="input" type="password"
-               placeholder="••••••••••" autocomplete="current-password" />
+        <div class="input-wrap">
+          <input id="admin-password" class="input" type="password"
+                 placeholder="••••••••••" autocomplete="current-password" />
+          <button type="button" class="eye-btn" onclick="togglePassword()" tabindex="-1" id="eye-btn" aria-label="Show password">
+            <svg id="eye-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
         <div id="admin-error" class="error-banner">Incorrect email or password. Please try again.</div>
       </div>
 
@@ -199,14 +218,17 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPA_URL = 'https://qmzgincouzpbyfxfddxt.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtemdpbmNvdXpwYnlmeGZkZHh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTg3NTAsImV4cCI6MjA5MTYzNDc1MH0.cm0NcefIhlvim2dWSJOcTpVyajiYrqsX2uy-35PqMuY';
-
-const ADMIN_EMAILS = ['riyadh@avonetiq.id', 'rizki.anindita@avonetiq.id', 'admin@avonetiq.id'];
+const SUPA_URL = 'https://swklfolveiilajdmuenu.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3a2xmb2x2ZWlpbGFqZG11ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NDEwMDAsImV4cCI6MjA5MzAxNzAwMH0.ZuxBQkHGwpY82XwA0NQzjqnvCeJH0WUIcp0Bux2K-84';
 
 const _supa = (window.supabase && window.supabase.createClient)
   ? window.supabase.createClient(SUPA_URL, SUPA_KEY)
   : null;
+
+async function hashPassword(pw) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 async function adminLogin() {
   const emailEl = document.getElementById('admin-email');
@@ -229,24 +251,37 @@ async function adminLogin() {
   btn.innerHTML = '<span class="spinner"></span> Signing in…';
 
   try {
-    if (_supa) {
-      const { data, error } = await _supa.auth.signInWithPassword({ email, password: pass });
-      if (!error && data.user) {
-        grantAccess(); return;
-      }
+    if (!_supa) throw new Error('No connection');
+
+    const hash = await hashPassword(pass.trim());
+    const { data: member, error } = await _supa
+      .from('team_members')
+      .select('role, password_hash, name, email, status')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!member) {
+      errEl.textContent = 'Email tidak terdaftar. Hubungi admin untuk mendapatkan akses.';
+      errEl.classList.add('show');
+      emailEl.classList.add('error');
+      passEl.focus();
+    } else if (!member.password_hash || member.password_hash !== hash) {
+      errEl.textContent = 'Password salah. Silakan coba lagi.';
+      errEl.classList.add('show');
+      emailEl.classList.add('error');
+      passEl.value = '';
+      passEl.focus();
+    } else {
+      // Success — update last_active fire-and-forget
+      _supa.from('team_members').update({ last_active: new Date().toISOString() })
+        .eq('email', email).then(() => {}).catch(err => console.warn('[last_active]', err));
+      grantAccess(member.email, member.role, member.name);
     }
-    // Fallback: allow known admin emails in dev
-    if (ADMIN_EMAILS.includes(email)) {
-      grantAccess(); return;
-    }
-    errEl.textContent = 'Incorrect email or password. Please try again.';
-    errEl.classList.add('show');
-    emailEl.classList.add('error');
-    passEl.value = '';
-    passEl.focus();
   } catch (e) {
     console.error('[Login]', e);
-    errEl.textContent = 'Network error. Please check your connection and try again.';
+    errEl.textContent = 'Koneksi bermasalah. Periksa jaringan dan coba lagi.';
     errEl.classList.add('show');
   } finally {
     btn.disabled = false;
@@ -255,23 +290,26 @@ async function adminLogin() {
 }
 
 function forgotPassword() {
-  const email = document.getElementById('admin-email').value.trim();
-  if (email && _supa) {
-    _supa.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/index.html' })
-      .then(({ error }) => {
-        if (!error) alert('Password reset link sent to ' + email);
-        else alert('Could not send reset email. Please try again.');
-      });
-  } else {
-    alert('Enter your email first, then click Forgot password?');
-  }
+  alert('Please contact the workspace owner to reset your password.');
 }
 
-function grantAccess() {
-  sessionStorage.setItem('avo_role', 'admin');
+function grantAccess(email, role, name) {
+  sessionStorage.setItem('avo_role', role || 'viewer');
+  sessionStorage.setItem('avo_email', email || '');
+  sessionStorage.setItem('avo_name', name || '');
   document.body.style.transition = 'opacity .3s ease';
   document.body.style.opacity = '0';
   setTimeout(() => { window.location.href = 'index.html'; }, 320);
+}
+
+function togglePassword() {
+  const input = document.getElementById('admin-password');
+  const icon  = document.getElementById('eye-icon');
+  const show  = input.type === 'password';
+  input.type  = show ? 'text' : 'password';
+  icon.innerHTML = show
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
 }
 
 document.addEventListener('keydown', e => {

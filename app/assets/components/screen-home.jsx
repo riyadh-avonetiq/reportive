@@ -95,6 +95,90 @@ const HOME_CLIENTS = [
   lastEdited: '4 days ago'
 }];
 
+// ── Deterministic gradient from name ─────────────────────────────
+const _GRADS = [
+  ['#00C2B8','#7000FF'],
+  ['#4285F4','#00C2B8'],
+  ['#F8B400','#E3170A'],
+  ['#16A34A','#0EA5E9'],
+  ['#E3170A','#F8B400'],
+  ['#16A34A','#F8B400'],
+  ['#7000FF','#4285F4'],
+  ['#0EA5E9','#16A34A'],
+  ['#F8B400','#00C2B8'],
+  ['#E3170A','#7000FF'],
+  ['#4285F4','#F8B400'],
+  ['#00C2B8','#16A34A'],
+];
+function _nameGrad(name) {
+  const s = (name || '').trim();
+  if (!s) return `linear-gradient(135deg,#00C2B8,#7000FF)`;
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  const [a, b] = _GRADS[h % _GRADS.length];
+  return `linear-gradient(135deg,${a},${b})`;
+}
+
+// ── Supabase app client — clients CRUD + Realtime ─────────────────
+const _APP_SUPA = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(
+      'https://swklfolveiilajdmuenu.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3a2xmb2x2ZWlpbGFqZG11ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NDEwMDAsImV4cCI6MjA5MzAxNzAwMH0.ZuxBQkHGwpY82XwA0NQzjqnvCeJH0WUIcp0Bux2K-84'
+    )
+  : null;
+
+function _relTime(ts) {
+  if (!ts) return '—';
+  const diff = Date.now() - new Date(ts).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 2) return 'Just now';
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return h === 1 ? '1 hour ago' : `${h} hours ago`;
+  const d = Math.floor(h / 24);
+  if (d === 1) return 'Yesterday';
+  if (d < 7) return `${d} days ago`;
+  return `${Math.floor(d / 7)} week${d >= 14 ? 's' : ''} ago`;
+}
+
+function _mapRow(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    logo: row.logo || null,
+    initials: row.initials || row.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
+    avatarGrad: row.avatar_grad || _nameGrad(row.name),
+    status: row.status || 'active',
+    period: row.period || 'Apr 2026',
+    featured: row.featured || false,
+    connected: row.connected || {},
+    info: row.info || {},
+    alert: row.alert || null,
+    lastEdited: _relTime(row.last_edited),
+    _ts: row.last_edited,
+    _createdAt: row.created_at,
+  };
+}
+
+async function _seedClients() {
+  if (!_APP_SUPA) return;
+  const rows = HOME_CLIENTS.map((c, i) => ({
+    id: c.id,
+    name: c.name,
+    logo: c.logo || null,
+    initials: c.initials,
+    avatar_grad: c.avatarGrad,
+    status: c.status || 'active',
+    period: c.period,
+    featured: c.featured || false,
+    connected: c.connected || {},
+    info: c.info || {},
+    alert: c.alert || null,
+    last_edited: new Date(Date.now() - (i + 1) * 7200000).toISOString(),
+    created_at: new Date(Date.now() - (i + 1) * 7200000).toISOString(),
+  }));
+  await _APP_SUPA.from('clients').insert(rows);
+}
 
 // ─── shared micro styles ───────────────────────────────────────────
 const HS = {
@@ -103,47 +187,176 @@ const HS = {
   mono: 'var(--font-mono)'
 };
 
+// ─── Session user ─────────────────────────────────────────────────
+const _USER_MAP = {
+  'optimize@avonetiq.com':      { name: 'Avonetiq Owner', first: 'Owner',  initials: 'AO', grad: 'linear-gradient(135deg,#00C2B8,#7000FF)' },
+  'riyadh@avonetiq.id':         { name: 'Riyadh Nasrin',  first: 'Riyadh', initials: 'RN', grad: 'linear-gradient(135deg,#4285F4,#00C2B8)' },
+  'riyadhnasrin96@gmail.com':   { name: 'Riyadh Nasrin',  first: 'Riyadh', initials: 'RN', grad: 'linear-gradient(135deg,#7000FF,#4285F4)' },
+  'rizki.anindita@avonetiq.id': { name: 'Rizki Anindita', first: 'Rizki',  initials: 'RA', grad: 'linear-gradient(135deg,#00C2B8,#7000FF)' },
+};
+function _getSessionUser() {
+  const email = sessionStorage.getItem('avo_email') || '';
+  const role  = sessionStorage.getItem('avo_role')  || 'admin';
+  const roleLabel = ({ owner:'Owner', admin:'Admin', editor:'Editor', viewer:'Viewer' })[role] || 'User';
+  const u = _USER_MAP[email] || {
+    name:     email ? email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,c=>c.toUpperCase()) : 'User',
+    first:    email ? email.split('@')[0].split(/[._]/)[0].replace(/\b\w/g,c=>c.toUpperCase()) : 'User',
+    initials: email ? email.slice(0,2).toUpperCase() : 'U',
+    grad:     'linear-gradient(135deg,#00C2B8,#7000FF)',
+  };
+  return { ...u, roleLabel };
+}
+const _hour = new Date().getHours();
+const _timeGreeting = _hour < 12 ? 'Selamat pagi' : _hour < 17 ? 'Selamat siang' : _hour < 20 ? 'Selamat sore' : 'Selamat malam';
+
+// ─── Supabase configs (3 projects) ───────────────────────────────
+const _SUPA = {
+  google: {
+    url: 'https://qmzgincouzpbyfxfddxt.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtemdpbmNvdXpwYnlmeGZkZHh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTg3NTAsImV4cCI6MjA5MTYzNDc1MH0.cm0NcefIhlvim2dWSJOcTpVyajiYrqsX2uy-35PqMuY',
+  },
+  gsc: {
+    url: 'https://dmnnscedufbsphvrrors.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRtbm5zY2VkdWZic3BodnJyb3JzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2OTg5NTEsImV4cCI6MjA5MjI3NDk1MX0.CDkwYfwi6h8DqNOZL8d9MPoBYUJmc77tOrubobM4vrg',
+  },
+  ga4: {
+    url: 'https://dpthobkylyuajaleykyf.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwdGhvYmt5bHl1YWphbGV5a3lmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MzkxMDYsImV4cCI6MjA5MjQxNTEwNn0.eGomVe5yQDecapanuMG08LdXRrw0Z5vkZdJyVgEQlE8',
+  },
+  meta: {
+    url: 'https://swklfolveiilajdmuenu.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3a2xmb2x2ZWlpbGFqZG11ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NDEwMDAsImV4cCI6MjA5MzAxNzAwMH0.ZuxBQkHGwpY82XwA0NQzjqnvCeJH0WUIcp0Bux2K-84',
+  },
+};
+
+async function _supaFetch(project, table, select, extra = '') {
+  const { url, key } = _SUPA[project];
+  try {
+    const res = await fetch(
+      `${url}/rest/v1/${table}?select=${encodeURIComponent(select)}${extra}&limit=1000`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}` } }
+    );
+    if (!res.ok) return null;
+    return res.json();
+  } catch { return null; }
+}
+
+// Source → { project, table, nameCol, sub } — null means not configured yet
+const _SRC_TABLE = {
+  google: { project: 'google', table: 'google_ads',     nameCol: 'account_name',  sub: 'Google Ads account'          },
+  meta:   { project: 'meta', table: 'meta_ads_insights', nameCol: 'account_name', sub: 'Meta Ads account' },
+  ga4:    { project: 'ga4',    table: 'ga4_sessions',   nameCol: 'property_name', sub: 'Google Analytics 4 property' },
+  search: { project: 'gsc',    table: 'search_console', nameCol: 'property',      sub: 'Search Console property'     },
+};
+
+// Cursor-based scan: each call jumps past the last-seen value, so it finds
+// every distinct name regardless of how many data rows each account has.
+async function _fetchAccounts(srcId) {
+  const cfg = _SRC_TABLE[srcId];
+  if (!cfg) return null;
+
+  const results = [];
+  let cursor = null;
+  const MAX_ACCOUNTS = 200;
+
+  while (results.length < MAX_ACCOUNTS) {
+    const filter = cursor
+      ? `&order=${cfg.nameCol}&${cfg.nameCol}=gt.${encodeURIComponent(cursor)}`
+      : `&order=${cfg.nameCol}`;
+
+    const rows = await _supaFetch(cfg.project, cfg.table, cfg.nameCol, filter);
+    if (!rows || rows.length === 0) break;
+
+    const name = rows[0][cfg.nameCol];
+    if (!name) break;
+
+    results.push({ id: name, name, sub: cfg.sub });
+    cursor = name;
+  }
+
+  return results;
+}
+
 // ─── New Report Modal ─────────────────────────────────────────────
 const NewReportModal = ({ onClose, onCreate }) => {
-  const [form, setForm] = React.useState({
-    clientName: '',
-    url: '',
-    sources: {
-      google: false,
-      search: false,
-      ga4: false,
-      meta: false
-    }
-  });
-  const [step, setStep] = React.useState(1); // 1: basic, 2: configure
+  const [step, setStep] = React.useState(1);
+  const [clientName, setClientName] = React.useState('');
+  const [logo, setLogo] = React.useState(null);
+  const [logoHover, setLogoHover] = React.useState(false);
+  const [connected, setConnected] = React.useState({});   // { srcId: { id, name, sub } }
+  const [expanded, setExpanded] = React.useState(null);   // srcId currently showing picker
+  const [loadingSrc, setLoadingSrc] = React.useState(null);
+  const [accounts, setAccounts] = React.useState({});     // { srcId: [] | null }
+  const [acctSearch, setAcctSearch] = React.useState('');
+  const [psUrl, setPsUrl] = React.useState('');
+  const fileRef = React.useRef(null);
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const toggleSource = (src) => setForm(f => ({ ...f, sources: { ...f.sources, [src]: !f.sources[src] } }));
+  const handleFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setLogo(ev.target.result);
+    reader.readAsDataURL(file);
+  };
 
-  const SOURCES = [
-    { id: 'google', label: 'Google Ads', desc: 'Search, Display & Video campaigns', color: '#4285F4', icon: 'M21.6 12.23c0-.78-.07-1.53-.2-2.25H12v4.26h5.38a4.6 4.6 0 01-2 3.02v2.51h3.24c1.9-1.75 2.99-4.33 2.99-7.54z M12 22c2.7 0 4.96-.9 6.62-2.43l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.07v2.59A10 10 0 0012 22z M6.41 13.9a6 6 0 010-3.8V7.51H3.07a10 10 0 000 8.98l3.34-2.6z M12 5.98c1.47 0 2.78.5 3.82 1.5l2.86-2.87A10 10 0 003.07 7.51l3.34 2.6C7.2 7.74 9.4 5.98 12 5.98z' },
-    { id: 'search', label: 'Google Search Console', desc: 'Organic search performance & keywords', color: '#00C2B8', icon: 'M10 3a7 7 0 100 14 7 7 0 000-14zM21 21l-4.35-4.35' },
-    { id: 'ga4', label: 'Google Analytics 4', desc: 'Website traffic, conversions & events', color: '#F9AB00', icon: 'M17 3a2 2 0 012 2v14a2 2 0 01-4 0V5a2 2 0 012-2z M11 11a2 2 0 012 2v6a2 2 0 01-4 0v-6a2 2 0 012-2z M5 19a2 2 0 110-4 2 2 0 010 4z' },
-    { id: 'meta', label: 'Meta Ads', desc: 'Facebook & Instagram advertising', color: '#0866FF', icon: 'M12 2a10 10 0 00-1.56 19.88v-7H8v-3h2.44V9.75c0-2.42 1.44-3.75 3.65-3.75 1.06 0 2.16.19 2.16.19v2.38h-1.22c-1.2 0-1.57.75-1.57 1.51V12h2.67l-.43 3h-2.24v7A10 10 0 0012 2z' }
+  const NRM_SOURCES = [
+    { id: 'google',    label: 'Google Ads',             desc: 'Search, Display & Video campaigns',       color: '#4285F4',
+      icon: <g key="g"><path fill="#4285F4" d="M21.6 12.23c0-.78-.07-1.53-.2-2.25H12v4.26h5.38a4.6 4.6 0 01-2 3.02v2.51h3.24c1.9-1.75 2.99-4.33 2.99-7.54z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.43l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.07v2.59A10 10 0 0012 22z"/><path fill="#FBBC04" d="M6.41 13.9a6 6 0 010-3.8V7.51H3.07a10 10 0 000 8.98l3.34-2.6z"/><path fill="#EA4335" d="M12 5.98c1.47 0 2.78.5 3.82 1.5l2.86-2.87A10 10 0 003.07 7.51l3.34 2.6C7.2 7.74 9.4 5.98 12 5.98z"/></g> },
+    { id: 'meta',      label: 'Meta Ads',               desc: 'Facebook & Instagram advertising',         color: '#0866FF',
+      icon: <path key="m" fill="#0866FF" d="M12 2a10 10 0 00-1.56 19.88v-7H8v-3h2.44V9.75c0-2.42 1.44-3.75 3.65-3.75 1.06 0 2.16.19 2.16.19v2.38h-1.22c-1.2 0-1.57.75-1.57 1.51V12h2.67l-.43 3h-2.24v7A10 10 0 0012 2z"/> },
+    { id: 'search',    label: 'Google Search Console',  desc: 'Organic search performance & indexing',    color: '#00C2B8',
+      icon: <g key="s"><circle cx="10" cy="10" r="6" fill="none" stroke="#00C2B8" strokeWidth="2.2"/><path stroke="#00C2B8" strokeWidth="2.2" strokeLinecap="round" d="M15 15l5 5"/></g> },
+    { id: 'ga4',       label: 'Google Analytics 4',     desc: 'Web & app traffic, conversions, events',   color: '#F9AB00',
+      icon: <g key="ga"><path fill="#F9AB00" d="M17 3a2 2 0 012 2v14a2 2 0 01-4 0V5a2 2 0 012-2z"/><circle cx="5" cy="19" r="2" fill="#E37400"/><path fill="#E37400" d="M11 11a2 2 0 012 2v6a2 2 0 01-4 0v-6a2 2 0 012-2z"/></g> },
+    { id: 'pagespeed', label: 'PageSpeed Insights',     desc: 'Core Web Vitals & site performance',       color: '#7000FF', needsUrl: true,
+      icon: <g key="ps"><path fill="#7000FF" d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16z"/><path fill="#7000FF" d="M12 6l3 6h-2v4h-2v-4H9z"/></g> },
   ];
 
-  const canCreate = form.clientName.trim().length > 0;
-  const sourcesSelected = Object.values(form.sources).filter(Boolean).length;
+  const connectedCount = Object.keys(connected).filter(k => connected[k]).length;
+  const canCreate = clientName.trim().length > 0;
+
+  const handleConnectClick = (srcId) => {
+    if (expanded === srcId) { setExpanded(null); setAcctSearch(''); return; }
+    setExpanded(srcId);
+    if (accounts[srcId] !== undefined) return; // already fetched
+    setLoadingSrc(srcId);
+    _fetchAccounts(srcId).then(rows => {
+      setAccounts(a => ({ ...a, [srcId]: rows }));
+      setLoadingSrc(null);
+    });
+  };
+
+  const selectAccount = (srcId, acc) => {
+    setConnected(c => ({ ...c, [srcId]: acc }));
+    setExpanded(null);
+  };
+
+  const connectPageSpeed = () => {
+    if (!psUrl.trim()) return;
+    setConnected(c => ({ ...c, pagespeed: { id: 'ps', name: psUrl.trim(), sub: 'PageSpeed URL' } }));
+    setExpanded(null);
+    setPsUrl('');
+  };
+
+  const disconnect = (srcId, e) => {
+    e.stopPropagation();
+    setConnected(c => { const n = { ...c }; delete n[srcId]; return n; });
+  };
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,.92)', backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
     onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div style={{ width: '100%', maxWidth: 700, background: 'rgba(14,24,42,.99)', border: '1px solid var(--navy-edge)', borderRadius: 20, boxShadow: '0 60px 140px rgba(0,0,0,.8), 0 0 0 1px rgba(0,194,184,.2)', overflow: 'hidden' }}>
 
-        {/* Header with gradient */}
+        {/* Header */}
         <div style={{ padding: '32px 40px', background: 'linear-gradient(135deg,rgba(0,194,184,.08),rgba(112,0,255,.04))', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontFamily: HS.display, fontSize: 24, fontWeight: 800, color: '#FCFCFC', letterSpacing: '-.02em', marginBottom: 6 }}>Create New Report</div>
             <div style={{ fontFamily: HS.body, fontSize: 13, color: 'var(--text-muted)' }}>
-              {step === 1 ? 'Enter client information to get started' : 'Select data sources to connect'}
+              {step === 1 ? 'Enter client information to get started' : 'Connect data sources for this client'}
             </div>
           </div>
-          <button onClick={(e) => { e.stopPropagation(); onClose(); }} style={{ width: 36, height: 36, border: 'none', background: 'rgba(0,194,184,.1)', borderRadius: 10, color: '#00C2B8', cursor: 'pointer', fontSize: 22, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .15s' }}
+          <button onClick={(e) => { e.stopPropagation(); onClose(); }} style={{ width: 36, height: 36, border: 'none', background: 'rgba(0,194,184,.1)', borderRadius: 10, color: '#00C2B8', cursor: 'pointer', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .15s' }}
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,194,184,.15)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,194,184,.1)'}>×</button>
         </div>
@@ -153,69 +366,200 @@ const NewReportModal = ({ onClose, onCreate }) => {
 
           {step === 1 ? (
             <>
-              {/* Client name - Required */}
-              <div style={{ marginBottom: 32 }}>
+              {/* Client Name */}
+              <div style={{ marginBottom: 28 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
                   <label style={{ fontFamily: HS.display, fontSize: 13, fontWeight: 700, color: '#FCFCFC' }}>Client Name</label>
                   <span style={{ fontFamily: HS.mono, fontSize: 9, color: '#DC2626', fontWeight: 700 }}>Required</span>
                 </div>
-                <input 
-                  value={form.clientName} 
-                  onChange={(e) => set('clientName', e.target.value)}
+                <input
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
                   placeholder="e.g. PT Kopi Senja Nusantara"
-                  style={{ width: '100%', boxSizing: 'border-box', padding: '14px 16px', background: 'var(--navy-elevated)', border: `1.5px solid ${form.clientName ? 'rgba(0,194,184,.5)' : 'var(--navy-edge)'}`, borderRadius: 12, color: '#FCFCFC', fontFamily: HS.body, fontSize: 14, outline: 'none', transition: 'border-color .15s, box-shadow .15s', boxShadow: form.clientName ? '0 0 0 3px rgba(0,194,184,.1)' : 'none' }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(0,194,184,.5)'}
-                  onBlur={(e) => e.currentTarget.style.borderColor = form.clientName ? 'rgba(0,194,184,.5)' : 'var(--navy-edge)'}
+                  style={{ width: '100%', boxSizing: 'border-box', padding: '14px 16px', background: 'var(--navy-elevated)', border: `1.5px solid ${clientName ? 'rgba(0,194,184,.5)' : 'var(--navy-edge)'}`, borderRadius: 12, color: '#FCFCFC', fontFamily: HS.body, fontSize: 14, outline: 'none', transition: 'border-color .15s', boxShadow: clientName ? '0 0 0 3px rgba(0,194,184,.1)' : 'none' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(0,194,184,.5)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,194,184,.1)'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = clientName ? 'rgba(0,194,184,.5)' : 'var(--navy-edge)'; e.currentTarget.style.boxShadow = clientName ? '0 0 0 3px rgba(0,194,184,.1)' : 'none'; }}
                 />
               </div>
 
-              {/* Website URL - Optional */}
-              <div style={{ marginBottom: 32 }}>
+              {/* Client Logo — Optional */}
+              <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                  <label style={{ fontFamily: HS.display, fontSize: 13, fontWeight: 700, color: '#FCFCFC' }}>Website URL</label>
+                  <label style={{ fontFamily: HS.display, fontSize: 13, fontWeight: 700, color: '#FCFCFC' }}>Client Logo</label>
                   <span style={{ fontFamily: HS.mono, fontSize: 9, color: 'var(--text-muted)' }}>Optional</span>
                 </div>
-                <input 
-                  value={form.url} 
-                  onChange={(e) => set('url', e.target.value)}
-                  placeholder="example.com"
-                  style={{ width: '100%', boxSizing: 'border-box', padding: '14px 16px', background: 'var(--navy-elevated)', border: '1.5px solid var(--navy-edge)', borderRadius: 12, color: '#FCFCFC', fontFamily: HS.mono, fontSize: 13, outline: 'none', transition: 'border-color .15s' }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(0,194,184,.4)'}
-                  onBlur={(e) => e.currentTarget.style.borderColor = 'var(--navy-edge)'}
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  {/* Preview avatar */}
+                  <div style={{ width: 56, height: 56, borderRadius: 12, background: _nameGrad(clientName), display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: HS.display, fontWeight: 800, fontSize: 18, color: '#0C182C', flexShrink: 0, overflow: 'hidden' }}>
+                    {logo
+                      ? <img src={logo} style={{ width: 56, height: 56, objectFit: 'contain' }} />
+                      : (clientName ? clientName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : '?')}
+                  </div>
+                  {/* Drop zone */}
+                  <div
+                    onClick={() => fileRef.current && fileRef.current.click()}
+                    onMouseEnter={() => setLogoHover(true)}
+                    onMouseLeave={() => setLogoHover(false)}
+                    style={{ flex: 1, border: `1.5px dashed ${logoHover ? 'rgba(0,194,184,.5)' : 'var(--navy-edge)'}`, borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', background: 'var(--navy-deep)', transition: 'border-color .15s' }}>
+                    <div style={{ width: 36, height: 36, background: 'rgba(0,194,184,.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg width="16" height="16" fill="none" stroke="#00C2B8" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
+                    </div>
+                    <div>
+                      <div style={{ fontFamily: HS.display, fontSize: 13, fontWeight: 600, color: '#FCFCFC' }}>{logo ? 'Replace logo' : 'Upload logo'}</div>
+                      <div style={{ fontFamily: HS.body, fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>PNG, SVG, JPG · max 2 MB</div>
+                    </div>
+                    {logo && <button onClick={(e) => { e.stopPropagation(); setLogo(null); }} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 20, padding: 0, lineHeight: 1 }}>×</button>}
+                  </div>
+                  <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
+                </div>
               </div>
             </>
           ) : (
             <>
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontFamily: HS.display, fontSize: 13, fontWeight: 700, color: '#FCFCFC', marginBottom: 12 }}>Connect Data Sources</div>
-                <div style={{ fontFamily: HS.body, fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.6 }}>Select the marketing platforms and analytics tools to connect. You can configure more sources later.</div>
+              {/* Step 2: Data Sources */}
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontFamily: HS.display, fontSize: 13, fontWeight: 700, color: '#FCFCFC', marginBottom: 5 }}>Connect Data Sources</div>
+                <div style={{ fontFamily: HS.body, fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.6 }}>Select the platforms to connect. You can add or change sources anytime later.</div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {SOURCES.map(src => (
-                  <label key={src.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '16px 18px', background: form.sources[src.id] ? `${src.color}12` : 'var(--navy-deep)', border: `1.5px solid ${form.sources[src.id] ? src.color + '55' : 'var(--navy-edge)'}`, borderRadius: 12, cursor: 'pointer', transition: 'all .15s' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={form.sources[src.id]} 
-                      onChange={() => toggleSource(src.id)}
-                      style={{ width: 20, height: 20, cursor: 'pointer', accentColor: src.color, marginTop: 2, flexShrink: 0 }}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontFamily: HS.display, fontSize: 13, fontWeight: 700, color: '#FCFCFC', marginBottom: 3 }}>{src.label}</div>
-                      <div style={{ fontFamily: HS.body, fontSize: 12, color: 'var(--text-muted)' }}>{src.desc}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {NRM_SOURCES.map(src => {
+                  const isConnected = !!connected[src.id];
+                  const isExpanded  = expanded === src.id;
+                  const isLoading   = loadingSrc === src.id;
+                  return (
+                    <div key={src.id} style={{ background: isConnected ? 'rgba(0,194,184,.05)' : 'var(--navy-surface)', border: `1px solid ${isConnected ? 'rgba(0,194,184,.3)' : 'var(--navy-edge)'}`, borderRadius: 12, overflow: 'hidden', opacity: src.disabled ? .45 : 1, transition: 'border-color .2s, background .2s' }}>
+
+                      {/* Source row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px' }}>
+                        <div style={{ width: 42, height: 42, background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <svg width="22" height="22" viewBox="0 0 24 24">{src.icon}</svg>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: HS.display, fontSize: 13.5, fontWeight: 700, color: '#FCFCFC' }}>{src.label}</div>
+                          {isConnected ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
+                              <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#16A34A', flexShrink: 0 }} />
+                              <span style={{ fontFamily: HS.mono, fontSize: 9.5, color: '#16A34A', letterSpacing: '.06em' }}>CONNECTED</span>
+                              <span style={{ fontFamily: HS.mono, fontSize: 9.5, color: 'var(--text-muted)' }}>· {connected[src.id].name}</span>
+                            </div>
+                          ) : (
+                            <div style={{ fontFamily: HS.body, fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{src.desc}</div>
+                          )}
+                        </div>
+                        {src.disabled ? (
+                          <span style={{ fontFamily: HS.mono, fontSize: 9, color: 'var(--text-muted)', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 5, padding: '3px 8px', letterSpacing: '.08em' }}>SOON</span>
+                        ) : isConnected ? (
+                          <button onClick={(e) => disconnect(src.id, e)}
+                          style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(220,38,38,.4)', background: 'rgba(220,38,38,.1)', color: '#DC2626', fontFamily: HS.display, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                            Disconnect
+                          </button>
+                        ) : (
+                          <button onClick={() => handleConnectClick(src.id)}
+                          style={{ padding: '7px 16px', borderRadius: 8, border: '1px solid rgba(0,194,184,.5)', background: 'rgba(0,194,184,.08)', color: '#00C2B8', fontFamily: HS.display, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, transition: 'all .15s' }}>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>
+                            Connect
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Expanded picker */}
+                      {isExpanded && (
+                        <div style={{ borderTop: '1px solid rgba(0,194,184,.16)', background: 'rgba(5,10,22,.55)', padding: '14px 16px' }}>
+                          {isLoading ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontFamily: HS.body, fontSize: 12 }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" /></svg>
+                              Loading accounts…
+                            </div>
+                          ) : src.needsUrl ? (
+                            /* PageSpeed: URL input */
+                            <div>
+                              <div style={{ fontFamily: HS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>Website URL</div>
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                <input
+                                  value={psUrl}
+                                  onChange={(e) => setPsUrl(e.target.value)}
+                                  onKeyDown={(e) => e.key === 'Enter' && connectPageSpeed()}
+                                  placeholder="https://example.com"
+                                  autoFocus
+                                  style={{ flex: 1, padding: '9px 12px', background: 'var(--navy-elevated)', border: '1.5px solid rgba(112,0,255,.4)', borderRadius: 8, color: '#FCFCFC', fontFamily: HS.mono, fontSize: 12.5, outline: 'none', boxShadow: '0 0 0 3px rgba(112,0,255,.08)' }}
+                                />
+                                <button onClick={connectPageSpeed} style={{ padding: '9px 18px', background: 'linear-gradient(135deg,#7000FF,#5500CC)', border: 'none', borderRadius: 8, color: '#fff', fontFamily: HS.display, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Add</button>
+                              </div>
+                            </div>
+                          ) : accounts[src.id] === null ? (
+                            /* No Supabase table configured yet */
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                              <svg width="14" height="14" fill="none" stroke="#F8B400" strokeWidth="1.8" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: 1 }}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01" /></svg>
+                              <div style={{ fontFamily: HS.body, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                                Belum ada akun {src.label} yang terdaftar di Supabase.<br />
+                                <span style={{ fontFamily: HS.mono, fontSize: 10, color: 'var(--text-muted)' }}>Tambahkan data ke tabel <b style={{ color: '#FCFCFC' }}>{src.id === 'meta' ? 'meta_ads' : 'search_console'}</b> untuk mulai menghubungkan akun.</span>
+                              </div>
+                            </div>
+                          ) : (
+                            /* Account list from Supabase — with search */
+                            (() => {
+                              const allAccts = accounts[src.id] || [];
+                              const q = acctSearch.toLowerCase();
+                              const filtered = q ? allAccts.filter(a => a.name.toLowerCase().includes(q)) : allAccts;
+                              return (
+                                <div>
+                                  {/* Search bar — only shown when ≥ 4 accounts */}
+                                  {allAccts.length >= 4 && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, marginBottom: 10 }}>
+                                      <svg width="12" height="12" fill="none" stroke="var(--text-muted)" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                                      <input
+                                        value={acctSearch}
+                                        onChange={e => setAcctSearch(e.target.value)}
+                                        placeholder={`Search ${src.label} accounts…`}
+                                        autoFocus
+                                        style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#FCFCFC', fontFamily: HS.body, fontSize: 12 }}
+                                      />
+                                      {acctSearch && <button onClick={() => setAcctSearch('')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}>×</button>}
+                                    </div>
+                                  )}
+                                  <div style={{ fontFamily: HS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>
+                                    {allAccts.length === 0 ? 'No accounts found' : `Select account${allAccts.length > 1 ? ` · ${filtered.length}${q ? `/${allAccts.length}` : ''}` : ''}`}
+                                  </div>
+                                  {allAccts.length === 0 ? (
+                                    <div style={{ fontFamily: HS.body, fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>No accounts in database.</div>
+                                  ) : filtered.length === 0 ? (
+                                    <div style={{ fontFamily: HS.body, fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>No match for "{acctSearch}".</div>
+                                  ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
+                                      {filtered.map(acc => (
+                                        <div key={acc.id} onClick={() => { selectAccount(src.id, acc); setAcctSearch(''); }}
+                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 8, cursor: 'pointer', transition: 'border-color .12s, background .12s', flexShrink: 0 }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(0,194,184,.4)'; e.currentTarget.style.background = 'rgba(0,194,184,.06)'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--navy-edge)'; e.currentTarget.style.background = 'var(--navy-elevated)'; }}>
+                                          <div style={{ minWidth: 0 }}>
+                                            <div style={{ fontFamily: HS.display, fontSize: 12.5, fontWeight: 600, color: '#FCFCFC', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc.name}</div>
+                                            {acc.sub && <div style={{ fontFamily: HS.mono, fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{acc.sub}</div>}
+                                          </div>
+                                          <svg width="14" height="14" fill="none" stroke="var(--text-muted)" strokeWidth="2" viewBox="0 0 24 24" style={{ flexShrink: 0, marginLeft: 8 }}><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div style={{ width: 32, height: 32, background: `${src.color}18`, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill={src.color}><path d={src.icon}/></svg>
-                    </div>
-                  </label>
-                ))}
+                  );
+                })}
               </div>
 
-              <div style={{ marginTop: 24, padding: '16px', background: 'rgba(0,194,184,.08)', border: '1px solid rgba(0,194,184,.2)', borderRadius: 10 }}>
-                <div style={{ fontFamily: HS.mono, fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 6 }}>Selected</div>
-                <div style={{ fontFamily: HS.display, fontSize: 18, fontWeight: 800, color: '#00C2B8' }}>{sourcesSelected} {sourcesSelected === 1 ? 'source' : 'sources'}</div>
-              </div>
+              {/* Connected summary */}
+              {connectedCount > 0 && (
+                <div style={{ marginTop: 14, padding: '12px 16px', background: 'rgba(0,194,184,.06)', border: '1px solid rgba(0,194,184,.2)', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <svg width="14" height="14" fill="none" stroke="#00C2B8" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><path d="M22 4L12 14.01l-3-3" /></svg>
+                  <span style={{ fontFamily: HS.display, fontSize: 12, fontWeight: 700, color: '#00C2B8' }}>{connectedCount} source{connectedCount !== 1 ? 's' : ''} connected</span>
+                </div>
+              )}
             </>
           )}
 
@@ -223,19 +567,21 @@ const NewReportModal = ({ onClose, onCreate }) => {
 
         {/* Footer */}
         <div style={{ padding: '20px 40px', display: 'flex', gap: 12, background: 'rgba(10,18,34,.6)' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '12px 0', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 10, color: 'var(--text-secondary)', fontFamily: HS.display, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .15s' }}
-          onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(148,163,184,.3)'}
-          onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--navy-edge)'}>
+          <button
+            onClick={() => step === 2 ? setStep(1) : onClose()}
+            style={{ flex: 1, padding: '12px 0', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 10, color: 'var(--text-secondary)', fontFamily: HS.display, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .15s' }}
+            onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(148,163,184,.3)'}
+            onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--navy-edge)'}>
             {step === 2 ? 'Back' : 'Cancel'}
           </button>
           {step === 1 ? (
-            <button onClick={() => setStep(2)} 
+            <button onClick={() => canCreate && setStep(2)}
             style={{ flex: 2, padding: '12px 0', background: canCreate ? 'linear-gradient(135deg,#00C2B8,#009E96)' : 'rgba(0,194,184,.2)', border: 'none', borderRadius: 10, color: canCreate ? '#0C182C' : 'rgba(0,194,184,.4)', fontFamily: HS.display, fontSize: 13, fontWeight: 700, cursor: canCreate ? 'pointer' : 'not-allowed', boxShadow: canCreate ? '0 4px 14px rgba(0,194,184,.25)' : 'none', transition: 'all .15s' }}>
               Continue to Data Sources
             </button>
           ) : (
-            <button onClick={() => { if (canCreate) { onCreate(form); onClose(); } }} 
-            style={{ flex: 2, padding: '12px 0', background: canCreate ? 'linear-gradient(135deg,#00C2B8,#009E96)' : 'rgba(0,194,184,.2)', border: 'none', borderRadius: 10, color: canCreate ? '#0C182C' : 'rgba(0,194,184,.4)', fontFamily: HS.display, fontSize: 13, fontWeight: 700, cursor: canCreate ? 'pointer' : 'not-allowed', boxShadow: canCreate ? '0 4px 14px rgba(0,194,184,.25)' : 'none', transition: 'all .15s' }}>
+            <button onClick={() => { onCreate({ clientName, logo, sources: connected }); onClose(); }}
+            style={{ flex: 2, padding: '12px 0', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 10, color: '#0C182C', fontFamily: HS.display, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,194,184,.25)', transition: 'all .15s' }}>
               Create Report
             </button>
           )}
@@ -344,30 +690,62 @@ const SOURCES_DEF = [
 { id: 'pagespeed', label: 'PageSpeed Insights', desc: 'Core Web Vitals & site performance', color: '#7000FF', needsUrl: true, icon: <g key="ps"><path fill="#7000FF" d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16z"/><path fill="#7000FF" d="M12 6l3 6h-2v4h-2v-4H9z"/></g> }];
 
 
-const ConfigurePanel = ({ client, onClose }) => {
+const ConfigurePanel = ({ client, onClose, onSave, onOpenReport }) => {
   const [connected, setConnected] = React.useState({ ...client.connected });
-  const [connecting, setConnecting] = React.useState(null);
+  const [expanded, setExpanded] = React.useState(null);
+  const [loadingSrc, setLoadingSrc] = React.useState(null);
+  const [accounts, setAccounts] = React.useState({});
+  const [acctSearch, setAcctSearch] = React.useState('');
+  const [psUrl, setPsUrl] = React.useState('');
 
-  const toggle = (id) => {
-    if (connecting) return;
-    if (!connected[id]) {
-      setConnecting(id);
-      setTimeout(() => {
-        setConnected((c) => ({ ...c, [id]: true }));
-        setConnecting(null);
-      }, 1400);
-    } else {
-      setConnected((c) => ({ ...c, [id]: false }));
-    }
+  const handleConnectClick = (srcId) => {
+    if (expanded === srcId) { setExpanded(null); setAcctSearch(''); return; }
+    setExpanded(srcId);
+    if (accounts[srcId] !== undefined) return;
+    setLoadingSrc(srcId);
+    _fetchAccounts(srcId).then(rows => {
+      setAccounts(a => ({ ...a, [srcId]: rows }));
+      setLoadingSrc(null);
+    });
   };
+
+  const selectAccount = (srcId, acc) => {
+    setConnected(c => ({ ...c, [srcId]: acc }));
+    setExpanded(null);
+    setAcctSearch('');
+  };
+
+  const connectPageSpeed = () => {
+    if (!psUrl.trim()) return;
+    setConnected(c => ({ ...c, pagespeed: { id: 'ps', name: psUrl.trim(), sub: 'PageSpeed URL' } }));
+    setExpanded(null);
+    setPsUrl('');
+  };
+
+  const disconnect = (srcId) => {
+    setConnected(c => { const n = { ...c }; delete n[srcId]; return n; });
+  };
+
+  const handleDone = () => {
+    onSave && onSave(connected);
+    onClose();
+  };
+
+  const handleDoneAndOpen = () => {
+    onSave && onSave(connected);
+    onClose();
+    onOpenReport && onOpenReport(client.id);
+  };
+
+  const hasConnected = Object.values(connected).some(v => !!v);
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(5,10,22,.7)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={{ width: 560, background: 'rgba(14,24,42,.98)', border: '1px solid var(--navy-edge)', borderRadius: 16, boxShadow: '0 40px 100px rgba(0,0,0,.6), 0 0 0 1px rgba(0,194,184,.1)', overflow: 'hidden' }}>
+      <div style={{ width: 560, maxHeight: '90vh', background: 'rgba(14,24,42,.98)', border: '1px solid var(--navy-edge)', borderRadius: 16, boxShadow: '0 40px 100px rgba(0,0,0,.6), 0 0 0 1px rgba(0,194,184,.1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
         {/* Header */}
-        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 40, height: 40, borderRadius: 10, background: client.avatarGrad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: HS.display, fontWeight: 800, fontSize: 14, color: '#0C182C' }}>{client.initials}</div>
             <div>
@@ -378,76 +756,139 @@ const ConfigurePanel = ({ client, onClose }) => {
           <button onClick={onClose} style={{ width: 30, height: 30, border: 'none', background: 'var(--navy-elevated)', borderRadius: 7, color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         </div>
 
-        {/* Sources */}
-        <div style={{ padding: '20px 24px' }}>
+        {/* Sources — scrollable */}
+        <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
           <div style={{ fontFamily: HS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 14 }}>Data sources</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {SOURCES_DEF.map((src) => {
               const isOn = connected[src.id];
-              const isConnecting = connecting === src.id;
+              const isExpanded = expanded === src.id;
+              const isLoading = loadingSrc === src.id;
               return (
                 <div key={src.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
                   background: isOn ? 'rgba(0,194,184,.05)' : 'var(--navy-surface)',
                   border: `1px solid ${isOn ? 'rgba(0,194,184,.3)' : 'var(--navy-edge)'}`,
-                  borderRadius: 11, transition: 'border-color .2s, background .2s'
+                  borderRadius: 11, overflow: 'hidden', transition: 'border-color .2s, background .2s'
                 }}>
-                  {/* Icon */}
-                  <div style={{ width: 40, height: 40, background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24">{src.icon}</svg>
-                  </div>
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: HS.display, fontSize: 13.5, fontWeight: 700, color: '#FCFCFC' }}>{src.label}</div>
-                    {isOn && (
-                      <>
-                        <div style={{ fontFamily: HS.mono, fontSize: 10.5, color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.5 }}>
-                          {src.needsUrl ? 'https://kopisenja.id' : (
-                            src.id === 'google' ? <>Kopi Senja Ads · <span style={{ color: 'var(--text-muted)' }}>CID 472-389-1056</span></> :
-                            src.id === 'meta' ? <>Kopi Senja Nusantara · <span style={{ color: 'var(--text-muted)' }}>act_8829473162</span></> :
-                            src.id === 'ga4' ? 'GA4 - Kopi Senja (G-X9K2P4)' :
-                            src.id === 'search' ? 'sc-domain:kopisenja.id' : ''
+                  {/* Source row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px' }}>
+                    {/* Icon */}
+                    <div style={{ width: 40, height: 40, background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24">{src.icon}</svg>
+                    </div>
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: HS.display, fontSize: 13.5, fontWeight: 700, color: '#FCFCFC' }}>{src.label}</div>
+                      {isOn ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
+                          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#16A34A', flexShrink: 0 }} />
+                          <span style={{ fontFamily: HS.mono, fontSize: 9.5, color: '#16A34A', letterSpacing: '.06em' }}>CONNECTED</span>
+                          {typeof isOn === 'object' && isOn.name && (
+                            <span style={{ fontFamily: HS.mono, fontSize: 9.5, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>· {isOn.name}</span>
                           )}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5 }}>
-                          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#16A34A' }} />
-                          <span style={{ fontFamily: HS.mono, fontSize: 9.5, color: '#16A34A', letterSpacing: '.08em' }}>CONNECTED</span>
-                        </div>
-                      </>
+                      ) : (
+                        <div style={{ fontFamily: HS.body, fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{src.desc}</div>
+                      )}
+                    </div>
+                    {/* Action button */}
+                    {isOn ? (
+                      <button onClick={() => disconnect(src.id)}
+                      style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(220,38,38,.4)', background: 'rgba(220,38,38,.1)', color: '#DC2626', fontFamily: HS.display, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                        Disconnect
+                      </button>
+                    ) : (
+                      <button onClick={() => handleConnectClick(src.id)}
+                      style={{ padding: '7px 16px', borderRadius: 8, border: `1px solid ${isExpanded ? 'rgba(0,194,184,.6)' : 'rgba(0,194,184,.55)'}`, background: isExpanded ? 'rgba(0,194,184,.15)' : 'rgba(0,194,184,.12)', color: '#00C2B8', fontFamily: HS.display, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, transition: 'all .15s' }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>
+                        {isExpanded ? 'Cancel' : 'Connect'}
+                      </button>
                     )}
                   </div>
-                  {/* Action */}
-                  <button onClick={() => toggle(src.id)}
-                  disabled={isConnecting}
-                  style={{
-                    padding: '7px 16px', borderRadius: 8, cursor: isConnecting ? 'default' : 'pointer',
-                    border: isOn ? `1px solid rgba(220,38,38,.4)` : `1px solid rgba(0,194,184,.55)`,
-                    background: isOn ? 'rgba(220,38,38,.1)' : 'rgba(0,194,184,.12)',
-                    color: isOn ? '#DC2626' : '#00C2B8',
-                    fontFamily: HS.display, fontSize: 12, fontWeight: 700,
-                    transition: 'all .15s', flexShrink: 0,
-                    opacity: isConnecting ? .7 : 1,
-                    display: 'flex', alignItems: 'center', gap: 6, minWidth: 110, justifyContent: 'center'
-                  }}>
-                    {isConnecting ?
-                    <>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: 'spin 1s linear infinite' }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" /></svg>
-                        Connecting…
-                      </> :
-                    isOn ?
-                    <>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                        Disconnect
-                      </> :
 
-                    <>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>
-                        Connect
-                      </>
-                    }
-                  </button>
-                </div>);
-
+                  {/* Expanded account picker */}
+                  {isExpanded && (
+                    <div style={{ borderTop: '1px solid rgba(0,194,184,.16)', background: 'rgba(5,10,22,.55)', padding: '14px 16px' }}>
+                      {isLoading ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontFamily: HS.body, fontSize: 12 }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" /></svg>
+                          Loading accounts…
+                        </div>
+                      ) : src.needsUrl ? (
+                        <div>
+                          <div style={{ fontFamily: HS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>Website URL</div>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <input
+                              value={psUrl}
+                              onChange={(e) => setPsUrl(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && connectPageSpeed()}
+                              placeholder="https://example.com"
+                              autoFocus
+                              style={{ flex: 1, padding: '9px 12px', background: 'var(--navy-elevated)', border: '1.5px solid rgba(112,0,255,.4)', borderRadius: 8, color: '#FCFCFC', fontFamily: HS.mono, fontSize: 12.5, outline: 'none', boxShadow: '0 0 0 3px rgba(112,0,255,.08)' }}
+                            />
+                            <button onClick={connectPageSpeed} style={{ padding: '9px 18px', background: 'linear-gradient(135deg,#7000FF,#5500CC)', border: 'none', borderRadius: 8, color: '#fff', fontFamily: HS.display, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Add</button>
+                          </div>
+                        </div>
+                      ) : accounts[src.id] === null ? (
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                          <svg width="14" height="14" fill="none" stroke="#F8B400" strokeWidth="1.8" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: 1 }}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01" /></svg>
+                          <div style={{ fontFamily: HS.body, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                            Belum ada akun {src.label} yang terdaftar di Supabase.<br/>
+                            <span style={{ fontFamily: HS.mono, fontSize: 10, color: 'var(--text-muted)' }}>Tambahkan data ke tabel untuk mulai menghubungkan akun.</span>
+                          </div>
+                        </div>
+                      ) : (
+                        (() => {
+                          const allAccts = accounts[src.id] || [];
+                          const q = acctSearch.toLowerCase();
+                          const filtered = q ? allAccts.filter(a => a.name.toLowerCase().includes(q)) : allAccts;
+                          return (
+                            <div>
+                              {allAccts.length >= 4 && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, marginBottom: 10 }}>
+                                  <svg width="12" height="12" fill="none" stroke="var(--text-muted)" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                                  <input
+                                    value={acctSearch}
+                                    onChange={e => setAcctSearch(e.target.value)}
+                                    placeholder={`Search ${src.label} accounts…`}
+                                    autoFocus
+                                    style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#FCFCFC', fontFamily: HS.body, fontSize: 12 }}
+                                  />
+                                  {acctSearch && <button onClick={() => setAcctSearch('')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}>×</button>}
+                                </div>
+                              )}
+                              <div style={{ fontFamily: HS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>
+                                {allAccts.length === 0 ? 'No accounts found' : `Select account${allAccts.length > 1 ? ` · ${filtered.length}${q ? `/${allAccts.length}` : ''}` : ''}`}
+                              </div>
+                              {allAccts.length === 0 ? (
+                                <div style={{ fontFamily: HS.body, fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>No accounts in database.</div>
+                              ) : filtered.length === 0 ? (
+                                <div style={{ fontFamily: HS.body, fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>No match for "{acctSearch}".</div>
+                              ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
+                                  {filtered.map(acc => (
+                                    <div key={acc.id} onClick={() => selectAccount(src.id, acc)}
+                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 8, cursor: 'pointer', transition: 'border-color .12s, background .12s' }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(0,194,184,.4)'; e.currentTarget.style.background = 'rgba(0,194,184,.06)'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--navy-edge)'; e.currentTarget.style.background = 'var(--navy-elevated)'; }}>
+                                      <div style={{ minWidth: 0 }}>
+                                        <div style={{ fontFamily: HS.display, fontSize: 12.5, fontWeight: 600, color: '#FCFCFC', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc.name}</div>
+                                        {acc.sub && <div style={{ fontFamily: HS.mono, fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{acc.sub}</div>}
+                                      </div>
+                                      <svg width="14" height="14" fill="none" stroke="var(--text-muted)" strokeWidth="2" viewBox="0 0 24 24" style={{ flexShrink: 0, marginLeft: 8 }}><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
             })}
           </div>
 
@@ -461,8 +902,13 @@ const ConfigurePanel = ({ client, onClose }) => {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '14px 24px', borderTop: '1px solid var(--navy-edge)', display: 'flex', justifyContent: 'flex-end', background: 'rgba(10,18,34,.5)' }}>
-          <button onClick={onClose} style={{ padding: '9px 24px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 8, color: '#0C182C', fontFamily: HS.display, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,194,184,.25)' }}>Done</button>
+        <div style={{ padding: '14px 24px', borderTop: '1px solid var(--navy-edge)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(10,18,34,.5)', flexShrink: 0, gap: 10 }}>
+          <button onClick={handleDone} style={{ padding: '9px 18px', background: 'transparent', border: '1px solid var(--navy-edge)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: HS.display, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Simpan</button>
+          <button onClick={handleDoneAndOpen} disabled={!hasConnected}
+          style={{ padding: '9px 22px', background: hasConnected ? 'linear-gradient(135deg,#00C2B8,#009E96)' : 'rgba(255,255,255,.05)', border: hasConnected ? 'none' : '1px solid rgba(255,255,255,.08)', borderRadius: 8, color: hasConnected ? '#0C182C' : 'var(--text-muted)', fontFamily: HS.display, fontSize: 12.5, fontWeight: 700, cursor: hasConnected ? 'pointer' : 'not-allowed', boxShadow: hasConnected ? '0 4px 14px rgba(0,194,184,.25)' : 'none', display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s' }}>
+            Simpan & Buka Report
+            <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.3" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
         </div>
       </div>
     </div>);
@@ -490,41 +936,77 @@ onClick={(e) => e.target === e.currentTarget && onClose()}>
 
 
 
-// ─── Quick Rename Modal ───────────────────────────────────────────
-const QuickRenameModal = ({ client, onSave, onClose }) => {
+// ─── Quick Edit Modal ─────────────────────────────────────────────
+const QuickEditModal = ({ client, onSave, onClose }) => {
   const [name, setName] = React.useState(client.name);
-  const [industry, setIndustry] = React.useState(client.industry);
-  const ref = React.useRef(null);
-  React.useEffect(() => {ref.current && ref.current.focus();}, []);
+  const [logo, setLogo] = React.useState(client.logo || null);
+  const [logoHover, setLogoHover] = React.useState(false);
+  const nameRef = React.useRef(null);
+  const fileRef = React.useRef(null);
+  React.useEffect(() => { nameRef.current && nameRef.current.focus(); }, []);
+
+  const handleFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setLogo(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(5,10,22,.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div style={{ width: 420, background: 'rgba(14,24,42,.98)', border: '1px solid var(--navy-edge)', borderRadius: 14, boxShadow: '0 32px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(0,194,184,.1)', overflow: 'hidden' }}>
+        {/* Header */}
         <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 9, background: client.avatarGrad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: HS.display, fontWeight: 800, fontSize: 13, color: '#0C182C', flexShrink: 0 }}>{client.initials}</div>
+          <div style={{ width: 38, height: 38, borderRadius: 9, background: client.avatarGrad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: HS.display, fontWeight: 800, fontSize: 13, color: '#0C182C', flexShrink: 0, overflow: 'hidden' }}>
+            {logo ? <img src={logo} style={{ width: 38, height: 38, objectFit: 'contain' }} /> : client.initials}
+          </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: HS.display, fontSize: 14, fontWeight: 700, color: '#FCFCFC' }}>Quick rename</div>
-            <div style={{ fontFamily: HS.body, fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>Update client name and category</div>
+            <div style={{ fontFamily: HS.display, fontSize: 14, fontWeight: 700, color: '#FCFCFC' }}>Quick edit</div>
+            <div style={{ fontFamily: HS.body, fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>Update client logo and name</div>
           </div>
           <button onClick={onClose} style={{ width: 28, height: 28, border: 'none', background: 'var(--navy-elevated)', borderRadius: 6, color: 'var(--text-muted)', cursor: 'pointer', fontSize: 17, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         </div>
+        {/* Body */}
         <div style={{ padding: '18px 22px' }}>
+          {/* Logo upload */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontFamily: HS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 8 }}>Client logo</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: client.avatarGrad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: HS.display, fontWeight: 800, fontSize: 15, color: '#0C182C', flexShrink: 0, overflow: 'hidden' }}>
+                {logo ? <img src={logo} style={{ width: 44, height: 44, objectFit: 'contain' }} /> : client.initials}
+              </div>
+              <div
+                onClick={() => fileRef.current && fileRef.current.click()}
+                onMouseEnter={() => setLogoHover(true)}
+                onMouseLeave={() => setLogoHover(false)}
+                style={{ flex: 1, border: `1.5px dashed ${logoHover ? 'rgba(0,194,184,.5)' : 'var(--navy-edge)'}`, borderRadius: 9, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', background: 'var(--navy-deep)', transition: 'border-color .15s', position: 'relative' }}>
+                <div style={{ width: 28, height: 28, background: 'rgba(0,194,184,.1)', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="13" height="13" fill="none" stroke="#00C2B8" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
+                </div>
+                <div>
+                  <div style={{ fontFamily: HS.display, fontSize: 12, fontWeight: 600, color: '#FCFCFC' }}>{logo ? 'Replace logo' : 'Upload logo'}</div>
+                  <div style={{ fontFamily: HS.body, fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>PNG, SVG, JPG · max 2 MB</div>
+                </div>
+                {logo && <button onClick={(e) => { e.stopPropagation(); setLogo(null); }} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>}
+              </div>
+              <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
+            </div>
+          </div>
+          <div style={{ height: 1, background: 'var(--navy-edge)', margin: '0 0 14px' }} />
+          {/* Name */}
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontFamily: HS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 6 }}>Client name</div>
-            <input ref={ref} value={name} onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => {if (e.key === 'Enter') {onSave(name, industry);onClose();}if (e.key === 'Escape') onClose();}}
+            <input ref={nameRef} value={name} onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { onSave(name, logo); onClose(); } if (e.key === 'Escape') onClose(); }}
             style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', background: 'var(--navy-elevated)', border: '1.5px solid rgba(0,194,184,.4)', borderRadius: 7, color: '#FCFCFC', fontFamily: HS.display, fontSize: 13, fontWeight: 600, outline: 'none', boxShadow: '0 0 0 3px rgba(0,194,184,.08)' }} />
           </div>
-          <div>
-            <div style={{ fontFamily: HS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 6 }}>Business category</div>
-            <input value={industry} onChange={(e) => setIndustry(e.target.value)}
-            onKeyDown={(e) => {if (e.key === 'Enter') {onSave(name, industry);onClose();}if (e.key === 'Escape') onClose();}}
-            style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: '#FCFCFC', fontFamily: HS.body, fontSize: 12.5, outline: 'none' }} />
-          </div>
         </div>
+        {/* Footer */}
         <div style={{ padding: '12px 22px', borderTop: '1px solid var(--navy-edge)', display: 'flex', gap: 7, background: 'rgba(10,18,34,.5)' }}>
           <button onClick={onClose} style={{ flex: 1, padding: '8px 0', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: 'var(--text-secondary)', fontFamily: HS.display, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-          <button onClick={() => {onSave(name, industry);onClose();}} style={{ flex: 2, padding: '8px 0', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 7, color: '#0C182C', fontFamily: HS.display, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,194,184,.25)' }}>Save</button>
+          <button onClick={() => { onSave(name, logo); onClose(); }} style={{ flex: 2, padding: '8px 0', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 7, color: '#0C182C', fontFamily: HS.display, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,194,184,.25)' }}>Save</button>
         </div>
       </div>
     </div>);
@@ -574,7 +1056,7 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--avo-teal)', opacity: hovered ? 1 : 0, transition: 'opacity .15s' }} />
 
       {/* Main row: avatar | name | dup+del | sources | last edited | actions */}
-      <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 88px 180px 110px 220px', alignItems: 'center', gap: 18, padding: '13px 20px', paddingLeft: 26 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '40px minmax(120px,1fr) 64px 160px 90px 200px', alignItems: 'center', gap: 14, padding: '13px 20px', paddingLeft: 26 }}>
 
         {/* Avatar */}
         <div style={{ width: 40, height: 40, borderRadius: 10, background: client.avatarGrad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: HS.display, fontWeight: 800, fontSize: 14, color: '#0C182C', flexShrink: 0 }}>
@@ -588,12 +1070,11 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
             <span style={{ fontFamily: HS.display, fontSize: 13.5, fontWeight: 700, color: '#FCFCFC', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{client.name}</span>
             <button onClick={(e) => {e.stopPropagation();onQuickRename(client);}}
-            title="Rename"
+            title="Quick edit"
             style={{ width: 20, height: 20, border: 'none', borderRadius: 5, background: nameHovered ? 'rgba(0,194,184,.15)' : 'transparent', color: nameHovered ? '#00C2B8' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .12s, color .12s', padding: 0 }}>
               <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z" /></svg>
             </button>
           </div>
-          <div style={{ fontFamily: HS.body, fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{client.industry}</div>
         </div>
 
         {/* Dup + Delete icons */}
@@ -637,11 +1118,24 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
             <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>
             Configure
           </button>
-          <button onClick={() => onOpen(client)}
-          style={{ padding: '6px 12px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 7, color: '#0C182C', fontFamily: HS.display, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, boxShadow: '0 3px 10px rgba(0,194,184,.2)' }}>
-            Open
-            <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-          </button>
+          {(() => {
+            const hasData = client.connected && Object.values(client.connected).some(v => !!v);
+            return hasData ? (
+              <button onClick={() => onOpen(client.id)}
+              style={{ padding: '6px 12px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 7, color: '#0C182C', fontFamily: HS.display, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, boxShadow: '0 3px 10px rgba(0,194,184,.2)' }}>
+                Open
+                <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+              </button>
+            ) : (
+              <button onClick={() => onConfigure(client)}
+              style={{ padding: '6px 12px', background: 'rgba(248,180,0,.1)', border: '1px solid rgba(248,180,0,.4)', borderRadius: 7, color: '#F8B400', fontFamily: HS.display, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,180,0,.18)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(248,180,0,.1)'; }}>
+                <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                Setup Data
+              </button>
+            );
+          })()}
         </div>
       </div>
     </div>);
@@ -649,32 +1143,43 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
 };
 
 // ─── Top bar ───────────────────────────────────────────────────────
-const HomeTopBar = ({ count }) =>
-<header style={{ height: 80, minHeight: 80, background: 'rgba(10,18,34,.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', padding: '0 28px', gap: 14, position: 'relative', zIndex: 10, boxSizing: 'border-box' }}>
-    <img src="assets/logo-mark.png" style={{ width: 62, height: 62 }} />
-    <div>
-      <div style={{ fontFamily: HS.display, fontSize: 14, fontWeight: 700, color: '#FCFCFC', letterSpacing: '-.01em' }}>Reportive</div>
-      <div style={{ fontFamily: HS.mono, fontSize: 8.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>by Avonetiq</div>
-    </div>
-    <div style={{ width: 1, height: 20, background: 'var(--navy-edge)' }} />
-    {[['Home', 'active'], ['Templates', ''], ['Access', '']].map(([l, a]) =>
-  <div key={l} style={{ padding: '6px 12px', borderRadius: 7, cursor: 'pointer', background: a ? 'rgba(0,194,184,.1)' : 'transparent', color: a ? '#00C2B8' : 'var(--text-secondary)', fontFamily: HS.display, fontSize: 12.5, fontWeight: a ? 700 : 500 }}>{l}</div>
-  )}
-    <div style={{ flex: 1 }} />
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'var(--navy-surface)', border: '1px solid var(--navy-edge)', borderRadius: 8, width: 200 }}>
-      <svg width="13" height="13" fill="none" stroke="var(--text-muted)" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
-      <span style={{ fontFamily: HS.body, fontSize: 12, color: 'var(--text-muted)' }}>Search clients…</span>
-      <span style={{ marginLeft: 'auto', fontFamily: HS.mono, fontSize: 9, color: 'var(--text-muted)', background: 'var(--navy-elevated)', padding: '1px 5px', borderRadius: 3 }}>⌘K</span>
-    </div>
-    <div style={{ width: 1, height: 20, background: 'var(--navy-edge)' }} />
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#00C2B8,#7000FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: HS.display, fontWeight: 700, fontSize: 12, color: '#0C182C' }}>RA</div>
+const HomeTopBar = ({ count, onNavigate }) => {
+  const user = _getSessionUser();
+  const NAV_ROUTES = { Home: 'home', Templates: 'templates', Access: 'access' };
+  const handleLogout = () => {
+    sessionStorage.removeItem('avo_role');
+    sessionStorage.removeItem('avo_email');
+    sessionStorage.removeItem('avo_name');
+    window.location.href = 'login.html';
+  };
+  return (
+    <header style={{ height: 80, minHeight: 80, background: 'rgba(10,18,34,.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', padding: '0 28px', gap: 14, position: 'relative', zIndex: 10, boxSizing: 'border-box' }}>
+      <img src="assets/logo-mark.png" style={{ width: 62, height: 62 }} />
       <div>
-        <div style={{ fontFamily: HS.display, fontSize: 12, fontWeight: 600, color: '#FCFCFC' }}>Rizki Anindita</div>
-        <div style={{ fontFamily: HS.mono, fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Admin</div>
+        <div style={{ fontFamily: HS.display, fontSize: 14, fontWeight: 700, color: '#FCFCFC', letterSpacing: '-.01em' }}>Reportive</div>
+        <div style={{ fontFamily: HS.mono, fontSize: 8.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>by Avonetiq</div>
       </div>
-    </div>
-  </header>;
+      <div style={{ width: 1, height: 20, background: 'var(--navy-edge)' }} />
+      {[['Home','active'],['Templates',''],['Access','']].map(([l,a]) =>
+        <div key={l} onClick={() => onNavigate && onNavigate(NAV_ROUTES[l])} style={{ padding: '6px 12px', borderRadius: 7, cursor: 'pointer', background: a ? 'rgba(0,194,184,.1)' : 'transparent', color: a ? '#00C2B8' : 'var(--text-secondary)', fontFamily: HS.display, fontSize: 12.5, fontWeight: a ? 700 : 500 }}>{l}</div>
+      )}
+      <div style={{ flex: 1 }} />
+      <button onClick={handleLogout} style={{ padding: '6px 12px', background: 'transparent', border: '1px solid rgba(220,38,38,.35)', borderRadius: 7, color: 'rgba(220,38,38,.7)', fontFamily: HS.display, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', transition: 'all .15s' }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(220,38,38,.1)'; e.currentTarget.style.color = '#DC2626'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(220,38,38,.7)'; }}>
+        Sign out
+      </button>
+      <div style={{ width: 1, height: 20, background: 'var(--navy-edge)' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+        <div style={{ width: 32, height: 32, borderRadius: '50%', background: user.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: HS.display, fontWeight: 700, fontSize: 12, color: '#0C182C' }}>{user.initials}</div>
+        <div>
+          <div style={{ fontFamily: HS.display, fontSize: 12, fontWeight: 600, color: '#FCFCFC' }}>{user.name}</div>
+          <div style={{ fontFamily: HS.mono, fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.08em' }}>{user.roleLabel}</div>
+        </div>
+      </div>
+    </header>
+  );
+};
 
 
 // ─── Filter bar ───────────────────────────────────────────────────
@@ -720,66 +1225,185 @@ const StatStrip = ({ clients }) => {
 };
 
 // ─── ScreenHome ────────────────────────────────────────────────────
-const ScreenHome = ({ onOpenClient }) => {
-  const [clients, setClients] = React.useState(HOME_CLIENTS);
+const ScreenHome = ({ onOpenClient, onNavigate }) => {
+  const user = _getSessionUser();
+  const [clients, setClients] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  // Expose live clients globally so ScreenReport can look up by id
+  React.useEffect(() => { window._avo_clients = clients; }, [clients]);
   const [editTarget, setEditTarget] = React.useState(null);
   const [configTarget, setConfigTarget] = React.useState(null);
   const [deleteTarget, setDeleteTarget] = React.useState(null);
-  const [quickRenameTarget, setQuickRenameTarget] = React.useState(null);
+  const [quickEditTarget, setQuickEditTarget] = React.useState(null);
   const [newReportOpen, setNewReportOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const searchRef = React.useRef(null);
 
-  const filtered = clients;
+  // ── Fetch + Realtime ────────────────────────────────────────────
+  React.useEffect(() => {
+    let channel;
+    async function init() {
+      if (!_APP_SUPA) { setClients(HOME_CLIENTS); setLoading(false); return; }
+      const { data, error } = await _APP_SUPA
+        .from('clients').select('*').order('created_at', { ascending: false });
+      if (error || !data) { setClients(HOME_CLIENTS); setLoading(false); return; }
+      if (data.length === 0) {
+        await _seedClients();
+        const { data: seeded } = await _APP_SUPA.from('clients').select('*').order('created_at', { ascending: false });
+        setClients((seeded || []).map(_mapRow));
+      } else {
+        setClients(data.map(_mapRow));
+      }
+      setLoading(false);
+      // Subscribe to realtime changes so all users see updates instantly
+      channel = _APP_SUPA
+        .channel('clients-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setClients(prev => prev.find(c => c.id === payload.new.id) ? prev : [_mapRow(payload.new), ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setClients(prev => prev.map(c => c.id === payload.new.id ? _mapRow(payload.new) : c));
+          } else if (payload.eventType === 'DELETE') {
+            setClients(prev => prev.filter(c => c.id !== payload.old.id));
+          }
+        })
+        .subscribe();
+    }
+    init();
+    return () => { if (channel && _APP_SUPA) _APP_SUPA.removeChannel(channel); };
+  }, []);
 
-  const handleQuickRename = (id, name, industry) => setClients((prev) => prev.map((c) => c.id === id ? { ...c, name, industry } : c));
-
-  const handleDuplicate = (c) => {
-    const dup = { ...c, id: c.id + '-copy', name: c.name + ' (copy)', featured: false };
-    setClients((prev) => [...prev, dup]);
-  };
-  const handleDelete = (id) => setClients((prev) => prev.filter((c) => c.id !== id));
-  const handleSaveEdit = (id, form) => setClients((prev) => prev.map((c) => c.id === id ? { ...c, name: form.name, industry: form.industry, period: form.period, info: { pic: form.pic, email: form.email, website: form.website, notes: form.notes } } : c));
-  
-  const handleCreateReport = (form) => {
-    const newClient = {
-      id: `client-${Date.now()}`,
-      name: form.clientName,
-      industry: 'New Client',
-      initials: form.clientName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
-      logo: null,
-      avatarGrad: 'linear-gradient(135deg,#00C2B8,#7000FF)',
-      period: 'Apr 2026',
-      sources: Object.keys(form.sources).filter(k => form.sources[k]),
-      alert: null,
-      featured: false,
-      info: { pic: '', email: '', website: form.url, notes: '' },
-      connected: form.sources,
-      lastEdited: 'Just now'
+  // ── Keyboard shortcuts ──────────────────────────────────────────
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchRef.current && searchRef.current.focus();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchRef.current) {
+        setSearchQuery('');
+        searchRef.current.blur();
+      }
     };
-    setClients((prev) => [newClient, ...prev]);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const filtered = searchQuery.trim()
+    ? clients.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : clients;
+
+  // ── Handlers (optimistic update + Supabase persist) ─────────────
+  const handleQuickEdit = async (id, name, logo) => {
+    setClients(prev => prev.map(c => c.id === id ? { ...c, name, ...(logo !== undefined ? { logo } : {}), lastEdited: 'Just now' } : c));
+    if (_APP_SUPA) await _APP_SUPA.from('clients').update({ name, ...(logo !== undefined ? { logo } : {}), last_edited: new Date().toISOString() }).eq('id', id);
   };
+
+  const handleDuplicate = async (c) => {
+    const newId = `${c.id}-copy-${Date.now()}`;
+    const dup = { ...c, id: newId, name: c.name + ' (copy)', featured: false, lastEdited: 'Just now' };
+    setClients(prev => [...prev, dup]);
+    if (_APP_SUPA) await _APP_SUPA.from('clients').insert({
+      id: newId, name: dup.name, logo: dup.logo || null, initials: dup.initials,
+      avatar_grad: dup.avatarGrad, status: dup.status || 'active', period: dup.period,
+      featured: false, connected: dup.connected || {}, info: dup.info || {}, alert: dup.alert || null,
+      last_edited: new Date().toISOString(), created_at: new Date().toISOString(),
+    });
+  };
+
+  const handleDelete = async (id) => {
+    setClients(prev => prev.filter(c => c.id !== id));
+    if (_APP_SUPA) await _APP_SUPA.from('clients').delete().eq('id', id);
+  };
+
+  const handleConfigureSave = async (id, newConnected) => {
+    setClients(prev => prev.map(c => c.id === id ? { ...c, connected: newConnected, lastEdited: 'Just now' } : c));
+    if (_APP_SUPA) await _APP_SUPA.from('clients').update({ connected: newConnected, last_edited: new Date().toISOString() }).eq('id', id);
+  };
+
+  const handleSaveEdit = async (id, form) => {
+    const info = { pic: form.pic, email: form.email, website: form.website, notes: form.notes };
+    setClients(prev => prev.map(c => c.id === id ? { ...c, name: form.name, period: form.period, info, lastEdited: 'Just now' } : c));
+    if (_APP_SUPA) await _APP_SUPA.from('clients').update({ name: form.name, period: form.period, info, last_edited: new Date().toISOString() }).eq('id', id);
+  };
+
+  const handleCreateReport = async (form) => {
+    const connectedMap = {};
+    ['google','meta','ga4','search','pagespeed'].forEach(k => { connectedMap[k] = form.sources[k] || false; });
+    const psEntry = form.sources.pagespeed;
+    const newId = `client-${Date.now()}`;
+    const initials = form.clientName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    const grad = _nameGrad(form.clientName);
+    const newClient = {
+      id: newId, name: form.clientName, initials, logo: form.logo || null,
+      avatarGrad: grad, period: 'Apr 2026',
+      alert: null, featured: false, status: 'active',
+      info: { pic: '', email: '', website: psEntry ? psEntry.name : '', notes: '' },
+      connected: connectedMap, lastEdited: 'Just now',
+    };
+    setClients(prev => [newClient, ...prev]);
+    if (_APP_SUPA) await _APP_SUPA.from('clients').insert({
+      id: newId, name: form.clientName, logo: form.logo || null, initials,
+      avatar_grad: grad, period: 'Apr 2026',
+      status: 'active', featured: false, connected: connectedMap,
+      info: { pic: '', email: '', website: psEntry ? psEntry.name : '', notes: '' },
+      alert: null, last_edited: new Date().toISOString(), created_at: new Date().toISOString(),
+    });
+  };
+
+  if (loading) return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--navy-base)', position: 'relative' }}>
+      <RFlare intensity={0.18} />
+      <HomeTopBar count={0} onNavigate={onNavigate} />
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+        <div style={{ width: 28, height: 28, border: '2.5px solid rgba(0,194,184,.25)', borderTopColor: '#00C2B8', borderRadius: '50%', animation: 'spin .7s linear infinite' }}/>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em' }}>Loading clients…</span>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--navy-base)', position: 'relative' }}>
       <RFlare intensity={0.18} />
-      <HomeTopBar count={filtered.length} />
+      <HomeTopBar count={filtered.length} onNavigate={onNavigate} />
 
       <div style={{ flex: 1, overflow: 'auto', position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '26px 32px 48px' }}>
 
           {/* Heading */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
-            <h1 style={{ margin: 0, fontFamily: HS.display, fontSize: 26, fontWeight: 700, color: '#FCFCFC', letterSpacing: '-.02em' }}>Selamat pagi, Rizki</h1>
-            <button onClick={() => setNewReportOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', color: '#0C182C', border: 'none', borderRadius: 8, fontFamily: HS.display, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,194,184,.25)' }}>
-              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-              New Report
-            </button>
+            <h1 style={{ margin: 0, fontFamily: HS.display, fontSize: 26, fontWeight: 700, color: '#FCFCFC', letterSpacing: '-.02em' }}>{_timeGreeting}, {user.first}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {/* Search */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 13px', background: 'var(--navy-surface)', border: `1px solid ${searchQuery ? 'rgba(0,194,184,.4)' : 'var(--navy-edge)'}`, borderRadius: 8, width: 220, transition: 'border-color .15s' }}>
+                <svg width="13" height="13" fill="none" stroke="var(--text-muted)" strokeWidth="1.8" viewBox="0 0 24 24" style={{ flexShrink: 0 }}><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
+                <input
+                  ref={searchRef}
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Search clients…"
+                  style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontFamily: HS.body, fontSize: 12, color: '#FCFCFC', minWidth: 0 }}
+                />
+                {searchQuery ? (
+                  <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
+                ) : (
+                  <span style={{ marginLeft: 'auto', fontFamily: HS.mono, fontSize: 9, color: 'var(--text-muted)', background: 'var(--navy-elevated)', padding: '1px 5px', borderRadius: 3, flexShrink: 0 }}>⌘K</span>
+                )}
+              </div>
+              {/* New Report */}
+              <button onClick={() => setNewReportOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', color: '#0C182C', border: 'none', borderRadius: 8, fontFamily: HS.display, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,194,184,.25)', whiteSpace: 'nowrap' }}>
+                <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+                New Report
+              </button>
+            </div>
           </div>
 
 
           {/* List */}
           <div style={{ background: 'var(--navy-surface)', border: '1px solid var(--navy-edge)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,.15)' }}>
             {/* Header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 88px 180px 110px 220px', gap: 18, padding: '8px 20px', paddingLeft: 26, background: 'var(--navy-deep)', borderBottom: '1px solid var(--navy-edge)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '40px minmax(120px,1fr) 64px 160px 90px 200px', gap: 14, padding: '8px 20px', paddingLeft: 26, background: 'var(--navy-deep)', borderBottom: '1px solid var(--navy-edge)' }}>
               {['', 'Client', '', 'Sources', 'Last edited', ''].map((h, i) =>
               <div key={i} style={{ fontFamily: HS.mono, fontSize: 9.5, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>{h}</div>
               )}
@@ -793,7 +1417,7 @@ const ScreenHome = ({ onOpenClient }) => {
               onConfigure={() => setConfigTarget(c)}
               onDuplicate={handleDuplicate}
               onDelete={() => setDeleteTarget(c)}
-              onQuickRename={setQuickRenameTarget} />
+              onQuickRename={setQuickEditTarget} />
 
             )}
           </div>
@@ -803,9 +1427,9 @@ const ScreenHome = ({ onOpenClient }) => {
 
       {/* Modals */}
       {newReportOpen && <NewReportModal onClose={() => setNewReportOpen(false)} onCreate={handleCreateReport} />}
-      {quickRenameTarget && <QuickRenameModal client={quickRenameTarget} onSave={(name, industry) => handleQuickRename(quickRenameTarget.id, name, industry)} onClose={() => setQuickRenameTarget(null)} />}
+      {quickEditTarget && <QuickEditModal client={quickEditTarget} onSave={(name, logo) => handleQuickEdit(quickEditTarget.id, name, logo)} onClose={() => setQuickEditTarget(null)} />}
       {editTarget && <EditModal client={editTarget} onSave={(form) => handleSaveEdit(editTarget.id, form)} onClose={() => setEditTarget(null)} />}
-      {configTarget && <ConfigurePanel client={configTarget} onClose={() => setConfigTarget(null)} />}
+      {configTarget && <ConfigurePanel client={configTarget} onClose={() => setConfigTarget(null)} onSave={(conn) => handleConfigureSave(configTarget.id, conn)} onOpenReport={(id) => { onOpenClient && onOpenClient(id); }} />}
       {deleteTarget && <DeleteConfirm client={deleteTarget} onConfirm={handleDelete} onClose={() => setDeleteTarget(null)} />}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

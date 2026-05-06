@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "Avonetiq Reporting",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "-l", "3101", "/tmp/avonetiq-app"],
+      "name": "Reportive App",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-I", "-c", "import os,http.server; os.chdir('/tmp/avonetiq-app'); http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,port=3101,bind='127.0.0.1')"],
       "port": 3101
     }
   ]

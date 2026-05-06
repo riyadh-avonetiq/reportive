@@ -66,8 +66,24 @@
 
 <div id="boot-splash">
   <div class="mark"></div>
-  <div class="label">Loading Reportive…</div>
+  <div class="label" id="boot-label">Loading Reportive…</div>
 </div>
+
+<script>
+  // If app hasn't mounted after 8s, show a helpful error instead of spinning forever
+  setTimeout(function() {
+    var root = document.getElementById('root');
+    var splash = document.getElementById('boot-splash');
+    var label = document.getElementById('boot-label');
+    if (splash && !splash.classList.contains('gone') && root && !root.hasChildNodes()) {
+      label.innerHTML = 'Tidak dapat memuat aplikasi.<br><span style="font-size:10px;opacity:.6;">Buka melalui server: <a href="http://localhost:3100/index.html" style="color:#00C2B8;">http://localhost:3100</a></span>';
+      label.style.maxWidth = '320px';
+      label.style.lineHeight = '1.6';
+      document.querySelector('#boot-splash .mark').style.animationPlayState = 'paused';
+      document.querySelector('#boot-splash .mark').style.opacity = '0.3';
+    }
+  }, 8000);
+</script>
 
 <!-- Preload logos so JSX <img src="assets/logo-mark.png"> hits warm cache -->
 <div class="preload-imgs">
@@ -105,8 +121,8 @@
 <script type="text/babel" src="assets/components/charts.jsx"></script>
 <script type="text/babel" src="assets/components/cards.jsx"></script>
 <script type="text/babel" src="assets/components/screen-dashboard.jsx"></script>
-<script type="text/babel" src="assets/components/screen-home.jsx"></script>
-<script type="text/babel" src="assets/components/screen-access.jsx"></script>
+<script type="text/babel" src="assets/components/screen-home.jsx?v=7"></script>
+<script type="text/babel" src="assets/components/screen-access.jsx?v=6"></script>
 <script type="text/babel" src="assets/components/screen-templates.jsx"></script>
 <script type="text/babel" src="assets/components/library-sheets.jsx"></script>
 <script type="text/babel" src="assets/components/screen-login.jsx"></script>
@@ -115,9 +131,11 @@
 <script type="text/babel" src="assets/components/design-canvas.jsx"></script>
 
 <!-- ── Reportive runtime (data + app shell) ───────────────────── -->
-<script type="text/babel" src="assets/js/data-bridge.jsx"></script>
+<script type="text/babel" src="assets/js/data-bridge.jsx?v=26"></script>
 <script type="text/babel" src="assets/js/live-cards.jsx"></script>
-<script type="text/babel" src="assets/js/app.jsx"></script>
+<!-- screen-report depends on window.LIVE (from data-bridge) so must load after it -->
+<script type="text/babel" src="assets/components/screen-report.jsx?v=17"></script>
+<script type="text/babel" src="assets/js/app.jsx?v=2"></script>
 
 </body>
 </html>
