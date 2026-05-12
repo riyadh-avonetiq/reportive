@@ -363,33 +363,13 @@ const DataSourceSection = ({ state, setState }) => {
 };
 
 // ─── Filter builder ───────────────────────────────────────────────
-const FilterSection = ({ filters, setFilters }) => {
-  const add = () => setFilters([...filters, { field: 'campaign', op: 'contains', val: '' }]);
-  const remove = (i) => setFilters(filters.filter((_, j) => j !== i));
-  return (
-    <ESection label="Filter">
-      <ELabel hint="active">Active filters</ELabel>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
-        {filters.map((f, i) => (
-          <div key={i} style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-            <ESelect value={f.field} onChange={v => { const nf = [...filters]; nf[i] = { ...f, field: v }; setFilters(nf); }}
-              options={[{value:'campaign',label:'Campaign'},{value:'device',label:'Device'},{value:'country',label:'Country'},{value:'status',label:'Status'}]}/>
-            <ESelect value={f.op} onChange={v => { const nf = [...filters]; nf[i] = { ...f, op: v }; setFilters(nf); }}
-              options={[{value:'contains',label:'contains'},{value:'is',label:'is'},{value:'not',label:'is not'}]}/>
-            <input value={f.val} onChange={e => { const nf = [...filters]; nf[i] = { ...f, val: e.target.value }; setFilters(nf); }}
-              placeholder="value"
-              style={{ flex: 1, minWidth: 0, padding: '6px 8px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}/>
-            <button onClick={() => remove(i)} style={{ padding: '5px 6px', background: 'transparent', border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.muted, cursor: 'pointer', lineHeight: 1 }}>×</button>
-          </div>
-        ))}
-      </div>
-      <button onClick={add} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 6, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5.5 1v9M1 5.5h9"/></svg>
-        Add filter
-      </button>
-    </ESection>
-  );
-};
+const FilterSection = ({ filters, setFilters }) => (
+  <ESection label="Filter">
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted, padding: '8px 10px', background: EP.elevated, border: `1px dashed ${EP.edge}`, borderRadius: 6, lineHeight: 1.5 }}>
+      Filter per-widget tersedia di panel Setup baru (klik widget langsung di report).
+    </div>
+  </ESection>
+);
 
 // ─── Category-specific Setup fields ──────────────────────────────
 
