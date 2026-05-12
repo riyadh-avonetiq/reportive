@@ -3330,7 +3330,7 @@ function ScreenReport({ clientId, onBack }) {
   // Ctrl+Z / Cmd+Z undo when editor is open (widget config first, then layout)
   useEffect(() => {
     const handler = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && showEditor) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         if (historyLen > 0) undoWidgetConfig();
         else undoLayout();
@@ -3338,7 +3338,7 @@ function ScreenReport({ clientId, onBack }) {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [undoWidgetConfig, undoLayout, showEditor, historyLen]);
+  }, [undoWidgetConfig, undoLayout, historyLen]);
 
   const handleSelectWidget = useCallback((id, cardId) => {
     setSelectedWidget(id);
