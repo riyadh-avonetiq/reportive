@@ -1066,6 +1066,7 @@ function CampaignsTable({ campaigns }) {
 // ─── Universal sub-renderers ───────────────────────────────────────
 
 function KpiStripWidget({ instance, p, cfg }) {
+  const d   = fmt.pctChange;
   const reg = window.DATA_REGISTRY?.[instance.source] || {};
   const scale = FONT_SCALES[cfg.fontSize] || 1;
   const metrics = cfg.metrics || [];
@@ -1095,6 +1096,7 @@ function KpiStripWidget({ instance, p, cfg }) {
 }
 
 function SingleStatWidget({ instance, p, cfg }) {
+  const d   = fmt.pctChange;
   const reg = window.DATA_REGISTRY?.[instance.source] || {};
   const scale = FONT_SCALES[cfg.fontSize] || 1;
   const key = cfg.metric;
