@@ -94,6 +94,7 @@ function aggregateAds(rows) {
   });
   t.ctr  = t.impressions > 0 ? (t.clicks / t.impressions) * 100 : 0;
   t.cpc  = t.clicks > 0 ? t.spend / t.clicks : 0;
+  t.cvr  = t.clicks > 0 ? (t.conversions / t.clicks) * 100 : 0;
   t.cpa  = t.conversions > 0 ? t.spend / t.conversions : 0;
   const roasFromRows = rows.reduce((s, r) => s + (+r.roas || 0), 0);
   t.roas = roasFromRows > 0
@@ -135,7 +136,7 @@ function aggregateGa4(rows) {
     if (r.bounce_rate != null && sess > 0)
       t.bounceWeighted += +r.bounce_rate * sess;
   });
-  // GA4 API returns bounceRate as decimal (0–1); multiply by 100 for display
+  // bounce_rate stored as decimal (0–1) from GA4 API; multiply by 100 for display
   t.bounce_rate = t.sessions > 0 ? (t.bounceWeighted / t.sessions) * 100 : 0;
   return t;
 }
@@ -143,10 +144,12 @@ function aggregateGa4(rows) {
 // ── Aggregate: Search Console ────────────────────────────────────────
 // summaryRows: (date, property) level — used for totals and daily chart
 // queryRows:   (query) level       — used for top-queries table
-function aggregateGsc(summaryRows, queryRows) {
+// pagesRows:   (page) level        — used for top-pages table
+function aggregateGsc(summaryRows, queryRows, pagesRows) {
   summaryRows = summaryRows || [];
   queryRows   = queryRows   || [];
-  if (!summaryRows.length && !queryRows.length) return null;
+  pagesRows   = pagesRows   || [];
+  if (!summaryRows.length && !queryRows.length && !pagesRows.length) return null;
 
   // Totals from summary (impression-weighted position)
   let impressions = 0, clicks = 0, posWeightedSum = 0, posImprSum = 0;
@@ -202,7 +205,31 @@ function aggregateGsc(summaryRows, queryRows) {
     labels:      dateKeys,
   };
 
-  return { impressions, clicks, ctr, position, queries, series };
+  // Top pages — group by page URL
+  const byPage = {};
+  pagesRows.forEach(r => {
+    const pg = r.page || '(unknown)';
+    if (!byPage[pg]) byPage[pg] = { page: pg, impressions: 0, clicks: 0, posWeightedSum: 0, posImprSum: 0 };
+    const imp = +r.impressions || 0;
+    byPage[pg].impressions    += imp;
+    byPage[pg].clicks         += +r.clicks || 0;
+    if (r.position != null && imp > 0) {
+      byPage[pg].posWeightedSum += +r.position * imp;
+      byPage[pg].posImprSum     += imp;
+    }
+  });
+  const pages = Object.values(byPage)
+    .map(pg => ({
+      page:        pg.page,
+      impressions: pg.impressions,
+      clicks:      pg.clicks,
+      ctr:         pg.impressions > 0 ? (pg.clicks / pg.impressions) * 100 : 0,
+      position:    pg.posImprSum > 0 ? pg.posWeightedSum / pg.posImprSum : 0,
+    }))
+    .sort((a, b) => b.clicks - a.clicks)
+    .slice(0, 15);
+
+  return { impressions, clicks, ctr, position, queries, pages, series };
 }
 
 // ── Aggregate: PageSpeed Insights ───────────────────────────────────
@@ -240,9 +267,14 @@ function aggregatePsi(rows) {
 }
 
 // ── Build aggregated data object ────────────────────────────────────
-function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRows, prevGa4Rows, prevGscSummary, prevGscQueries, from, to, prevFrom, prevTo, metaRows, prevMetaRows) {
+function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRows, prevGa4Rows, prevGscSummary, prevGscQueries, from, to, prevFrom, prevTo, metaRows, prevMetaRows, gscPages, prevGscPages, adsDetailRows, adsSegRows, adsSheetRows) {
+  // Use ads_data (sheet-synced, matches google_ads_daily) when available; fall back to google_ads
+  const detailRows = adsSheetRows && adsSheetRows.length ? adsSheetRows : adsDetailRows;
+  console.log('[Reportive] detail source:', adsSheetRows && adsSheetRows.length ? 'ads_data (' + adsSheetRows.length + ' rows)' : 'google_ads (' + adsDetailRows.length + ' rows)');
   metaRows     = metaRows     || [];
   prevMetaRows = prevMetaRows || [];
+  gscPages     = gscPages     || [];
+  prevGscPages = prevGscPages || [];
 
   const ads      = aggregateAds(adsRows);
   const adsPrev  = aggregateAds(prevAdsRows);
@@ -251,8 +283,8 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
   const ga4      = aggregateGa4(ga4Rows);
   const ga4Prev  = aggregateGa4(prevGa4Rows);
   const psi      = aggregatePsi(psiRows);
-  const gsc      = aggregateGsc(gscSummary, gscQueries);
-  const gscPrev  = aggregateGsc(prevGscSummary, prevGscQueries);
+  const gsc      = aggregateGsc(gscSummary, gscQueries, gscPages);
+  const gscPrev  = aggregateGsc(prevGscSummary, prevGscQueries, prevGscPages);
 
   // Daily series from Google Ads rows
   const dailyAds = {};
@@ -302,9 +334,11 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
   });
   const campaigns = Object.values(byCamp)
     .sort((a, b) => b.spend - a.spend)
-    .slice(0, 8)
     .map(c => ({ ...c,
+      campaign: c.name,
       ctr: c.impressions > 0 ? (c.clicks / c.impressions) * 100 : 0,
+      cpc: c.clicks > 0 ? c.spend / c.clicks : 0,
+      cvr: c.clicks > 0 ? (c.conversions / c.clicks) * 100 : 0,
       cpa: c.conversions > 0 ? c.spend / c.conversions : 0,
     }));
 
@@ -345,6 +379,57 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
       cpc: t.clicks > 0 ? t.spend / t.clicks : 0,
     }));
 
+  // Ad Groups (campaign × ad_group level)
+  const _byAdGroup = {};
+  (detailRows || []).forEach(r => {
+    const key = (r.campaign_name || '') + '\x00' + (r.ad_group || '');
+    if (!_byAdGroup[key]) _byAdGroup[key] = { campaign: r.campaign_name || '', ad_group: r.ad_group || '', campaign_type: r.campaign_type || '', spend: 0, impressions: 0, clicks: 0, conversions: 0 };
+    _byAdGroup[key].spend       += +r.spend       || 0;
+    _byAdGroup[key].impressions += +r.impressions || 0;
+    _byAdGroup[key].clicks      += +r.clicks      || 0;
+    _byAdGroup[key].conversions += +r.conversions || 0;
+  });
+  const adGroups = Object.values(_byAdGroup)
+    .sort((a, b) => b.spend - a.spend).slice(0, 1000)
+    .map(g => ({ ...g,
+      name: g.campaign,
+      type: g.campaign_type,
+      ctr: g.impressions > 0 ? (g.clicks / g.impressions) * 100 : 0,
+      cpc: g.clicks > 0 ? g.spend / g.clicks : 0,
+      cvr: g.clicks > 0 ? (g.conversions / g.clicks) * 100 : 0,
+      cpa: g.conversions > 0 ? g.spend / g.conversions : 0,
+    }));
+
+  // Keywords (campaign × ad_group × keyword level)
+  const _byKeyword = {};
+  (detailRows || []).filter(r => r.keyword).forEach(r => {
+    const key = (r.campaign_name || '') + '\x00' + (r.ad_group || '') + '\x00' + (r.keyword || '');
+    if (!_byKeyword[key]) _byKeyword[key] = { campaign: r.campaign_name || '', ad_group: r.ad_group || '', keyword: r.keyword || '', match_type: r.match_type || '', spend: 0, impressions: 0, clicks: 0, conversions: 0 };
+    _byKeyword[key].spend       += +r.spend       || 0;
+    _byKeyword[key].impressions += +r.impressions || 0;
+    _byKeyword[key].clicks      += +r.clicks      || 0;
+    _byKeyword[key].conversions += +r.conversions || 0;
+  });
+  const keywords = Object.values(_byKeyword)
+    .sort((a, b) => b.spend - a.spend).slice(0, 1000)
+    .map(k => ({ ...k,
+      name: k.campaign,
+      type: k.campaign_type || '',
+      ctr: k.impressions > 0 ? (k.clicks / k.impressions) * 100 : 0,
+      cpc: k.clicks > 0 ? k.spend / k.clicks : 0,
+      cvr: k.clicks > 0 ? (k.conversions / k.clicks) * 100 : 0,
+      cpa: k.conversions > 0 ? k.spend / k.conversions : 0,
+    }));
+
+  // Conversion actions (from google_ads_seg where segment_type = 'conversion_action')
+  const _byConvAction = {};
+  (adsSegRows || []).forEach(r => {
+    const key = r.segment_value || 'Other';
+    if (!_byConvAction[key]) _byConvAction[key] = { name: key, conversions: 0 };
+    _byConvAction[key].conversions += +r.conversions || 0;
+  });
+  const conversionActions = Object.values(_byConvAction).sort((a, b) => b.conversions - a.conversions);
+
   const { labelShort, labelLong } = buildRangeLabel(from, to);
   const { labelShort: prevLabel }  = buildRangeLabel(prevFrom, prevTo);
 
@@ -354,6 +439,7 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
     prevKey: prevLabel || null,
     ads, adsPrev, meta, metaPrev, ga4, ga4Prev, psi, gsc, gscPrev,
     series, channels, campaigns, metaSeries, metaChannels,
+    adGroups, keywords, conversionActions,
   };
 }
 
@@ -398,10 +484,25 @@ function mockData() {
       { name: 'Performance', spend:  8_700_000, clicks: 3870, impressions:  69900, conversions: 167, ctr: 5.54, cpc: 2247 },
     ],
     campaigns: [
-      { name: 'Brand Awareness Q1',         type: 'Search',  spend: 8_400_000, clicks: 2340, impressions: 61800, conversions: 188, ctr: 3.78, cpa: 44680 },
-      { name: 'Retargeting · Cart',          type: 'Display', spend: 4_200_000, clicks: 1780, impressions: 52600, conversions: 218, ctr: 3.38, cpa: 19266 },
-      { name: 'Product Launch · Bold Brew',  type: 'Search',  spend: 6_100_000, clicks: 1980, impressions: 52700, conversions: 158, ctr: 3.76, cpa: 38607 },
-      { name: 'Ramadan Promo',               type: 'Display', spend: 2_900_000, clicks:  920, impressions: 28800, conversions:  78, ctr: 3.20, cpa: 37179 },
+      { name: 'Brand Awareness Q1',         type: 'Search',  spend: 8_400_000, clicks: 2340, impressions: 61800, conversions: 188, ctr: 3.78, cpc: 3590, cvr: 8.03, cpa: 44680 },
+      { name: 'Retargeting · Cart',          type: 'Display', spend: 4_200_000, clicks: 1780, impressions: 52600, conversions: 218, ctr: 3.38, cpc: 2360, cvr: 12.2, cpa: 19266 },
+      { name: 'Product Launch · Bold Brew',  type: 'Search',  spend: 6_100_000, clicks: 1980, impressions: 52700, conversions: 158, ctr: 3.76, cpc: 3081, cvr: 7.98, cpa: 38607 },
+      { name: 'Ramadan Promo',               type: 'Display', spend: 2_900_000, clicks:  920, impressions: 28800, conversions:  78, ctr: 3.20, cpc: 3152, cvr: 8.48, cpa: 37179 },
+    ],
+    adGroups: [
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Exact',      type: 'Search',  spend: 3_200_000, clicks: 980, impressions: 24800, conversions: 88,  ctr: 3.95, cpc: 3265, cvr: 8.98, cpa: 36364 },
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Phrase',     type: 'Search',  spend: 2_800_000, clicks: 840, impressions: 22400, conversions: 64,  ctr: 3.75, cpc: 3333, cvr: 7.62, cpa: 43750 },
+      { name: 'Retargeting · Cart',  campaign: 'Retargeting · Cart',  ad_group: 'Cart Abandoners',   type: 'Display', spend: 2_600_000, clicks: 1120, impressions: 31200, conversions: 148, ctr: 3.59, cpc: 2321, cvr: 13.2, cpa: 17568 },
+      { name: 'Retargeting · Cart',  campaign: 'Retargeting · Cart',  ad_group: 'Product Viewers',   type: 'Display', spend: 1_600_000, clicks:  660, impressions: 21400, conversions:  70, ctr: 3.08, cpc: 2424, cvr: 10.6, cpa: 22857 },
+      { name: 'Product Launch · Bold Brew', campaign: 'Product Launch · Bold Brew', ad_group: 'New Coffee Line', type: 'Search', spend: 3_900_000, clicks: 1240, impressions: 32100, conversions: 102, ctr: 3.86, cpc: 3145, cvr: 8.23, cpa: 38235 },
+      { name: 'Ramadan Promo',       campaign: 'Ramadan Promo',       ad_group: 'Promo Bundle',      type: 'Display', spend: 1_700_000, clicks:  540, impressions: 17200, conversions:  48, ctr: 3.14, cpc: 3148, cvr: 8.89, cpa: 35417 },
+    ],
+    keywords: [
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Exact',   keyword: 'kopi senja',          match_type: 'Exact', type: 'Search', spend: 1_840_000, clicks: 580, impressions: 14200, conversions: 52, ctr: 4.08, cpc: 3172, cvr: 8.97, cpa: 35385 },
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Exact',   keyword: 'kopi senja nusantara', match_type: 'Exact', type: 'Search', spend: 1_360_000, clicks: 400, impressions: 10600, conversions: 36, ctr: 3.77, cpc: 3400, cvr: 9.00, cpa: 37778 },
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Phrase',  keyword: 'beli kopi senja',      match_type: 'Phrase',type: 'Search', spend:   980_000, clicks: 310, impressions:  8400, conversions: 28, ctr: 3.69, cpc: 3161, cvr: 9.03, cpa: 35000 },
+      { name: 'Product Launch · Bold Brew', campaign: 'Product Launch · Bold Brew', ad_group: 'New Coffee Line', keyword: 'kopi bold brew',  match_type: 'Broad', type: 'Search', spend: 2_100_000, clicks: 680, impressions: 17400, conversions: 56, ctr: 3.91, cpc: 3088, cvr: 8.24, cpa: 37500 },
+      { name: 'Product Launch · Bold Brew', campaign: 'Product Launch · Bold Brew', ad_group: 'New Coffee Line', keyword: 'kopi specialty single origin', match_type: 'Phrase', type: 'Search', spend: 1_800_000, clicks: 560, impressions: 14700, conversions: 46, ctr: 3.81, cpc: 3214, cvr: 8.21, cpa: 39130 },
     ],
     meta:     { spend: 32_400_000, impressions: 680000, clicks: 12400, conversions: 842, ctr: 1.82, cpc: 2613, cpa: 38478, roas: 2.74 },
     metaPrev: { spend: 28_800_000, impressions: 610000, clicks: 10900, conversions: 720, ctr: 1.79, cpc: 2642, cpa: 40000, roas: 2.51 },
@@ -418,6 +519,21 @@ function mockData() {
       { name: 'Lookalike Audience',      spend:  7_400_000, clicks: 2690, impressions: 150000, conversions: 132, ctr: 1.79, cpc: 2750 },
     ],
   };
+}
+
+// Fetch all rows from a Supabase query, paging 1000 at a time to bypass PostgREST max_rows cap.
+async function fetchPaged(q, pageSize) {
+  pageSize = pageSize || 1000;
+  var all = [];
+  var offset = 0;
+  while (true) {
+    var res = await q.range(offset, offset + pageSize - 1);
+    if (res.error || !res.data || res.data.length === 0) break;
+    all = all.concat(res.data);
+    if (res.data.length < pageSize) break;
+    offset += pageSize;
+  }
+  return all;
 }
 
 // ── Fetcher ─────────────────────────────────────────────────────────
@@ -437,6 +553,33 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     if (from)    adsQ = adsQ.gte('day', from);
     if (to)      adsQ = adsQ.lte('day', to);
 
+    // ── Google Ads Detail (ad_group + keyword level) ────────────
+    // Primary: ads_data (from Google Sheets sync) — same source as google_ads_daily,
+    // gives accurate totals. Fallback: google_ads (direct API, may miss DSA spend).
+    let adsSheetQ = _supa.from('ads_data')
+      .select('day, campaign_name, campaign_type, ad_group, keyword, match_type, spend, impressions, clicks, conversions')
+      .order('day', { ascending: true })
+      .limit(100000);
+    if (from) adsSheetQ = adsSheetQ.gte('day', from);
+    if (to)   adsSheetQ = adsSheetQ.lte('day', to);
+
+    let adsDetailQ = _supa.from('google_ads')
+      .select('day, account_name, campaign_name, campaign_type, ad_group, keyword, match_type, spend, impressions, clicks, conversions')
+      .order('day', { ascending: true });
+    if (account) adsDetailQ = adsDetailQ.eq('account_name', account);
+    if (from)    adsDetailQ = adsDetailQ.gte('day', from);
+    if (to)      adsDetailQ = adsDetailQ.lte('day', to);
+
+    // ── Google Ads Segments (conversion actions) ────────────────
+    let adsSegQ = _supa.from('google_ads_seg')
+      .select('day, account_name, campaign_name, segment_type, segment_value, conversions')
+      .eq('segment_type', 'conversion_action')
+      .order('day', { ascending: true })
+      .limit(50000);
+    if (account) adsSegQ = adsSegQ.eq('account_name', account);
+    if (from)    adsSegQ = adsSegQ.gte('day', from);
+    if (to)      adsSegQ = adsSegQ.lte('day', to);
+
     // ── Meta Ads ────────────────────────────────────────────────
     // Query from campaign-level view (aggregated server-side) — no LIMIT issue.
     const metaQ = (_metaSupa && metaAccount !== null)
@@ -453,7 +596,6 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
       : Promise.resolve({ data: [] });
 
     // ── GA4 ─────────────────────────────────────────────────────
-    // ga4_totals: date-only granularity — exact numbers matching GA4 dashboard export
     const ga4Q = (_ga4Supa && ga4Property !== null)
       ? (() => {
           let q = _ga4Supa.from('ga4_totals')
@@ -488,7 +630,19 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
           let q = _gscSupa.from('search_console_daily')
             .select('query, impressions, clicks, position')
             .order('clicks', { ascending: false })
-            .limit(500);
+            .limit(50);
+          if (gscProperty) q = q.eq('property', gscProperty);
+          if (from) q = q.gte('date', from);
+          if (to)   q = q.lte('date', to);
+          return q;
+        })()
+      : Promise.resolve({ data: [] });
+    const gscPagesQ = (_gscSupa && gscProperty !== null)
+      ? (() => {
+          let q = _gscSupa.from('search_console_pages')
+            .select('page, impressions, clicks, position')
+            .order('clicks', { ascending: false })
+            .limit(50);
           if (gscProperty) q = q.eq('property', gscProperty);
           if (from) q = q.gte('date', from);
           if (to)   q = q.lte('date', to);
@@ -501,7 +655,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     // If a date range is selected, filter within it; if no data found, fall back to latest overall.
     let psiQ = psiUrl
       ? (() => {
-          let q = _supa.from('pagespeed')
+          let q = _ga4Supa.from('pagespeed')
             .select('day, url, performance_score, seo_score, accessibility_score, best_practices_score')
             .eq('url', psiUrl)
             .order('day', { ascending: false })
@@ -512,26 +666,11 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
         })()
       : Promise.resolve({ data: [] });
 
-    const [adsR, metaR, ga4R, gscSumR, gscQryR, psiR] = await Promise.all([adsQ, metaQ, ga4Q, gscSummaryQ, gscQueryQ, psiQ]);
+    const [adsR, adsSheetR, adsDetailRows, adsSegR, metaR, ga4R, gscSumR, gscQryR, gscPgsR, psiR] = await Promise.all([adsQ, adsSheetQ, fetchPaged(adsDetailQ), adsSegQ, metaQ, ga4Q, gscSummaryQ, gscQueryQ, gscPagesQ, psiQ]);
 
-    // GSC: if search_console_summary view doesn't exist yet, fall back to search_console_daily
-    // for summary rows. This is temporary — create the view for accurate data.
-    let gscSummaryData = gscSumR.error ? null : (gscSumR.data || []);
-    if (gscSummaryData === null && _gscSupa && gscProperty !== null) {
-      try {
-        let fbQ = _gscSupa.from('search_console_daily')
-          .select('date, property, impressions, clicks, position')
-          .order('date', { ascending: true })
-          .limit(1000);
-        if (gscProperty) fbQ = fbQ.eq('property', gscProperty);
-        if (from) fbQ = fbQ.gte('date', from);
-        if (to)   fbQ = fbQ.lte('date', to);
-        const fbR = await fbQ;
-        if (!fbR.error) gscSummaryData = fbR.data || [];
-        else gscSummaryData = [];
-      } catch (_) { gscSummaryData = []; }
-    }
-    gscSummaryData = gscSummaryData || [];
+    // search_console_summary: accurate daily totals from GSC API (dimensions: date, searchType: web)
+    // Do NOT fall back to search_console_daily — per-query rows inflate impressions 5-10x
+    const gscSummaryData = (gscSumR.error || !gscSumR.data) ? [] : gscSumR.data;
 
 
     const metaData = metaR.error ? [] : (metaR.data || []);
@@ -540,7 +679,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     let psiData = psiR.error ? [] : (psiR.data || []);
     if (!psiData.length && psiUrl) {
       try {
-        const fallbackR = await _supa.from('pagespeed')
+        const fallbackR = await _ga4Supa.from('pagespeed')
           .select('day, url, performance_score, seo_score, accessibility_score, best_practices_score')
           .eq('url', psiUrl)
           .order('day', { ascending: false })
@@ -557,7 +696,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
       for (const variant of variants) {
         if (psiData.length) break;
         try {
-          const vR = await _supa.from('pagespeed')
+          const vR = await _ga4Supa.from('pagespeed')
             .select('day, url, performance_score, seo_score, accessibility_score, best_practices_score')
             .eq('url', variant)
             .order('day', { ascending: false })
@@ -567,12 +706,17 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
       }
     }
 
+    const adsSheetRows = (!adsSheetR.error && adsSheetR.data && adsSheetR.data.length) ? adsSheetR.data : null;
     return {
-      ads:        adsR.error    ? [] : (adsR.data    || []),
+      ads:        adsR.error       ? [] : (adsR.data    || []),
+      adsSheet:   adsSheetRows,
+      adsDetail:  adsDetailRows,
+      adsSeg:     adsSegR.error    ? [] : (adsSegR.data || []),
       meta:       metaData,
-      ga4:        ga4R.error    ? [] : (ga4R.data    || []),
+      ga4:        ga4R.error       ? [] : (ga4R.data       || []),
       gscSummary: gscSummaryData,
-      gscQueries: gscQryR.error ? [] : (gscQryR.data || []),
+      gscQueries: gscQryR.error    ? [] : (gscQryR.data    || []),
+      gscPages:   gscPgsR.error    ? [] : (gscPgsR.data    || []),
       psi:        psiData,
     };
   } catch (e) {
@@ -607,7 +751,7 @@ function LiveProvider({ children }) {
         fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, metaAccount),
         (prevFrom && prevTo)
           ? fetchAll(account, ga4Property, gscProperty, psiUrl, prevFrom, prevTo, metaAccount)
-          : Promise.resolve({ ads: [], meta: [], ga4: [], gscSummary: [], gscQueries: [], psi: [] }),
+          : Promise.resolve({ ads: [], adsDetail: [], adsSeg: [], meta: [], ga4: [], gscSummary: [], gscQueries: [], gscPages: [], psi: [] }),
       ]);
       if (cancelled) return;
 
@@ -632,6 +776,9 @@ function LiveProvider({ children }) {
           rawPrev.gscSummary || [], rawPrev.gscQueries || [],
           from, to, prevFrom, prevTo,
           raw.meta || [], rawPrev.meta || [],
+          raw.gscPages || [], rawPrev.gscPages || [],
+          raw.adsDetail || [], raw.adsSeg || [],
+          raw.adsSheet || null,
         );
       }
       setState({ loading: false, error: null, data, _isMock: isMock });
@@ -667,5 +814,6 @@ const useLive = () => React.useContext(DataCtx);
 window.LIVE = {
   LiveProvider,
   useLive,
+  _ga4Supa,
   fmt: { rupiahShort: fmtRupiahShort, num: fmtNum, pct: fmtPct, roas: fmtRoas, pctChange },
 };

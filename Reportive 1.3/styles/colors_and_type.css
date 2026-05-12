@@ -1,0 +1,263 @@
+/* ============================================================
+   Reportive by Avonetiq — Colors & Type Tokens
+   Canonical source: public/AVQ-DESIGN-SYSTEM.html (ADS v1.1)
+   + Reporting Tools/app/assets/css/style.css
+   ============================================================ */
+
+/* ── Fonts ─────────────────────────────────────────────────
+   Brand-uploaded Manrope + DM Mono served locally from /fonts.
+   Space Grotesk still via Google Fonts (no TTF supplied).
+   ──────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+/* Manrope — variable weight, 200–800 */
+@font-face {
+  font-family: 'Manrope';
+  src: url('./fonts/Manrope-VariableFont_wght.ttf') format('truetype-variations'),
+       url('./fonts/Manrope-VariableFont_wght.ttf') format('truetype');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* DM Mono — Light 300 / Regular 400 / Medium 500, upright + italic */
+@font-face { font-family: 'DM Mono'; src: url('./fonts/DMMono-Light.ttf') format('truetype');        font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: 'DM Mono'; src: url('./fonts/DMMono-LightItalic.ttf') format('truetype');  font-weight: 300; font-style: italic; font-display: swap; }
+@font-face { font-family: 'DM Mono'; src: url('./fonts/DMMono-Regular.ttf') format('truetype');      font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'DM Mono'; src: url('./fonts/DMMono-Italic.ttf') format('truetype');       font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: 'DM Mono'; src: url('./fonts/DMMono-Medium.ttf') format('truetype');       font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'DM Mono'; src: url('./fonts/DMMono-MediumItalic.ttf') format('truetype'); font-weight: 500; font-style: italic; font-display: swap; }
+
+:root {
+  /* ═══════════════════════════════════════════════════════════
+     COLOR SYSTEM
+     ═══════════════════════════════════════════════════════════ */
+
+  /* ── Navy Stack (L0 page → L4 border) ──────────────────── */
+  --navy-base:      #0C182C;  /* L0 page bg — the one true background */
+  --navy-deep:      #111D32;  /* L1 page accent / table headers */
+  --navy-light:     #152238;  /* L2 modal/drawer surfaces */
+  --navy-surface:   #1C2A3F;  /* L2 cards, surfaces */
+  --navy-elevated:  #243350;  /* L3 hover, inputs, elevated */
+  --navy-edge:      #334766;  /* L4 borders */
+
+  /* ── Avo Teal (primary brand) ──────────────────────────── */
+  --avo-glow:       #004D49;  /* glow shadows only */
+  --avo-subdued:    #008F87;  /* inactive teal */
+  --avo-teal:       #00C2B8;  /* PRIMARY brand */
+  --avo-hover:      #33D1C9;  /* hover state */
+  --avo-edge:       #99F2EC;  /* edge highlights */
+
+  /* ── Gold (secondary brand) ────────────────────────────── */
+  --gold-deep:      #593600;  /* glow shadows only */
+  --gold-ochre:     #A66900;  /* darker gold */
+  --gold-base:      #F8B400;  /* SECONDARY brand */
+  --gold-hover:     #FFCA3A;  /* hover state */
+  --gold-edge:      #FFE8A3;  /* edge highlights */
+
+  /* ── Pillar Accents ────────────────────────────────────── */
+  --pillar-optimize:   #00C2B8;  /* = teal */
+  --pillar-manifest:   #7000FF;  /* violet */
+  --pillar-generative: #F8B400;  /* = gold */
+
+  /* ── Status ────────────────────────────────────────────── */
+  --status-error:    #E3170A;
+  --status-success:  #02605C;
+  --status-warning:  #D5650F;
+  --status-positive: #16A34A;   /* report trend up */
+  --status-negative: #DC2626;   /* report trend down */
+  --sky-base:        #0EA5E9;
+
+  /* ── Gradient Stops (CTAs, charts only — never flats) ── */
+  --cyan-600:   #0891b2;
+  --cyan-500:   #06b6d4;
+  --cyan-300:   #22d3ee;
+  --teal-500:   #14b8a6;
+  --teal-400:   #2dd4bf;
+  --violet-600: #7c3aed;
+  --violet-500: #8b5cf6;
+  --purple-500: #a855f7;
+  --purple-400: #c084fc;
+  --indigo-600: #4f46e5;
+  --indigo-500: #6366f1;
+  --purple-600: #9333ea;
+
+  /* Approved gradient pairs */
+  --grad-analyze: linear-gradient(135deg, #0891b2, #14b8a6);
+  --grad-violet:  linear-gradient(135deg, #7c3aed, #a855f7);
+  --grad-indigo:  linear-gradient(135deg, #4f46e5, #9333ea);
+  --grad-gold:    linear-gradient(135deg, #F8B400, #FFCA3A);
+  --grad-teal:    linear-gradient(135deg, #00C2B8, #33D1C9);
+
+  /* ── Text (on dark navy) ───────────────────────────────── */
+  --text-primary:   #FCFCFC;   /* headings, values */
+  --text-secondary: #94A3B8;   /* body, descriptions */
+  --text-muted:     #64748B;   /* captions, labels */
+  --text-disabled:  #475569;   /* disabled states */
+
+  /* ═══════════════════════════════════════════════════════════
+     TYPE SYSTEM — 3-font stack
+     ═══════════════════════════════════════════════════════════ */
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body:    'Manrope',      system-ui, sans-serif;
+  --font-mono:    'DM Mono',      'SF Mono', monospace;
+
+  /* ═══════════════════════════════════════════════════════════
+     RADII
+     ═══════════════════════════════════════════════════════════ */
+  --r-xs:   4px;
+  --r-sm:   6px;   /* badges */
+  --r-md:   8px;   /* buttons, inputs */
+  --r-lg:   12px;  /* cards */
+  --r-xl:   16px;  /* featured cards */
+  --r-2xl:  20px;  /* hero cards */
+  --r-pill: 9999px;
+
+  /* ═══════════════════════════════════════════════════════════
+     SPACING — 4px grid
+     ═══════════════════════════════════════════════════════════ */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  20px;
+  --sp-6:  24px;
+  --sp-8:  32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+
+  /* ═══════════════════════════════════════════════════════════
+     SHADOWS & GLOWS
+     ═══════════════════════════════════════════════════════════ */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.2), 0 2px 4px rgba(0,0,0,.1);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.3);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,.4);
+  --shadow-xl: 0 20px 60px rgba(0,0,0,.5);
+
+  --glow-teal:   0 0 20px var(--avo-glow);
+  --glow-teal-lg:0 0 28px var(--avo-glow);
+  --glow-gold:   0 0 15px var(--gold-deep);
+  --glow-violet: 0 4px 14px rgba(139,92,246,.25);
+
+  /* ═══════════════════════════════════════════════════════════
+     MOTION — durations + easings
+     ═══════════════════════════════════════════════════════════ */
+  --t-fast: 150ms;
+  --t-med:  200ms;
+  --t-slow: 600ms;
+  --t-card: 800ms;
+  --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-spring:cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ═══════════════════════════════════════════════════════════
+     LAYOUT
+     ═══════════════════════════════════════════════════════════ */
+  --sidebar-w: 240px;
+  --header-h:  56px;
+  --page-max:  1280px;
+  --page-wide: 1440px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SEMANTIC ROLES — elements styled with tokens above.
+   Import this file then write <h1>, <p>, <code> directly.
+   ═══════════════════════════════════════════════════════════════ */
+
+html { background: var(--navy-base); }
+body {
+  background: var(--navy-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Display headings — Space Grotesk */
+h1, h2, h3, h4, h5 { font-family: var(--font-display); color: var(--text-primary); letter-spacing: -0.01em; }
+h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+h3 { font-size: 18px; font-weight: 600; line-height: 1.3; }
+h4 { font-size: 15px; font-weight: 600; line-height: 1.4; }
+h5 { font-size: 13px; font-weight: 600; line-height: 1.4; }
+
+/* Eyebrow / section label — all caps */
+.eyebrow, .section-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Body prose — Manrope */
+p { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; }
+p.lead { font-size: 15px; color: var(--text-primary); }
+
+/* Mono — data, stats, code */
+code, kbd, samp, .mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--avo-teal);
+  padding: 1px 5px;
+  background: var(--navy-surface);
+  border-radius: var(--r-xs);
+}
+
+/* Numeric / metric value */
+.metric-value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  color: var(--text-primary);
+}
+.metric-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+/* Links */
+a { color: var(--avo-teal); text-decoration: none; transition: color var(--t-fast); }
+a:hover { color: var(--avo-hover); }
+
+/* Focus ring — teal */
+*:focus-visible {
+  outline: 2px solid var(--avo-teal);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* ── Gradient flare backdrop (signature brand motif) ──── */
+.avo-flare-container { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.avo-flare { position: absolute; border-radius: 50%; will-change: transform; }
+.avo-flare-gold {
+  width: 900px; height: 900px;
+  background: radial-gradient(circle, rgba(248,180,0,.45) 0%, rgba(166,105,0,.18) 40%, transparent 68%);
+  filter: blur(100px); top: -10%; left: 5%;
+  animation: flareGold 16s ease-in-out infinite;
+}
+.avo-flare-teal {
+  width: 750px; height: 750px;
+  background: radial-gradient(circle, rgba(0,194,184,.38) 0%, rgba(0,77,73,.15) 40%, transparent 68%);
+  filter: blur(110px); bottom: -15%; right: -5%;
+  animation: flareTeal 18s ease-in-out infinite;
+}
+.avo-flare-indigo {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(112,0,255,.18) 0%, transparent 60%);
+  filter: blur(120px); top: 30%; right: 20%;
+  animation: flareIndigo 14s ease-in-out infinite;
+}
+@keyframes flareGold { 0%,100%{transform:translate(0,0) scale(1)} 20%{transform:translate(18vw,10vh) scale(1.1)} 40%{transform:translate(28vw,22vh) scale(.94)} 60%{transform:translate(8vw,32vh) scale(1.07)} 80%{transform:translate(-8vw,12vh) scale(.96)} }
+@keyframes flareTeal { 0%,100%{transform:translate(0,0) scale(1)} 25%{transform:translate(-16vw,-12vh) scale(1.08)} 50%{transform:translate(-24vw,-28vh) scale(.93)} 75%{transform:translate(-6vw,-8vh) scale(1.06)} }
+@keyframes flareIndigo { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(10vw,-14vh) scale(1.12)} 66%{transform:translate(-12vw,10vh) scale(.88)} }

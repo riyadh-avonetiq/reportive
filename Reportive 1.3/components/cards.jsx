@@ -813,10 +813,10 @@ const HighlightCarousel = () => {
 
 const CARDS = [
   // narrative
-  { id: 'narrative-hero', cat: 'narrative', title: 'Hero summary banner', w: 4, h: 1.2, render: NarrativeHero },
-  { id: 'narrative-note', cat: 'narrative', title: '3-beat analyst note', w: 4, h: 1.1, render: AnalystNote },
-  { id: 'narrative-callout', cat: 'narrative', title: 'Callout with CTA', w: 2, h: 1.4, render: Callout },
-  { id: 'narrative-quote', cat: 'narrative', title: 'Quote with attribution', w: 2, h: 1.2, render: QuoteCard },
+  { id: 'narrative-hero', cat: 'narrative', title: 'Hero banner', w: 4, h: 1.2, render: NarrativeHero },
+  { id: 'narrative-note', cat: 'narrative', title: 'Analyst 3-beat note', w: 4, h: 1.1, render: AnalystNote },
+  { id: 'narrative-callout', cat: 'narrative', title: 'Opportunity callout', w: 2, h: 1.4, render: Callout },
+  { id: 'narrative-quote', cat: 'narrative', title: 'Client quote', w: 2, h: 1.2, render: QuoteCard },
   // kpi
   { id: 'kpi-single', cat: 'kpi', title: 'Single stat', w: 1, h: 0.9, render: () => <KpiSingle/> },
   { id: 'kpi-strip', cat: 'kpi', title: '4-stat strip', w: 4, h: 0.8, render: KpiStrip },
@@ -826,27 +826,27 @@ const CARDS = [
   { id: 'chart-area', cat: 'charts', title: 'Dual-area trend', w: 3, h: 1.7, render: ChartAreaDual },
   { id: 'chart-area-axes', cat: 'charts', title: 'Area with X/Y axes', w: 3, h: 1.8, render: ChartAreaWithAxes },
   { id: 'chart-line', cat: 'charts', title: 'Solo line with KPI', w: 2, h: 1.4, render: ChartLineSolo },
-  { id: 'chart-bar', cat: 'charts', title: 'Bar chart', w: 2, h: 1.5, render: ChartBarPacing },
-  { id: 'chart-donut', cat: 'charts', title: 'Donut with legend', w: 2, h: 1.6, render: ChartDonutMix },
+  { id: 'chart-bar', cat: 'charts', title: 'Bar · budget pacing', w: 2, h: 1.5, render: ChartBarPacing },
+  { id: 'chart-donut', cat: 'charts', title: 'Donut · spend mix', w: 2, h: 1.6, render: ChartDonutMix },
   { id: 'chart-heatmap', cat: 'charts', title: 'Heatmap · hours × days', w: 3, h: 1.7, render: ChartHeatmap },
-  { id: 'chart-sparks', cat: 'charts', title: 'Sparkline row list', w: 2, h: 1.6, render: ChartSparkRow },
+  { id: 'chart-sparks', cat: 'charts', title: 'Channel sparkline rows', w: 2, h: 1.6, render: ChartSparkRow },
   // tables
-  { id: 'table-channels', cat: 'tables', title: 'Multi-column table', w: 4, h: 1.7, render: TableChannels },
-  { id: 'table-campaigns', cat: 'tables', title: 'Row list with badges', w: 3, h: 1.5, render: TableCampaigns },
-  { id: 'table-rankings', cat: 'tables', title: 'Position ranking table', w: 2, h: 1.8, render: TableRankings },
+  { id: 'table-channels', cat: 'tables', title: 'Channel summary', w: 4, h: 1.7, render: TableChannels },
+  { id: 'table-campaigns', cat: 'tables', title: 'Campaign list', w: 3, h: 1.5, render: TableCampaigns },
+  { id: 'table-rankings', cat: 'tables', title: 'Keyword rankings', w: 2, h: 1.8, render: TableRankings },
   // progress
-  { id: 'progress-psi', cat: 'progress', title: 'Score ring 4-up', w: 3, h: 2, render: PageSpeedInsights },
-  { id: 'progress-score', cat: 'progress', title: 'Score ring with stats', w: 2, h: 1.5, render: ScoreRing },
-  { id: 'progress-goals', cat: 'progress', title: 'Goal progress bars', w: 2, h: 1.4, render: GoalProgress },
-  { id: 'progress-pacing', cat: 'progress', title: 'Pacing bar', w: 2, h: 1.1, render: BudgetPacing },
-  { id: 'progress-grid', cat: 'progress', title: 'Score grid 2×2', w: 2, h: 1.4, render: MiniScoreGrid },
+  { id: 'progress-psi', cat: 'progress', title: 'Page Speed Insights', w: 3, h: 2, render: PageSpeedInsights },
+  { id: 'progress-score', cat: 'progress', title: 'Authority score ring', w: 2, h: 1.5, render: ScoreRing },
+  { id: 'progress-goals', cat: 'progress', title: 'Monthly goals', w: 2, h: 1.4, render: GoalProgress },
+  { id: 'progress-pacing', cat: 'progress', title: 'Budget pacing bar', w: 2, h: 1.1, render: BudgetPacing },
+  { id: 'progress-grid', cat: 'progress', title: 'Page health 2×2', w: 2, h: 1.4, render: MiniScoreGrid },
   // lists
-  { id: 'list-keywords', cat: 'lists', title: 'Ranked row list', w: 2, h: 1.7, render: ListTopKeywords },
-  { id: 'list-pages', cat: 'lists', title: 'URL list with quality bar', w: 2, h: 1.7, render: ListTopPages },
-  { id: 'list-countries', cat: 'lists', title: 'Horizontal bar list', w: 2, h: 1.2, render: ListCountries },
-  { id: 'list-devices', cat: 'lists', title: 'Category split bars', w: 2, h: 1.2, render: ListDeviceSplit },
+  { id: 'list-keywords', cat: 'lists', title: 'Top keywords', w: 2, h: 1.7, render: ListTopKeywords },
+  { id: 'list-pages', cat: 'lists', title: 'Top landing pages', w: 2, h: 1.7, render: ListTopPages },
+  { id: 'list-countries', cat: 'lists', title: 'Top countries', w: 2, h: 1.2, render: ListCountries },
+  { id: 'list-devices', cat: 'lists', title: 'Device split', w: 2, h: 1.2, render: ListDeviceSplit },
   // carousel
-  { id: 'carousel-highlights', cat: 'carousel', title: 'Highlight carousel', w: 4, h: 1.4, render: HighlightCarousel },
+  { id: 'carousel-highlights', cat: 'carousel', title: 'Performance highlights', w: 4, h: 1.4, render: HighlightCarousel },
 ];
 
 const CATS = [

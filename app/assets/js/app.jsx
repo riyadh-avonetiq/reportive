@@ -26,6 +26,40 @@ function parseHash() {
 }
 
 // ─────────────────────────────────────────────────────────────────
+// Top-level error boundary — catches crashes in any screen
+// ─────────────────────────────────────────────────────────────────
+class AppErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  render() {
+    if (this.state.error) return (
+      <div style={{
+        height: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        background: '#060E1A', color: '#FCFCFC',
+        fontFamily: 'monospace', padding: 40,
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#E3170A', marginBottom: 12 }}>
+          Application Error
+        </div>
+        <div style={{ fontSize: 11, color: '#FCFCFC', marginBottom: 8, maxWidth: 600, wordBreak: 'break-word' }}>
+          {this.state.error.message}
+        </div>
+        <pre style={{ fontSize: 9, color: '#64748B', maxWidth: 700, overflow: 'auto', whiteSpace: 'pre-wrap', marginTop: 12 }}>
+          {this.state.error.stack}
+        </pre>
+        <button
+          onClick={() => { this.setState({ error: null }); window.location.hash = 'home'; }}
+          style={{ marginTop: 20, padding: '8px 20px', background: '#00C2B8', border: 'none', borderRadius: 7, color: '#0C182C', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>
+          ← Kembali ke Home
+        </button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
 // Root App
 // ─────────────────────────────────────────────────────────────────
 function App() {
@@ -50,7 +84,12 @@ function App() {
   }
 
   if (route.route === 'access') {
+    if (ROLE === 'viewer') return <ScreenHome onOpenClient={onOpenClient} onNavigate={navigate}/>;
     return <ScreenAccess onNavigate={navigate}/>;
+  }
+
+  if (route.route === 'templates') {
+    if (ROLE === 'viewer') return <ScreenHome onOpenClient={onOpenClient} onNavigate={navigate}/>;
   }
 
   // Default: Home
@@ -83,9 +122,11 @@ function Root() {
     });
   }, []);
   return (
-    <LiveProvider>
-      <App/>
-    </LiveProvider>
+    <AppErrorBoundary>
+      <LiveProvider>
+        <App/>
+      </LiveProvider>
+    </AppErrorBoundary>
   );
 }
 

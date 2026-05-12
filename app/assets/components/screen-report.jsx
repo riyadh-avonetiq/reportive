@@ -7,6 +7,8 @@
 const { useState, useEffect, useCallback, useMemo } = React;
 const { useLive, fmt } = window.LIVE;
 
+const _IS_VIEWER = sessionStorage.getItem('avo_role') === 'viewer';
+
 // ─── Design tokens ────────────────────────────────────────────────
 const teal   = '#00C2B8';
 const gold   = '#F8B400';
@@ -38,22 +40,18 @@ function Eyebrow({ children, color = muted }) {
 }
 
 // ─── KPI tile (design-system aligned) ────────────────────────────
-function Kpi({ label, value, delta, sub, accent = teal, spark }) {
-  const dc = deltaColor(delta);
+function Kpi({ label, value, delta, sub, compare, accent = teal, spark, scale = 1 }) {
   return (
     <RCard accent={accent} padding={16} style={{ flex: '1 1 140px', minWidth: 128 }}>
       <Eyebrow>{label}</Eyebrow>
-      <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 800, color: fg, letterSpacing: '-0.02em', lineHeight: 1, margin: '7px 0', fontVariantNumeric: 'tabular-nums' }}>
+      <div style={{ marginTop: 6, fontFamily: T.display, fontSize: Math.round(22 * scale), fontWeight: 800, color: fg, letterSpacing: '-0.02em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
         {value}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          {delta != null && (
-            <RDelta value={Math.round(delta * 10) / 10}/>
-          )}
-          {sub && delta == null && (
-            <div style={{ fontFamily: T.mono, fontSize: 9, color: muted, marginTop: 2 }}>{sub}</div>
-          )}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {delta != null && <RDelta value={Math.round(delta * 10) / 10}/>}
+          {compare && delta != null && <span style={{ fontFamily: T.body, fontSize: 10, color: muted }}>{compare}</span>}
+          {sub && delta == null && <span style={{ fontFamily: T.mono, fontSize: 9, color: muted }}>{sub}</span>}
         </div>
         {spark && <Spark data={spark} color={accent} w={56} h={18}/>}
       </div>
@@ -588,19 +586,21 @@ function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPrese
           </svg>
         </button>
 
-        {/* Edit / Editor toggle */}
-        <button onClick={onEdit} style={{
-          padding: '6px 12px', borderRadius: 7, cursor: 'pointer',
-          fontFamily: T.display, fontSize: 10, fontWeight: 600,
-          background: showEditor ? 'rgba(0,194,184,.15)' : 'rgba(255,255,255,.06)',
-          border: `1px solid ${showEditor ? 'rgba(0,194,184,.4)' : 'rgba(255,255,255,.12)'}`,
-          color: showEditor ? teal : sec,
-          display: 'flex', alignItems: 'center', gap: 5,
-          transition: 'background .15s, color .15s',
-        }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-          Edit
-        </button>
+        {/* Edit / Editor toggle — hidden for viewers */}
+        {!_IS_VIEWER && (
+          <button onClick={onEdit} style={{
+            padding: '6px 12px', borderRadius: 7, cursor: 'pointer',
+            fontFamily: T.display, fontSize: 10, fontWeight: 600,
+            background: showEditor ? 'rgba(0,194,184,.15)' : 'rgba(255,255,255,.06)',
+            border: `1px solid ${showEditor ? 'rgba(0,194,184,.4)' : 'rgba(255,255,255,.12)'}`,
+            color: showEditor ? teal : sec,
+            display: 'flex', alignItems: 'center', gap: 5,
+            transition: 'background .15s, color .15s',
+          }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            Edit
+          </button>
+        )}
 
         {/* Present */}
         <button onClick={onPresent} style={{
@@ -626,10 +626,1180 @@ function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPrese
   );
 }
 
+// ─── Reusable sortable table header cell ──────────────────────────
+function SortTh({ label, sortKey, active, dir, onSort, align = 'right' }) {
+  return (
+    <th
+      onClick={() => onSort(sortKey)}
+      style={{
+        padding: '8px 14px', textAlign: align,
+        fontFamily: T.mono, fontSize: 9.5, fontWeight: 600,
+        textTransform: 'uppercase', letterSpacing: '0.1em',
+        color: active ? teal : muted, cursor: 'pointer',
+        userSelect: 'none', whiteSpace: 'nowrap',
+      }}
+    >
+      {label}{active ? (dir === 'desc' ? ' ↓' : ' ↑') : ''}
+    </th>
+  );
+}
+
+// ─── Selectable widget wrapper ─────────────────────────────────────
+function SelectableWidget({ id, cardId, editState, children }) {
+  if (!editState) return children;
+  const isSelected = editState.selected === id;
+  return (
+    <div
+      onClick={e => { e.stopPropagation(); editState.onSelect(id, cardId); }}
+      style={{
+        position: 'relative',
+        outline: `2px solid ${isSelected ? teal : 'rgba(0,194,184,.12)'}`,
+        outlineOffset: 3,
+        borderRadius: 12,
+        cursor: 'pointer',
+        transition: 'outline-color .15s',
+      }}
+    >
+      {isSelected && (
+        <div style={{
+          position: 'absolute', top: -14, left: 8, zIndex: 20,
+          background: teal, color: '#0C182C',
+          fontFamily: T.mono, fontSize: 8, fontWeight: 700,
+          padding: '2px 7px', borderRadius: 4, letterSpacing: '0.08em',
+          pointerEvents: 'none',
+        }}>EDITING</div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+// ─── Table dimension / metric schemas ─────────────────────────────
+const FONT_SCALES = { S: 0.85, M: 1, L: 1.15 };
+
+// ─── Universal widget → card-type map ─────────────────────────────
+// widgetConfigs is keyed by card type so all widgets of the same type
+// share one config (font size, name, metrics, etc.)
+const WIDGET_CARD_TYPES = {
+  'google-kpi':       'kpi-strip',
+  'meta-kpi':         'kpi-strip',
+  'ga4-kpi':          'kpi-strip',
+  'search-kpi':       'kpi-strip',
+  'google-spend':     'chart-area',
+  'google-clicks':    'chart-bar',
+  'google-budget':    'chart-donut',
+  'google-campaigns': 'table-campaigns',
+  'google-adgroups':  'table-campaigns',
+  'google-keywords':  'table-campaigns',
+  'meta-trend':       'chart-area',
+  'meta-donut':       'chart-donut',
+  'ga4-sessions':     'chart-area',
+  'ga4-heatmap':      'chart-heatmap',
+  'ga4-conversion':   'chart-area',
+  'search-position':  'chart-donut',
+  'search-ctr':       'chart-area',
+  'search-clicks':    'chart-bar',
+  'search-queries':   'table-rankings',
+  'search-pages':     'table-rankings',
+};
+
+// ─── Default drag layout ──────────────────────────────────────────
+const DEFAULT_DRAG_LAYOUT = {
+  rows: [
+    [{ id: 'google-kpi', span: 12 }],
+    [{ id: 'google-spend', span: 4 }, { id: 'google-clicks', span: 4 }, { id: 'google-budget', span: 4 }],
+    [{ id: 'google-campaigns', span: 12 }],
+    [{ id: 'google-adgroups', span: 12 }],
+    [{ id: 'google-keywords', span: 12 }],
+    [{ id: 'meta-kpi', span: 12 }],
+    [{ id: 'meta-trend', span: 7 }, { id: 'meta-donut', span: 5 }],
+    [{ id: 'ga4-kpi', span: 12 }],
+    [{ id: 'ga4-sessions', span: 7 }, { id: 'ga4-heatmap', span: 5 }],
+    [{ id: 'ga4-conversion', span: 12 }],
+    [{ id: 'search-kpi', span: 12 }],
+    [{ id: 'search-ctr', span: 4 }, { id: 'search-clicks', span: 4 }],
+    [{ id: 'search-queries', span: 12 }],
+    [{ id: 'search-pages', span: 12 }],
+  ]
+};
+
+function shortUrlFmt(url) {
+  if (!url) return '—';
+  try {
+    const u = new URL(url.startsWith('http') ? url : 'https://' + url);
+    return u.pathname === '/' ? u.hostname : u.pathname;
+  } catch { return url; }
+}
+
+function fmtMetricVal(val, fmt_) {
+  if (val == null) return '—';
+  switch (fmt_) {
+    case 'rupiah': return fmt.rupiahShort(val);
+    case 'pct':    return fmt.pct ? fmt.pct(val) : val.toFixed(2) + '%';
+    case 'roas':   return fmt.roas ? fmt.roas(val) : val.toFixed(2) + 'x';
+    default:       return fmt.num ? fmt.num(val) : String(val);
+  }
+}
+
+const GOOGLE_TABLE_DIMS = [
+  { key: 'name',       label: 'Campaign' },
+  { key: 'ad_group',   label: 'Ad Group' },
+  { key: 'keyword',    label: 'Keyword' },
+  { key: 'match_type', label: 'Match Type' },
+  { key: 'type',       label: 'Campaign Type' },
+  { key: 'device',     label: 'Device' },
+];
+const GOOGLE_TABLE_METRICS = [
+  { key: 'spend',       label: 'Spend',       fmt: 'rupiah' },
+  { key: 'clicks',      label: 'Clicks',      fmt: 'num' },
+  { key: 'impressions', label: 'Impressions', fmt: 'num' },
+  { key: 'conversions', label: 'Conversions', fmt: 'num' },
+  { key: 'ctr',         label: 'CTR',         fmt: 'pct' },
+  { key: 'cvr',         label: 'CVR',         fmt: 'pct' },
+  { key: 'cpa',         label: 'CPA',         fmt: 'rupiah' },
+  { key: 'roas',        label: 'ROAS',        fmt: 'roas' },
+];
+const SEARCH_TABLE_DIMS = [
+  { key: 'query',   label: 'Query' },
+  { key: 'page',    label: 'Page',    fmtCell: 'url' },
+  { key: 'country', label: 'Country' },
+  { key: 'device',  label: 'Device' },
+];
+const SEARCH_TABLE_METRICS = [
+  { key: 'impressions', label: 'Impressions', fmt: 'num' },
+  { key: 'clicks',      label: 'Clicks',      fmt: 'num' },
+  { key: 'ctr',         label: 'CTR',         fmt: 'pct' },
+  { key: 'position',    label: 'Avg Position', fmt: 'num' },
+];
+
+// ─── Universal configurable data table ────────────────────────────
+function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defaultDims, defaultMetrics, defaultName }) {
+  const cfg = {
+    name: '',
+    dimensions: defaultDims || availDims.slice(0, 1).map(d => d.key),
+    metrics: defaultMetrics || availMetrics.slice(0, 4).map(m => m.key),
+    metricLabels: {},
+    filters: [],
+    sortMetric: (defaultMetrics || availMetrics.slice(0, 1).map(m => m.key))[0] || '',
+    sortDir: 'desc',
+    fontSize: 'M',
+    pageSize: 10,
+    ...(widgetConfig || {}),
+  };
+
+  const [search,  setSearch]  = useState('');
+  const [sortKey, setSortKey] = useState(cfg.sortMetric);
+  const [sortDir, setSortDir] = useState(cfg.sortDir);
+  const [pageNum, setPageNum] = useState(1);
+
+  useEffect(() => { setPageNum(1); }, [search]);
+  useEffect(() => { setPageNum(1); }, [cfg.pageSize]);
+  useEffect(() => { setSortKey(cfg.sortMetric || ''); }, [cfg.sortMetric]);
+
+  const fScale  = FONT_SCALES[cfg.fontSize] || 1;
+  const fs      = n => Math.round(n * fScale);
+  const dims    = cfg.dimensions.map(k => availDims.find(d => d.key === k)).filter(Boolean);
+  const metrics = cfg.metrics.map(k => availMetrics.find(m => m.key === k)).filter(Boolean);
+  const pgSize  = Math.max(1, cfg.pageSize || 10);
+
+  const toggleSort = key => {
+    if (sortKey === key) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+    else { setSortKey(key); setSortDir('desc'); setPageNum(1); }
+  };
+
+  const filtered = useMemo(() => {
+    let r = rows || [];
+    (cfg.filters || []).forEach(f => {
+      if (!f.val) return;
+      const v = (f.val || '').toLowerCase();
+      r = r.filter(row => {
+        const rv = String(row[f.dim] || '').toLowerCase();
+        if (f.op === 'is')     return rv === v;
+        if (f.op === 'not')    return rv !== v;
+        if (f.op === 'starts') return rv.startsWith(v);
+        return rv.includes(v);
+      });
+    });
+    if (search) {
+      const s = search.toLowerCase();
+      r = r.filter(row => dims.some(d => String(row[d.key] || '').toLowerCase().includes(s)));
+    }
+    return r;
+  }, [rows, cfg.filters, search, dims]);
+
+  const sorted = useMemo(() => {
+    if (!sortKey) return filtered;
+    return [...filtered].sort((a, b) => {
+      const mul = sortDir === 'desc' ? -1 : 1;
+      return mul * ((+(a[sortKey]) || 0) - (+(b[sortKey]) || 0));
+    });
+  }, [filtered, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pgSize));
+  const curPage    = Math.min(pageNum, totalPages);
+  const pageRows   = sorted.slice((curPage - 1) * pgSize, curPage * pgSize);
+  const displayName = cfg.name || defaultName || 'Table';
+
+  return (
+    <RCard padding={0} style={{ overflow: 'hidden' }}>
+      <div style={{ padding: `${fs(10)}px ${fs(16)}px`, borderBottom: '1px solid var(--navy-edge)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ fontFamily: T.display, fontSize: fs(13), fontWeight: 700, color: fg }}>{displayName}</div>
+          <div style={{ fontFamily: T.body, fontSize: fs(10), color: muted, marginTop: 2 }}>{sorted.length} baris</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: `${fs(5)}px ${fs(9)}px`, background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, minWidth: 160 }}>
+          <svg width="10" height="10" fill="none" stroke={muted} strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…"
+            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: fg, fontFamily: T.body, fontSize: fs(11) }}/>
+          {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', padding: 0, fontSize: 13, lineHeight: 1 }}>×</button>}
+        </div>
+      </div>
+
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.body, fontSize: fs(12) }}>
+          <thead>
+            <tr style={{ background: 'var(--navy-deep)' }}>
+              {dims.map(d => (
+                <th key={d.key} style={{ padding: `${fs(7)}px ${fs(12)}px`, textAlign: 'left', fontFamily: T.mono, fontSize: fs(9), fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: muted, whiteSpace: 'nowrap' }}>
+                  {d.label}
+                </th>
+              ))}
+              {metrics.map(m => (
+                <SortTh key={m.key} label={cfg.metricLabels?.[m.key] || m.label} sortKey={m.key} active={sortKey === m.key} dir={sortDir} onSort={toggleSort}/>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {pageRows.length === 0 && (
+              <tr><td colSpan={dims.length + metrics.length} style={{ padding: fs(20), textAlign: 'center', fontFamily: T.mono, fontSize: fs(10), color: muted }}>No results</td></tr>
+            )}
+            {pageRows.map((r, i) => (
+              <tr key={i} style={{ borderTop: '1px solid rgba(51,71,102,.5)' }}>
+                {dims.map((d, di) => {
+                  const raw  = r[d.key];
+                  const disp = d.fmtCell === 'url' ? shortUrlFmt(raw) : (raw || '—');
+                  return (
+                    <td key={d.key} title={d.fmtCell === 'url' ? (raw || '') : undefined}
+                      style={{ padding: `${fs(8)}px ${fs(12)}px`, fontFamily: di === 0 ? T.display : T.body, fontWeight: di === 0 ? 600 : 400, color: di === 0 ? fg : muted, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: fs(di === 0 ? 12 : 11) }}>
+                      {disp}
+                    </td>
+                  );
+                })}
+                {metrics.map(m => (
+                  <td key={m.key} style={{ padding: `${fs(8)}px ${fs(12)}px`, textAlign: 'right', fontFamily: T.mono, color: sec, fontSize: fs(11), whiteSpace: 'nowrap' }}>
+                    {fmtMetricVal(r[m.key], m.fmt)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {totalPages > 1 && (
+        <div style={{ padding: `${fs(7)}px ${fs(14)}px`, borderTop: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--navy-deep)', flexWrap: 'wrap', gap: 6 }}>
+          <div style={{ fontFamily: T.mono, fontSize: fs(9), color: muted }}>
+            {(curPage - 1) * pgSize + 1}–{Math.min(curPage * pgSize, sorted.length)} / {sorted.length}
+          </div>
+          <div style={{ display: 'flex', gap: 3 }}>
+            <button onClick={() => setPageNum(p => Math.max(1, p - 1))} disabled={curPage === 1}
+              style={{ width: fs(26), height: fs(26), border: '1px solid var(--navy-edge)', borderRadius: 5, background: 'var(--navy-elevated)', color: curPage === 1 ? muted : fg, cursor: curPage === 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: curPage === 1 ? 0.4 : 1 }}>
+              <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let p = totalPages <= 5 ? i + 1 : curPage <= 3 ? i + 1 : curPage >= totalPages - 2 ? totalPages - 4 + i : curPage - 2 + i;
+              return (
+                <button key={p} onClick={() => setPageNum(p)}
+                  style={{ width: fs(26), height: fs(26), border: `1px solid ${p === curPage ? teal : 'var(--navy-edge)'}`, borderRadius: 5, background: p === curPage ? 'rgba(0,194,184,.15)' : 'var(--navy-elevated)', color: p === curPage ? teal : sec, cursor: 'pointer', fontFamily: T.mono, fontSize: fs(10), fontWeight: p === curPage ? 700 : 400 }}>
+                  {p}
+                </button>
+              );
+            })}
+            <button onClick={() => setPageNum(p => Math.min(totalPages, p + 1))} disabled={curPage === totalPages}
+              style={{ width: fs(26), height: fs(26), border: '1px solid var(--navy-edge)', borderRadius: 5, background: 'var(--navy-elevated)', color: curPage === totalPages ? muted : fg, cursor: curPage === totalPages ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: curPage === totalPages ? 0.4 : 1 }}>
+              <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+          </div>
+        </div>
+      )}
+    </RCard>
+  );
+}
+
+// ─── Campaigns table with search + sort ───────────────────────────
+function CampaignsTable({ campaigns }) {
+  const [search,  setSearch]  = useState('');
+  const [sortKey, setSortKey] = useState('spend');
+  const [sortDir, setSortDir] = useState('desc');
+
+  const toggleSort = key => {
+    if (sortKey === key) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+    else { setSortKey(key); setSortDir('desc'); }
+  };
+
+  const rows = campaigns
+    .filter(c => !search || (c.name || '').toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => sortDir === 'desc' ? (b[sortKey] || 0) - (a[sortKey] || 0) : (a[sortKey] || 0) - (b[sortKey] || 0));
+
+  const cols = [
+    { key: 'spend',  label: 'Spend' },
+    { key: 'clicks', label: 'Clicks' },
+    { key: 'ctr',    label: 'CTR' },
+    { key: 'cvr',    label: 'CVR' },
+    { key: 'cpa',    label: 'CPA' },
+    { key: 'roas',   label: 'ROAS' },
+  ];
+
+  return (
+    <RCard padding={0} style={{ overflow: 'hidden' }}>
+      <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <div>
+          <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg }}>Campaigns</div>
+          <div style={{ fontFamily: T.body, fontSize: 11, color: muted, marginTop: 2 }}>{rows.length} kampanye · periode ini</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 10px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, minWidth: 180 }}>
+          <svg width="11" height="11" fill="none" stroke={muted} strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Cari kampanye…"
+            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: fg, fontFamily: T.body, fontSize: 11.5 }}
+          />
+          {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', padding: 0, lineHeight: 1, fontSize: 14 }}>×</button>}
+        </div>
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.body, fontSize: 12 }}>
+        <thead>
+          <tr style={{ background: 'var(--navy-deep)' }}>
+            <th style={{ padding: '8px 14px', textAlign: 'left', fontFamily: T.mono, fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: muted }}>Kampanye</th>
+            <th style={{ padding: '8px 14px', textAlign: 'left', fontFamily: T.mono, fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: muted }}>Tipe</th>
+            {cols.map(c => <SortTh key={c.key} label={c.label} sortKey={c.key} active={sortKey === c.key} dir={sortDir} onSort={toggleSort}/>)}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 && (
+            <tr><td colSpan={8} style={{ padding: '20px 14px', textAlign: 'center', fontFamily: T.mono, fontSize: 10, color: muted }}>Tidak ada kampanye yang cocok</td></tr>
+          )}
+          {rows.map((c, i) => (
+            <tr key={i} style={{ borderTop: '1px solid rgba(51,71,102,.5)' }}>
+              <td style={{ padding: '10px 14px', fontFamily: T.display, fontWeight: 600, color: fg, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</td>
+              <td style={{ padding: '10px 14px' }}><RChip color={c.type === 'Search' ? blue : c.type === 'Display' ? gold : teal}>{c.type || '—'}</RChip></td>
+              <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, color: fg }}>{fmt.rupiahShort(c.spend)}</td>
+              <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, color: sec }}>{fmt.num(c.clicks)}</td>
+              <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, color: c.ctr > 3 ? '#16A34A' : sec }}>{fmt.pct(c.ctr)}</td>
+              <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, color: sec }}>{c.cvr != null ? fmt.pct(c.cvr) : '—'}</td>
+              <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, color: sec }}>{fmt.rupiahShort(c.cpa)}</td>
+              <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, color: c.roas >= 2 ? '#16A34A' : sec }}>{c.roas != null ? fmt.roas(c.roas) : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </RCard>
+  );
+}
+
+// ─── Widget map builder ────────────────────────────────────────────
+// Returns { [widgetId]: ReactNode } for all widgets across all sections.
+function buildWidgetMap(p, connected, widgetConfigs, editState) {
+  const d    = fmt.pctChange;
+  const wcfg = id => widgetConfigs?.[WIDGET_CARD_TYPES[id] || id] || {};
+  const wn   = id => wcfg(id).name || null;
+  const map  = {};
+
+  // ── Google Ads widgets ──
+  if (connected?.google && p?.ads && p?.series) {
+    const { ads, adsPrev, series, channels, campaigns } = p;
+    const kpiScale = FONT_SCALES[wcfg('google-kpi').fontSize] || 1;
+
+    const TYPE_COLORS = [blue, gold, '#16A34A', '#E3170A', violet];
+    const totalSpend = (channels || []).reduce((s, c) => s + c.spend, 0) || 1;
+    const donutSegs = (channels || []).slice(0, 5).map((ch, i) => ({
+      value: ch.spend, color: TYPE_COLORS[i % TYPE_COLORS.length],
+    }));
+
+    const today = new Date().getDate();
+    const safeSpend  = (series.spend  || []).length >= 2 ? series.spend  : [0, 0];
+    const safeClicks = (series.clicks || []).length >= 2 ? series.clicks : [0, 0];
+    const paceIdx = Math.min(today - 1, (safeSpend.length || 1) - 1);
+
+    map['google-kpi'] = (
+      <SelectableWidget id="google-kpi" cardId="kpi-strip" editState={editState}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+          <Kpi label="Total Spend"   value={fmt.rupiahShort(ads.spend)}       delta={d(ads.spend, adsPrev.spend)}             accent={gold} spark={safeSpend.slice(-7)} scale={kpiScale}/>
+          <Kpi label="Clicks"        value={fmt.num(ads.clicks)}              delta={d(ads.clicks, adsPrev.clicks)}           accent={blue} scale={kpiScale}/>
+          <Kpi label="Impressions"   value={fmt.num(ads.impressions)}         delta={d(ads.impressions, adsPrev.impressions)} accent={blue} scale={kpiScale}/>
+          <Kpi label="Conversions"   value={fmt.num(ads.conversions)}         delta={d(ads.conversions, adsPrev.conversions)} accent={teal} scale={kpiScale}/>
+          <Kpi label="CTR"           value={fmt.pct(ads.ctr)}                 delta={d(ads.ctr, adsPrev.ctr)}                 accent={teal} scale={kpiScale}/>
+          <Kpi label="Avg CPC"       value={fmt.rupiahShort(ads.cpc)}         sub="per klik" scale={kpiScale}/>
+          <Kpi label="CPA"           value={fmt.rupiahShort(ads.cpa)}         sub="per konversi" scale={kpiScale}/>
+          <Kpi label="ROAS"          value={fmt.roas(ads.roas)}               delta={d(ads.roas, adsPrev.roas)}               accent={gold} scale={kpiScale}/>
+        </div>
+      </SelectableWidget>
+    );
+
+    map['google-spend'] = (
+      <SelectableWidget id="google-spend" cardId="chart-area" editState={editState}>
+        <ChartCard title={wn('google-spend') || "Spend Harian"} sub={`Total: ${fmt.rupiahShort(ads.spend)}`}>
+          <MiniLine data={safeSpend} w={300} h={72} color={blue} fill id="gads-spend"/>
+        </ChartCard>
+      </SelectableWidget>
+    );
+
+    map['google-clicks'] = (
+      <SelectableWidget id="google-clicks" cardId="chart-bar" editState={editState}>
+        <ChartCard title={wn('google-clicks') || "Click Volume · Pacing"} sub="Bulan ini vs target">
+          <MiniBar data={safeClicks} w={300} h={72} color={blue} activeUntil={paceIdx}/>
+        </ChartCard>
+      </SelectableWidget>
+    );
+
+    map['google-budget'] = (
+      <SelectableWidget id="google-budget" cardId="chart-donut" editState={editState}>
+        <ChartCard title={wn('google-budget') || "Budget per Tipe Kampanye"}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <MiniDonut
+              segments={donutSegs.length ? donutSegs : [{ value: 1, color: '#243350' }]}
+              size={88} thickness={9}
+              centerLabel={String((channels || []).length)}
+              centerSub="types"
+            />
+            <div style={{ flex: 1 }}>
+              {(channels || []).slice(0, 5).map((ch, i) => (
+                <div key={ch.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: TYPE_COLORS[i % TYPE_COLORS.length], flexShrink: 0 }}/>
+                    <span style={{ fontFamily: T.mono, fontSize: 9, color: sec }}>{ch.name}</span>
+                  </div>
+                  <span style={{ fontFamily: T.mono, fontSize: 9, color: muted }}>
+                    {((ch.spend / totalSpend) * 100).toFixed(1)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </ChartCard>
+      </SelectableWidget>
+    );
+
+    if ((campaigns || []).length > 0) {
+      map['google-campaigns'] = (
+        <SelectableWidget id="google-campaigns" cardId="table-campaigns" editState={editState}>
+          <DataTable widgetId="google-campaigns" widgetConfig={wcfg('google-campaigns')}
+            rows={campaigns} availDims={GOOGLE_TABLE_DIMS} availMetrics={GOOGLE_TABLE_METRICS}
+            defaultDims={['name']} defaultMetrics={['spend','clicks','impressions','ctr','cpa']}
+            defaultName="Campaigns · Google Ads"/>
+        </SelectableWidget>
+      );
+    }
+
+    if (p.adGroups && p.adGroups.length > 0) {
+      map['google-adgroups'] = (
+        <SelectableWidget id="google-adgroups" cardId="table-campaigns" editState={editState}>
+          <DataTable widgetId="google-adgroups" widgetConfig={wcfg('google-adgroups')}
+            rows={p.adGroups} availDims={GOOGLE_TABLE_DIMS} availMetrics={GOOGLE_TABLE_METRICS}
+            defaultDims={['ad_group','name']} defaultMetrics={['spend','clicks','ctr','cpa']}
+            defaultName="Ad Groups · Google Ads"/>
+        </SelectableWidget>
+      );
+    }
+
+    if (p.keywords && p.keywords.length > 0) {
+      map['google-keywords'] = (
+        <SelectableWidget id="google-keywords" cardId="table-campaigns" editState={editState}>
+          <DataTable widgetId="google-keywords" widgetConfig={wcfg('google-keywords')}
+            rows={p.keywords} availDims={GOOGLE_TABLE_DIMS} availMetrics={GOOGLE_TABLE_METRICS}
+            defaultDims={['keyword']} defaultMetrics={['spend','clicks','ctr','cpa']}
+            defaultName="Keywords · Google Ads"/>
+        </SelectableWidget>
+      );
+    }
+  }
+
+  // ── Meta Ads widgets ──
+  if (connected?.meta && p) {
+    const ads      = p.meta     || p.ads;
+    const adsPrev  = p.metaPrev || p.adsPrev;
+    const series   = (p.metaSeries && p.metaSeries.labels && p.metaSeries.labels.length) ? p.metaSeries : p.series;
+    const channels = (p.metaChannels && p.metaChannels.length) ? p.metaChannels : (p.channels || []);
+    const kpiScale = FONT_SCALES[wcfg('meta-kpi').fontSize] || 1;
+
+    if (ads && adsPrev && series) {
+      const META_COLORS = ['#0EA5E9', violet, '#F43F5E', gold];
+      const totalImpr = channels.reduce((s, c) => s + c.impressions, 0) || 1;
+      const donutSegs = channels.slice(0, 4).map((ch, i) => ({
+        value: ch.impressions, color: META_COLORS[i % META_COLORS.length],
+      }));
+
+      const safeImpr   = (series.impressions || []).length >= 2 ? series.impressions : [0, 0];
+      const safeClicks = (series.clicks || []).length >= 2 ? series.clicks : [0, 0];
+      const imprScale  = safeImpr.map(v => Math.round(v / Math.max(...safeImpr) * Math.max(...safeClicks)));
+      const cpm = ads.impressions > 0 ? (ads.spend / ads.impressions) * 1000 : 0;
+
+      map['meta-kpi'] = (
+        <SelectableWidget id="meta-kpi" cardId="kpi-strip" editState={editState}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+            <Kpi label="Total Spend"   value={fmt.rupiahShort(ads.spend)}       delta={d(ads.spend, adsPrev.spend)}             accent={gold} spark={safeClicks.slice(-7)} scale={kpiScale}/>
+            <Kpi label="Reach (Impr.)" value={fmt.num(ads.impressions)}         delta={d(ads.impressions, adsPrev.impressions)} accent={'#0EA5E9'} scale={kpiScale}/>
+            <Kpi label="Link Clicks"   value={fmt.num(ads.clicks)}              delta={d(ads.clicks, adsPrev.clicks)}           accent={'#0EA5E9'} scale={kpiScale}/>
+            <Kpi label="Conversions"   value={fmt.num(ads.conversions)}         delta={d(ads.conversions, adsPrev.conversions)} accent={teal} scale={kpiScale}/>
+            <Kpi label="CPM"           value={fmt.rupiahShort(cpm)}             sub="per 1k impresi" scale={kpiScale}/>
+            <Kpi label="CTR"           value={fmt.pct(ads.ctr)}                 delta={d(ads.ctr, adsPrev.ctr)}                 accent={teal} scale={kpiScale}/>
+            <Kpi label="CPA"           value={fmt.rupiahShort(ads.cpa)}         sub="per konversi" scale={kpiScale}/>
+          </div>
+        </SelectableWidget>
+      );
+
+      map['meta-trend'] = (
+        <SelectableWidget id="meta-trend" cardId="chart-area" editState={editState}>
+          <ChartCard title={wn('meta-trend') || "Reach vs Engagement Trend"}>
+            <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
+              <LegendDot color="#0EA5E9" label="Impressions (scaled)"/>
+              <LegendDot color={violet} label="Clicks"/>
+            </div>
+            <MultiArea
+              seriesA={imprScale.length >= 2 ? imprScale : [10, 20]}
+              seriesB={safeClicks.length >= 2 ? safeClicks : [5, 10]}
+              colorA="#0EA5E9" colorB={violet}
+              labelsX={safeImpr.length >= 4 ? ['W1', 'W2', 'W3', 'W4'] : []}
+              w={480} h={130}
+            />
+          </ChartCard>
+        </SelectableWidget>
+      );
+
+      map['meta-donut'] = (
+        <SelectableWidget id="meta-donut" cardId="chart-donut" editState={editState}>
+          <ChartCard title={wn('meta-donut') || "Impresi per Tipe Iklan"}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <MiniDonut
+                segments={donutSegs.length ? donutSegs : [{ value: 1, color: '#243350' }]}
+                size={88} thickness={9}
+                centerLabel={fmt.num(Math.round(ads.impressions / 1000)) + 'k'}
+                centerSub="reach"
+              />
+              <div style={{ flex: 1 }}>
+                {channels.slice(0, 4).map((ch, i) => (
+                  <div key={ch.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: META_COLORS[i % META_COLORS.length], flexShrink: 0 }}/>
+                      <span style={{ fontFamily: T.mono, fontSize: 9, color: sec }}>{ch.name}</span>
+                    </div>
+                    <span style={{ fontFamily: T.mono, fontSize: 9, color: muted }}>
+                      {((ch.impressions / totalImpr) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ChartCard>
+        </SelectableWidget>
+      );
+    }
+  }
+
+  // ── GA4 widgets ──
+  if (connected?.ga4 && p?.ga4 && p.ga4.sessions > 0) {
+    const { ga4, ga4Prev, series } = p;
+    const kpiScale = FONT_SCALES[wcfg('ga4-kpi').fontSize] || 1;
+
+    const rawHeat = (series.impressions || []).length >= 28
+      ? series.impressions
+      : (series.clicks || []).length >= 7
+        ? series.clicks
+        : Array.from({ length: 28 }, (_, i) => Math.abs(Math.sin(i * 0.7 + 0.3)) * 100 + 30);
+
+    const heatFlat = rawHeat.slice(0, 28);
+    const heatMax  = Math.max(...heatFlat) || 1;
+    const heatValues = Array.from({ length: 4 }, (_, r) =>
+      Array.from({ length: 7 }, (_, c) => (heatFlat[r * 7 + c] || 0) / heatMax)
+    );
+
+    const safeA = (series.impressions || []).length >= 2
+      ? series.impressions.map(v => Math.round(v / 25))
+      : [ga4.sessions];
+    const safeB = (series.clicks || []).length >= 2
+      ? series.clicks.map(v => Math.round(v * 1.3))
+      : [ga4.users];
+    const safeConv = (series.conversions || []).length >= 2 ? series.conversions : [0, 0];
+    const safeA7 = safeA.slice(-7);
+
+    const pagesPerSession = ga4.sessions > 0 ? (ga4.pageviews / ga4.sessions) : 0;
+    const engageRate      = ga4.sessions > 0 ? (ga4.engaged / ga4.sessions) * 100 : 0;
+
+    map['ga4-kpi'] = (
+      <SelectableWidget id="ga4-kpi" cardId="kpi-strip" editState={editState}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+          <Kpi label="Sessions"          value={fmt.num(ga4.sessions)}  delta={d(ga4.sessions, ga4Prev.sessions)}   accent={gold} spark={safeA7} scale={kpiScale}/>
+          <Kpi label="Users"             value={fmt.num(ga4.users)}     delta={d(ga4.users, ga4Prev.users)}         accent={gold} scale={kpiScale}/>
+          <Kpi label="Pageviews"         value={fmt.num(ga4.pageviews)} delta={d(ga4.pageviews, ga4Prev.pageviews)} accent={gold} scale={kpiScale}/>
+          <Kpi label="Engaged Sessions"  value={fmt.num(ga4.engaged)}   delta={d(ga4.engaged, ga4Prev.engaged)}     accent={teal} scale={kpiScale}/>
+          <Kpi label="Bounce Rate"       value={fmt.pct(ga4.bounce_rate)}
+            delta={d(ga4.bounce_rate, ga4Prev.bounce_rate) != null ? -d(ga4.bounce_rate, ga4Prev.bounce_rate) : null}
+            scale={kpiScale}/>
+          <Kpi label="Pages / Session"   value={pagesPerSession.toFixed(1)} sub="rata-rata" scale={kpiScale}/>
+          <Kpi label="Engagement Rate"   value={engageRate.toFixed(1) + '%'} sub="dari total sessions" scale={kpiScale}/>
+        </div>
+      </SelectableWidget>
+    );
+
+    map['ga4-sessions'] = (
+      <SelectableWidget id="ga4-sessions" cardId="chart-area" editState={editState}>
+        <ChartCard title={wn('ga4-sessions') || "Sessions vs Users Trend"}>
+          <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
+            <LegendDot color={gold} label="Sessions"/>
+            <LegendDot color={teal} label="Users"/>
+          </div>
+          <MultiArea
+            seriesA={safeA.length >= 2 ? safeA : [100, 120]}
+            seriesB={safeB.length >= 2 ? safeB : [80, 95]}
+            colorA={gold} colorB={teal}
+            labelsX={safeA.length >= 4 ? ['W1', 'W2', 'W3', 'W4'] : []}
+            w={480} h={130}
+          />
+        </ChartCard>
+      </SelectableWidget>
+    );
+
+    map['ga4-heatmap'] = (
+      <SelectableWidget id="ga4-heatmap" cardId="chart-heatmap" editState={editState}>
+        <ChartCard title={wn('ga4-heatmap') || "Traffic Intensity"} sub="4 Minggu × Hari">
+          <MiniHeatmap
+            rows={4} cols={7}
+            values={heatValues}
+            labelsRow={['W1', 'W2', 'W3', 'W4']}
+            labelsCol={['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']}
+            cell={17} color={teal}
+          />
+        </ChartCard>
+      </SelectableWidget>
+    );
+
+    map['ga4-conversion'] = (
+      <SelectableWidget id="ga4-conversion" cardId="chart-bar" editState={editState}>
+        <ChartCard title={wn('ga4-conversion') || "Volume Konversi Harian"}>
+          <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 700, color: fg, marginBottom: 8 }}>
+            {fmt.num(ga4.engaged)}{' '}
+            <span style={{ fontFamily: T.mono, fontSize: 10, color: muted, fontWeight: 400 }}>engaged sessions</span>
+          </div>
+          <MiniBar data={safeConv.length >= 2 ? safeConv : [1, 2]} w={800} h={56} color={teal} gap={3}/>
+        </ChartCard>
+      </SelectableWidget>
+    );
+  }
+
+  // ── Search Console widgets ──
+  if (connected?.search && p?.gsc) {
+    const { gsc } = p;
+    const { impressions, clicks, ctr, position, queries, series } = gsc;
+    const posColor = position <= 3 ? '#16A34A' : position <= 7 ? gold : '#E3170A';
+    const posLabel = position <= 3 ? 'Excellent · Top 3' : position <= 7 ? 'Good · Page 1' : 'Perlu Optimasi';
+    const gscPrev  = p.gscPrev;
+    const kpiScale = FONT_SCALES[wcfg('search-kpi').fontSize] || 1;
+
+    const safeCtr = (series.clicks || []).length >= 2
+      ? series.clicks.map((v, i) => {
+          const im = (series.impressions || [])[i] || 1;
+          return parseFloat(((v / im) * 100).toFixed(2));
+        })
+      : [ctr];
+    const safeClicks = (series.clicks || []).length >= 2 ? series.clicks : [clicks];
+
+    map['search-kpi'] = (
+      <SelectableWidget id="search-kpi" cardId="kpi-strip" editState={editState}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+          <Kpi label="Total Impressions" value={fmt.num(impressions)}
+            delta={gscPrev ? d(impressions, gscPrev.impressions) : null} accent={blue} scale={kpiScale}/>
+          <Kpi label="Organic Clicks"    value={fmt.num(clicks)}
+            delta={gscPrev ? d(clicks, gscPrev.clicks) : null} accent={teal} scale={kpiScale}/>
+          <Kpi label="Avg CTR"           value={ctr.toFixed(2) + '%'}
+            delta={gscPrev ? d(ctr, gscPrev.ctr) : null} accent={teal} scale={kpiScale}/>
+          <Kpi label="Avg Position"      value={'#' + position.toFixed(1)} sub={posLabel} accent={posColor} scale={kpiScale}/>
+        </div>
+      </SelectableWidget>
+    );
+
+    map['search-ctr'] = (
+      <SelectableWidget id="search-ctr" cardId="chart-area" editState={editState}>
+        <ChartCard title={wn('search-ctr') || "CTR Organik Harian"}>
+          <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 700, color: fg, marginBottom: 8 }}>
+            {ctr.toFixed(2)}%
+            <span style={{ fontFamily: T.mono, fontSize: 10, color: muted, fontWeight: 400, marginLeft: 6 }}>avg CTR</span>
+          </div>
+          <MiniLine data={safeCtr.length >= 2 ? safeCtr : [ctr, ctr]} w={260} h={66} color={blue} fill id="sc-ctr"/>
+        </ChartCard>
+      </SelectableWidget>
+    );
+
+    map['search-clicks'] = (
+      <SelectableWidget id="search-clicks" cardId="chart-bar" editState={editState}>
+        <ChartCard title={wn('search-clicks') || "Organic Clicks Harian"}>
+          <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 700, color: fg, marginBottom: 8 }}>
+            {fmt.num(clicks)}
+          </div>
+          <MiniBar data={safeClicks.length >= 2 ? safeClicks : [clicks, clicks]} w={260} h={66} color={blue}/>
+        </ChartCard>
+      </SelectableWidget>
+    );
+
+    if (queries && queries.length > 0) {
+      map['search-queries'] = (
+        <SelectableWidget id="search-queries" cardId="table-rankings" editState={editState}>
+          <DataTable widgetId="search-queries" widgetConfig={wcfg('search-queries')}
+            rows={queries} availDims={SEARCH_TABLE_DIMS} availMetrics={SEARCH_TABLE_METRICS}
+            defaultDims={['query']} defaultMetrics={['impressions','clicks','ctr','position']}
+            defaultName="Top Queries · Search Console"/>
+        </SelectableWidget>
+      );
+    }
+
+    if (gsc.pages && gsc.pages.length > 0) {
+      map['search-pages'] = (
+        <SelectableWidget id="search-pages" cardId="table-rankings" editState={editState}>
+          <DataTable widgetId="search-pages" widgetConfig={wcfg('search-pages')}
+            rows={gsc.pages} availDims={SEARCH_TABLE_DIMS} availMetrics={SEARCH_TABLE_METRICS}
+            defaultDims={['page']} defaultMetrics={['impressions','clicks','ctr','position']}
+            defaultName="Top Pages · Search Console"/>
+        </SelectableWidget>
+      );
+    }
+  }
+
+  return map;
+}
+
+// ─── Between-row Browse drop zone ─────────────────────────────────
+// Defined at module level (NOT inside DragCanvas) so React sees the same component
+// type across re-renders — prevents unmount/remount that would generate spurious
+// dragenter/dragleave events and cause flicker.
+function RowDropZone({ insertAt, active, onDragOver, onDragEnter, onDrop }) {
+  return (
+    <div
+      style={{
+        height: active ? 56 : 20, borderRadius: 6, marginBottom: 4,
+        transition: 'height .15s ease, background .15s, border-color .15s',
+        border: `1.5px dashed ${active ? teal : 'rgba(0,194,184,.25)'}`,
+        background: active ? 'rgba(0,194,184,.08)' : 'rgba(0,194,184,.02)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'copy',
+      }}
+      onDragOver={onDragOver}
+      onDragEnter={() => onDragEnter(insertAt)}
+      onDrop={e => onDrop(insertAt, e)}
+    >
+      {active
+        ? <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: teal }}>+ new row</span>
+        : <div style={{ width: 40, height: 2, borderRadius: 1, background: 'rgba(0,194,184,.25)' }}/>
+      }
+    </div>
+  );
+}
+
+// ─── Drag canvas ───────────────────────────────────────────────────
+function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutChange }) {
+  const [dragId,           setDragId]           = React.useState(null);
+  const [dropTarget,       setDropTarget]        = React.useState(null);
+  const [ghostPos,         setGhostPos]          = React.useState({ x: 0, y: 0 });
+  const [browseDragActive, setBrowseDragActive]  = React.useState(false);
+  const [browseDropTarget, setBrowseDropTarget]  = React.useState(null);
+  const pendingDrag  = React.useRef(null);
+  const dragIdRef    = React.useRef(null);   // mirrors dragId for doc-level handlers
+  const containerRef = React.useRef(null);   // ref to the outer canvas div
+  dragIdRef.current  = dragId;               // keep in sync every render
+
+  // ── Document-level Browse drag detection ─────────────────────────
+  // Uses dragstart/dragend (fire once per drag) instead of dragenter/dragleave
+  // counting (which fires on every child element and causes flicker).
+  React.useEffect(() => {
+    const onDocDragStart = e => {
+      if (Array.from(e.dataTransfer?.types || []).includes('browsecardid')) {
+        setBrowseDragActive(true);
+        setBrowseDropTarget(null);
+      }
+    };
+    const onDocDragEnd = () => { setBrowseDragActive(false); setBrowseDropTarget(null); };
+    document.addEventListener('dragstart', onDocDragStart);
+    document.addEventListener('dragend',   onDocDragEnd);
+    return () => {
+      document.removeEventListener('dragstart', onDocDragStart);
+      document.removeEventListener('dragend',   onDocDragEnd);
+    };
+  }, []);
+
+  // ── Document-level pointer cleanup ───────────────────────────────
+  // Cancels a stuck pointer drag if the user releases the pointer outside
+  // the canvas boundary (where the container's onPointerUp won't fire).
+  React.useEffect(() => {
+    const cancelIfOutside = e => {
+      pendingDrag.current = null;          // always clear on any pointer release
+      if (!dragIdRef.current) return;
+      if (containerRef.current && containerRef.current.contains(e.target)) return;
+      setDragId(null);
+      setDropTarget(null);
+    };
+    document.addEventListener('pointerup',     cancelIfOutside);
+    document.addEventListener('pointercancel', cancelIfOutside);
+    return () => {
+      document.removeEventListener('pointerup',     cancelIfOutside);
+      document.removeEventListener('pointercancel', cancelIfOutside);
+    };
+  }, []);
+
+  // Build widget map from live data, then augment with Browse overrides / browse-* IDs
+  const widgetMap = buildWidgetMap(p, connected, widgetConfigs, editState);
+  const _cards = window.CARDS || [];
+  layouts.rows.forEach(row => row.forEach(entry => {
+    if (entry.cardTypeOverride) {
+      const c = _cards.find(c => c.id === entry.cardTypeOverride);
+      if (c) {
+        const content = React.createElement(c.render);
+        widgetMap[entry.id] = editState
+          ? React.createElement(SelectableWidget, { id: entry.id, cardId: entry.cardTypeOverride, editState }, content)
+          : content;
+      }
+    }
+    if (entry.id && entry.id.startsWith('browse-')) {
+      const wop   = entry.id.slice('browse-'.length);
+      const tsIdx = wop.lastIndexOf('-');
+      const cid   = wop.slice(0, tsIdx);
+      const c     = _cards.find(c => c.id === cid);
+      if (c && !widgetMap[entry.id]) {
+        const content = React.createElement(c.render);
+        widgetMap[entry.id] = editState
+          ? React.createElement(SelectableWidget, { id: entry.id, cardId: cid, editState }, content)
+          : content;
+      }
+    }
+  }));
+
+  // ── Pointer drag (reorder existing widgets) ──────────────────────
+  const handlePointerDown = (id, e) => {
+    if (!editState || browseDragActive) return;
+    e.stopPropagation();
+    // Release implicit pointer capture so pointerenter fires on other widgets (enables cross-row drag)
+    if (e.target.releasePointerCapture) e.target.releasePointerCapture(e.pointerId);
+    pendingDrag.current = { id, startX: e.clientX, startY: e.clientY };
+  };
+
+  const handlePointerMove = (e) => {
+    if (pendingDrag.current && !dragId) {
+      const dx = e.clientX - pendingDrag.current.startX;
+      const dy = e.clientY - pendingDrag.current.startY;
+      if (Math.sqrt(dx * dx + dy * dy) > 6) {
+        setDragId(pendingDrag.current.id);
+        setGhostPos({ x: e.clientX, y: e.clientY });
+        pendingDrag.current = null;
+      }
+    }
+    if (dragId) setGhostPos({ x: e.clientX, y: e.clientY });
+  };
+
+  // Shared drop application — used by both onPointerUp (inside canvas) and
+  // document-level cleanup (outside canvas, cancel only).
+  const applyDrop = (id, target) => {
+    if (!target) return;
+    onLayoutChange(prev => {
+      let rows = prev.rows.map(r => [...r]);
+
+      if (target.type === 'swap') {
+        // Move-before-target: remove drag entry, insert at target position.
+        // Works same-row (horizontal) and cross-row (vertical).
+        let dragEntry = null;
+        rows = rows.map(row => {
+          const idx = row.findIndex(w => w.id === id);
+          if (idx !== -1) { dragEntry = row[idx]; return row.filter((_, i) => i !== idx); }
+          return row;
+        }).filter(row => row.length > 0);
+        if (dragEntry) {
+          let targetRowIdx = -1, targetPosIdx = -1;
+          rows.forEach((row, ri) => row.forEach((w, pi) => {
+            if (w.id === target.targetId) { targetRowIdx = ri; targetPosIdx = pi; }
+          }));
+          if (targetRowIdx >= 0) rows[targetRowIdx].splice(targetPosIdx, 0, dragEntry);
+        }
+
+      } else if (target.type === 'new-row') {
+        let dragEntry = null;
+        // Track source row index BEFORE removal to correct insertAt if that row is deleted
+        const srcRowIdx = rows.findIndex(row => row.some(w => w.id === id));
+        const srcWillBeEmpty = srcRowIdx >= 0 && rows[srcRowIdx].length === 1;
+        rows = rows.map(row => {
+          const idx = row.findIndex(w => w.id === id);
+          if (idx !== -1) { dragEntry = row[idx]; return row.filter((_, i) => i !== idx); }
+          return row;
+        }).filter(row => row.length > 0);
+        // If the source row was removed and was before the target, indices shifted by -1
+        let insertAt = target.insertAt;
+        if (srcWillBeEmpty && srcRowIdx < insertAt) insertAt = Math.max(0, insertAt - 1);
+        if (dragEntry) rows.splice(insertAt, 0, [dragEntry]);
+      }
+
+      return { ...prev, rows };
+    });
+  };
+
+  const handlePointerUp = () => {
+    pendingDrag.current = null;
+    if (!dragId) return;
+    applyDrop(dragId, dropTarget);
+    setDragId(null);
+    setDropTarget(null);
+  };
+
+  // ── Browse → Canvas drag helpers ─────────────────────────────────
+  const isBrowseDrag = e => e.dataTransfer?.types && Array.from(e.dataTransfer.types).includes('browsecardid');
+
+  // Drop ON center of widget → replace it
+  const handleWidgetBrowseDrop = (widgetId, e) => {
+    const cardId = e.dataTransfer?.getData('browseCardId');
+    if (!cardId) return;
+    e.preventDefault(); e.stopPropagation();
+    onLayoutChange(prev => ({
+      ...prev,
+      rows: prev.rows.map(r => r.map(w => w.id === widgetId ? { ...w, cardTypeOverride: cardId } : w)),
+    }));
+  };
+
+  // Drop on left/right edge of widget → insert before/after in the row
+  const handleBetweenDrop = (rowIdx, insertPos, e) => {
+    const cardId = e.dataTransfer?.getData('browseCardId');
+    if (!cardId) return;
+    e.preventDefault(); e.stopPropagation();
+    const newId = `browse-${cardId}-${Date.now()}`;
+    onLayoutChange(prev => {
+      const rows = prev.rows.map(r => [...r]);
+      rows[rowIdx].splice(insertPos, 0, { id: newId, span: 4 });
+      return { ...prev, rows };
+    });
+  };
+
+  // Drop on between-row zone → insert new row
+  const handleNewRowDrop = (insertAt, e) => {
+    const cardId = e.dataTransfer?.getData('browseCardId');
+    if (!cardId) return;
+    e.preventDefault(); e.stopPropagation();
+    const newId = `browse-${cardId}-${Date.now()}`;
+    onLayoutChange(prev => {
+      const rows = [...prev.rows];
+      rows.splice(insertAt, 0, [{ id: newId, span: 12 }]);
+      return { ...prev, rows };
+    });
+  };
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative' }}
+      onPointerMove={editState ? handlePointerMove : undefined}
+      onPointerUp={editState ? handlePointerUp : undefined}
+      onDragOver={e => { if (isBrowseDrag(e)) e.preventDefault(); }}
+    >
+      {/* 12-column grid overlay during pointer drag */}
+      {dragId && (
+        <div style={{
+          position: 'absolute', inset: -4, zIndex: 1, pointerEvents: 'none', borderRadius: 6,
+          background: 'repeating-linear-gradient(to right, rgba(0,194,184,.06) 0, rgba(0,194,184,.06) calc(100%/12 - 14px * 11/12), transparent calc(100%/12 - 14px * 11/12), transparent calc(100%/12))',
+          border: '1px solid rgba(0,194,184,.1)',
+        }}/>
+      )}
+
+      {/* Browse drag canvas hint border */}
+      {browseDragActive && (
+        <div style={{
+          position: 'absolute', inset: -2, zIndex: 0, borderRadius: 10, pointerEvents: 'none',
+          border: '2px dashed rgba(0,194,184,.3)',
+        }}/>
+      )}
+
+      {/* Rows — always grid (no layout switch prevents flickering) */}
+      {layouts.rows.map((row, rowIdx) => {
+        const visible = row.filter(({ id }) => widgetMap[id]);
+        if (!visible.length) return null;
+        const autoSpan = Math.max(1, Math.floor(12 / visible.length));
+
+        return (
+          <React.Fragment key={rowIdx}>
+            {/* Between-row zone: only during Browse drag */}
+            {browseDragActive && <RowDropZone
+              insertAt={rowIdx}
+              active={browseDropTarget?.type === 'row' && browseDropTarget.insertAt === rowIdx}
+              onDragOver={e => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'copy'; }}
+              onDragEnter={i => setBrowseDropTarget({ type: 'row', insertAt: i })}
+              onDrop={(i, e) => handleNewRowDrop(i, e)}
+            />}
+
+            {/* Pointer-drag new-row zone */}
+            {dragId && !browseDragActive && (
+              <div
+                onPointerEnter={() => setDropTarget({ type: 'new-row', insertAt: rowIdx })}
+                style={{
+                  height: dropTarget?.type === 'new-row' && dropTarget.insertAt === rowIdx ? 40 : 20,
+                  borderRadius: 6, transition: 'height .12s, background .12s',
+                  border: `1px dashed ${dropTarget?.type === 'new-row' && dropTarget.insertAt === rowIdx ? teal : 'transparent'}`,
+                  background: dropTarget?.type === 'new-row' && dropTarget.insertAt === rowIdx ? 'rgba(0,194,184,.1)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                {dropTarget?.type === 'new-row' && dropTarget.insertAt === rowIdx && (
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: teal }}>Drop here → new row</span>
+                )}
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 20, marginBottom: 20, position: 'relative' }}>
+              {visible.map((entry, colIdx) => {
+                const { id } = entry;
+                const actualIdx  = row.indexOf(entry);
+                const isDragging = dragId === id;
+                const isSwap     = !browseDragActive && dropTarget?.type === 'swap' && dropTarget.targetId === id;
+                const isBefore   = browseDragActive && browseDropTarget?.type === 'before' && browseDropTarget.id === id;
+                const isAfter    = browseDragActive && browseDropTarget?.type === 'after'  && browseDropTarget.id === id;
+                const isReplace  = browseDragActive && browseDropTarget?.type === 'replace' && browseDropTarget.id === id;
+
+                return (
+                  <div key={id}
+                    style={{
+                      gridColumn: `span ${autoSpan}`, position: 'relative',
+                      opacity: isDragging ? 0.3 : 1,
+                      cursor: editState && !browseDragActive ? (isDragging ? 'grabbing' : 'grab') : 'default',
+                      userSelect: 'none',
+                    }}
+                    onPointerDown={editState && !browseDragActive ? e => handlePointerDown(id, e) : undefined}
+                    onPointerEnter={() => { if (dragId && dragId !== id) setDropTarget({ type: 'swap', targetId: id }); }}
+                    onDragOver={e => {
+                      if (!isBrowseDrag(e)) return;
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'copy';
+                      setBrowseDropTarget({ type: 'replace', id });
+                    }}
+                    onDrop={e => isBrowseDrag(e) && handleWidgetBrowseDrop(id, e)}
+                  >
+                    {/* Drag indicator pill */}
+                    {editState && !browseDragActive && (
+                      <div style={{
+                        position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
+                        width: 36, height: 4, borderRadius: 2, zIndex: 20, pointerEvents: 'none',
+                        background: isDragging ? teal : 'rgba(0,194,184,.3)', transition: 'background .15s',
+                      }}/>
+                    )}
+
+                    {/* Delete button — visible when this widget is selected */}
+                    {editState && editState.selected === id && !dragId && !browseDragActive && (
+                      <button
+                        onPointerDown={e => e.stopPropagation()}
+                        onClick={e => { e.stopPropagation(); editState.onDelete(id); }}
+                        style={{
+                          position: 'absolute', top: -10, right: -10, zIndex: 30,
+                          width: 24, height: 24, borderRadius: '50%', padding: 0,
+                          background: '#E3170A', border: '2px solid #0C182C',
+                          color: '#fff', fontSize: 14, lineHeight: '20px', textAlign: 'center',
+                          cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,.45)',
+                        }}
+                      >×</button>
+                    )}
+
+                    {/* Pointer swap highlight */}
+                    {isSwap && (
+                      <div style={{ position: 'absolute', inset: 0, borderRadius: 12, border: '2px dashed #00C2B8', background: 'rgba(0,194,184,.08)', zIndex: 5, pointerEvents: 'none' }}/>
+                    )}
+
+                    {/* Browse mode: left-edge zone (insert before), right-edge zone (insert after), center replace */}
+                    {browseDragActive && (
+                      <>
+                        {/* Insert-before: left 30% */}
+                        <div style={{
+                          position: 'absolute', top: 0, left: 0, bottom: 0, width: '30%',
+                          zIndex: 15, cursor: 'copy', borderRadius: '10px 0 0 10px',
+                          background: isBefore ? 'rgba(0,194,184,.14)' : 'transparent',
+                          borderLeft: `3px solid ${isBefore ? teal : 'rgba(0,194,184,.22)'}`,
+                          transition: 'background .1s, border-color .1s',
+                        }}
+                          onDragOver={e => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'copy'; setBrowseDropTarget({ type: 'before', id }); }}
+                          onDrop={e => { e.stopPropagation(); handleBetweenDrop(rowIdx, actualIdx, e); }}
+                        >
+                          {isBefore && <div style={{ position: 'absolute', left: -4, top: '50%', transform: 'translateY(-50%)', width: 8, height: 8, borderRadius: '50%', background: teal }}/>}
+                        </div>
+
+                        {/* Insert-after: right 30% */}
+                        <div style={{
+                          position: 'absolute', top: 0, right: 0, bottom: 0, width: '30%',
+                          zIndex: 15, cursor: 'copy', borderRadius: '0 10px 10px 0',
+                          background: isAfter ? 'rgba(0,194,184,.14)' : 'transparent',
+                          borderRight: `3px solid ${isAfter ? teal : 'rgba(0,194,184,.22)'}`,
+                          transition: 'background .1s, border-color .1s',
+                        }}
+                          onDragOver={e => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'copy'; setBrowseDropTarget({ type: 'after', id }); }}
+                          onDrop={e => { e.stopPropagation(); handleBetweenDrop(rowIdx, actualIdx + 1, e); }}
+                        >
+                          {isAfter && <div style={{ position: 'absolute', right: -4, top: '50%', transform: 'translateY(-50%)', width: 8, height: 8, borderRadius: '50%', background: teal }}/>}
+                        </div>
+
+                        {/* Replace overlay (center) */}
+                        {isReplace && (
+                          <div style={{ position: 'absolute', inset: 0, borderRadius: 12, zIndex: 5, pointerEvents: 'none', border: '2px dashed #00C2B8', background: 'rgba(0,194,184,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: teal, background: 'rgba(10,18,34,.7)', padding: '2px 8px', borderRadius: 4 }}>Replace</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {widgetMap[id]}
+                  </div>
+                );
+              })}
+            </div>
+          </React.Fragment>
+        );
+      })}
+
+      {/* Bottom zone */}
+      {browseDragActive
+        ? <RowDropZone
+            insertAt={layouts.rows.length}
+            active={browseDropTarget?.type === 'row' && browseDropTarget.insertAt === layouts.rows.length}
+            onDragOver={e => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'copy'; }}
+            onDragEnter={i => setBrowseDropTarget({ type: 'row', insertAt: i })}
+            onDrop={(i, e) => handleNewRowDrop(i, e)}
+          />
+        : dragId && (
+          <div
+            onPointerEnter={() => setDropTarget({ type: 'new-row', insertAt: layouts.rows.length })}
+            style={{
+              height: 40, borderRadius: 6,
+              border: `1px dashed ${dropTarget?.type === 'new-row' && dropTarget.insertAt === layouts.rows.length ? teal : 'rgba(255,255,255,.1)'}`,
+              background: dropTarget?.type === 'new-row' && dropTarget.insertAt === layouts.rows.length ? 'rgba(0,194,184,.1)' : 'transparent',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: dropTarget?.type === 'new-row' && dropTarget.insertAt === layouts.rows.length ? teal : 'rgba(255,255,255,.2)' }}>
+              + Drop here → new row at bottom
+            </span>
+          </div>
+        )
+      }
+
+      {/* Ghost label follows pointer during canvas reorder drag */}
+      {dragId && (
+        <div style={{
+          position: 'fixed', top: ghostPos.y - 16, left: ghostPos.x - 80, pointerEvents: 'none', zIndex: 999,
+          width: 160, height: 32, background: 'rgba(10,18,34,.92)', border: '1px solid rgba(0,194,184,.5)',
+          borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          boxShadow: '0 8px 32px rgba(0,0,0,.4)',
+        }}>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="#00C2B8">
+            <rect y="0" width="12" height="2" rx="1"/><rect y="3" width="12" height="2" rx="1"/><rect y="6" width="12" height="2" rx="1"/>
+          </svg>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: teal, letterSpacing: '0.06em' }}>
+            {WIDGET_CARD_TYPES[dragId] || dragId}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Google Ads Section ────────────────────────────────────────────
-function GoogleAdsSection({ p }) {
+function GoogleAdsSection({ p, editState, widgetConfigs }) {
   const { ads, adsPrev, series, channels, campaigns } = p;
-  const d = fmt.pctChange;
+  const d    = fmt.pctChange;
+  const wcfg = id => widgetConfigs?.[WIDGET_CARD_TYPES[id] || id] || {};
+  const kpiScale = FONT_SCALES[wcfg('google-kpi').fontSize] || 1;
+  const wn = id => wcfg(id).name || null;
 
   const TYPE_COLORS = [blue, gold, '#16A34A', '#E3170A', violet];
   const totalSpend = channels.reduce((s, c) => s + c.spend, 0) || 1;
@@ -647,93 +1817,236 @@ function GoogleAdsSection({ p }) {
     <Section>
       <SectionHead channel="google" title="Google Ads" subtitle={`${campaigns.length} kampanye · Search, Display, Performance Max`}/>
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
-        <Kpi label="Total Spend"   value={fmt.rupiahShort(ads.spend)}       delta={d(ads.spend, adsPrev.spend)}             accent={gold} spark={safeSpend.slice(-7)}/>
-        <Kpi label="Clicks"        value={fmt.num(ads.clicks)}              delta={d(ads.clicks, adsPrev.clicks)}           accent={blue}/>
-        <Kpi label="Impressions"   value={fmt.num(ads.impressions)}         delta={d(ads.impressions, adsPrev.impressions)} accent={blue}/>
-        <Kpi label="Conversions"   value={fmt.num(ads.conversions)}         delta={d(ads.conversions, adsPrev.conversions)} accent={teal}/>
-        <Kpi label="CTR"           value={fmt.pct(ads.ctr)}                 delta={d(ads.ctr, adsPrev.ctr)}                 accent={teal}/>
-        <Kpi label="Avg CPC"       value={fmt.rupiahShort(ads.cpc)}         sub="per klik"/>
-        <Kpi label="CPA"           value={fmt.rupiahShort(ads.cpa)}         sub="per konversi"/>
-        <Kpi label="ROAS"          value={fmt.roas(ads.roas)}               delta={d(ads.roas, adsPrev.roas)}               accent={gold}/>
-      </div>
+      <SelectableWidget id="google-kpi" cardId="kpi-strip" editState={editState}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+          <Kpi label="Total Spend"   value={fmt.rupiahShort(ads.spend)}       delta={d(ads.spend, adsPrev.spend)}             accent={gold} spark={safeSpend.slice(-7)} scale={kpiScale}/>
+          <Kpi label="Clicks"        value={fmt.num(ads.clicks)}              delta={d(ads.clicks, adsPrev.clicks)}           accent={blue} scale={kpiScale}/>
+          <Kpi label="Impressions"   value={fmt.num(ads.impressions)}         delta={d(ads.impressions, adsPrev.impressions)} accent={blue} scale={kpiScale}/>
+          <Kpi label="Conversions"   value={fmt.num(ads.conversions)}         delta={d(ads.conversions, adsPrev.conversions)} accent={teal} scale={kpiScale}/>
+          <Kpi label="CTR"           value={fmt.pct(ads.ctr)}                 delta={d(ads.ctr, adsPrev.ctr)}                 accent={teal} scale={kpiScale}/>
+          <Kpi label="Avg CPC"       value={fmt.rupiahShort(ads.cpc)}         sub="per klik" scale={kpiScale}/>
+          <Kpi label="CPA"           value={fmt.rupiahShort(ads.cpa)}         sub="per konversi" scale={kpiScale}/>
+          <Kpi label="ROAS"          value={fmt.roas(ads.roas)}               delta={d(ads.roas, adsPrev.roas)}               accent={gold} scale={kpiScale}/>
+        </div>
+      </SelectableWidget>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
-        <ChartCard title="Spend Harian" sub={`Total: ${fmt.rupiahShort(ads.spend)}`}>
-          <MiniLine data={safeSpend} w={300} h={72} color={blue} fill id="gads-spend"/>
-        </ChartCard>
+      <div style={{ display: 'grid', gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14, marginBottom: 14 }}>
+        <SelectableWidget id="google-spend" cardId="chart-area" editState={editState}>
+          <ChartCard title={wn('google-spend') || "Spend Harian"} sub={`Total: ${fmt.rupiahShort(ads.spend)}`}>
+            <MiniLine data={safeSpend} w={300} h={72} color={blue} fill id="gads-spend"/>
+          </ChartCard>
+        </SelectableWidget>
 
-        <ChartCard title="Click Volume · Pacing" sub="Bulan ini vs target">
-          <MiniBar data={safeClicks} w={300} h={72} color={blue} activeUntil={paceIdx}/>
-        </ChartCard>
+        <SelectableWidget id="google-clicks" cardId="chart-bar" editState={editState}>
+          <ChartCard title={wn('google-clicks') || "Click Volume · Pacing"} sub="Bulan ini vs target">
+            <MiniBar data={safeClicks} w={300} h={72} color={blue} activeUntil={paceIdx}/>
+          </ChartCard>
+        </SelectableWidget>
 
-        <ChartCard title="Budget per Tipe Kampanye">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <MiniDonut
-              segments={donutSegs.length ? donutSegs : [{ value: 1, color: '#243350' }]}
-              size={88} thickness={9}
-              centerLabel={String(channels.length)}
-              centerSub="types"
-            />
-            <div style={{ flex: 1 }}>
-              {channels.slice(0, 5).map((ch, i) => (
-                <div key={ch.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: TYPE_COLORS[i % TYPE_COLORS.length], flexShrink: 0 }}/>
-                    <span style={{ fontFamily: T.mono, fontSize: 9, color: sec }}>{ch.name}</span>
+        <SelectableWidget id="google-budget" cardId="chart-donut" editState={editState}>
+          <ChartCard title={wn('google-budget') || "Budget per Tipe Kampanye"}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <MiniDonut
+                segments={donutSegs.length ? donutSegs : [{ value: 1, color: '#243350' }]}
+                size={88} thickness={9}
+                centerLabel={String(channels.length)}
+                centerSub="types"
+              />
+              <div style={{ flex: 1 }}>
+                {channels.slice(0, 5).map((ch, i) => (
+                  <div key={ch.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: TYPE_COLORS[i % TYPE_COLORS.length], flexShrink: 0 }}/>
+                      <span style={{ fontFamily: T.mono, fontSize: 9, color: sec }}>{ch.name}</span>
+                    </div>
+                    <span style={{ fontFamily: T.mono, fontSize: 9, color: muted }}>
+                      {((ch.spend / totalSpend) * 100).toFixed(1)}%
+                    </span>
                   </div>
-                  <span style={{ fontFamily: T.mono, fontSize: 9, color: muted }}>
-                    {((ch.spend / totalSpend) * 100).toFixed(1)}%
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        </ChartCard>
+          </ChartCard>
+        </SelectableWidget>
       </div>
 
       {campaigns.length > 0 && (
-        <RCard padding={0} style={{ overflow: 'hidden' }}>
-          <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg }}>Top Campaigns</div>
-              <div style={{ fontFamily: T.body, fontSize: 11, color: muted, marginTop: 2 }}>Semua kampanye aktif · periode ini</div>
-            </div>
-          </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.body, fontSize: 12 }}>
-            <thead>
-              <tr style={{ background: 'var(--navy-deep)' }}>
-                {['Kampanye', 'Tipe', 'Spend', 'Clicks', 'CTR', 'CPA'].map(h => (
-                  <th key={h} style={{ padding: '8px 14px', textAlign: h === 'Kampanye' ? 'left' : 'right', fontFamily: T.mono, fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: muted }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {campaigns.map((c, i) => (
-                <tr key={i} style={{ borderTop: '1px solid rgba(51,71,102,.5)' }}>
-                  <td style={{ padding: '10px 14px', fontFamily: T.display, fontWeight: 600, color: fg, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</td>
-                  <td style={{ padding: '10px 14px', textAlign: 'right' }}><RChip color={c.type === 'Search' ? blue : c.type === 'Display' ? gold : teal}>{c.type || '—'}</RChip></td>
-                  <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, color: fg }}>{fmt.rupiahShort(c.spend)}</td>
-                  <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, color: sec }}>{fmt.num(c.clicks)}</td>
-                  <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, color: c.ctr > 3 ? '#16A34A' : sec }}>{fmt.pct(c.ctr)}</td>
-                  <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, color: sec }}>{fmt.rupiahShort(c.cpa)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </RCard>
+        <SelectableWidget id="google-campaigns" cardId="table-campaigns" editState={editState}>
+          <DataTable widgetId="google-campaigns" widgetConfig={wcfg('google-campaigns')}
+            rows={campaigns} availDims={GOOGLE_TABLE_DIMS} availMetrics={GOOGLE_TABLE_METRICS}
+            defaultDims={['name']} defaultMetrics={['spend','clicks','impressions','ctr','cpa']}
+            defaultName="Campaigns · Google Ads"/>
+        </SelectableWidget>
+      )}
+
+      {p.adGroups && p.adGroups.length > 0 && (
+        <SelectableWidget id="google-adgroups" cardId="table-campaigns" editState={editState}>
+          <DataTable widgetId="google-adgroups" widgetConfig={wcfg('google-adgroups')}
+            rows={p.adGroups} availDims={GOOGLE_TABLE_DIMS} availMetrics={GOOGLE_TABLE_METRICS}
+            defaultDims={['ad_group','name']} defaultMetrics={['spend','clicks','ctr','cpa']}
+            defaultName="Ad Groups · Google Ads"/>
+        </SelectableWidget>
+      )}
+
+      {p.keywords && p.keywords.length > 0 && (
+        <SelectableWidget id="google-keywords" cardId="table-campaigns" editState={editState}>
+          <DataTable widgetId="google-keywords" widgetConfig={wcfg('google-keywords')}
+            rows={p.keywords} availDims={GOOGLE_TABLE_DIMS} availMetrics={GOOGLE_TABLE_METRICS}
+            defaultDims={['keyword']} defaultMetrics={['spend','clicks','ctr','cpa']}
+            defaultName="Keywords · Google Ads"/>
+        </SelectableWidget>
       )}
     </Section>
   );
 }
 
+// ─── Ad Groups table ──────────────────────────────────────────────
+function AdGroupsTable({ adGroups }) {
+  const [search,  setSearch]  = useState('');
+  const [sortKey, setSortKey] = useState('spend');
+  const [sortDir, setSortDir] = useState('desc');
+  const [show,    setShow]    = useState(false);
+
+  const toggleSort = key => {
+    if (sortKey === key) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+    else { setSortKey(key); setSortDir('desc'); }
+  };
+
+  const rows = adGroups
+    .filter(r => !search || (r.ad_group || '').toLowerCase().includes(search.toLowerCase()) || (r.campaign || '').toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => sortDir === 'desc' ? (b[sortKey] || 0) - (a[sortKey] || 0) : (a[sortKey] || 0) - (b[sortKey] || 0))
+    .slice(0, 50);
+
+  return (
+    <RCard padding={0} style={{ overflow: 'hidden', marginTop: 14 }}>
+      <div
+        onClick={() => setShow(v => !v)}
+        style={{ padding: '12px 18px', borderBottom: show ? '1px solid var(--navy-edge)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+      >
+        <div>
+          <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg }}>Ad Groups</div>
+          <div style={{ fontFamily: T.body, fontSize: 11, color: muted, marginTop: 2 }}>{adGroups.length} ad groups · klik untuk {show ? 'sembunyikan' : 'tampilkan'}</div>
+        </div>
+        <svg width="14" height="14" fill="none" stroke={muted} strokeWidth="2" viewBox="0 0 24 24" style={{ transform: show ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      {show && (
+        <>
+          <div style={{ padding: '8px 18px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', gap: 7, alignItems: 'center', background: 'var(--navy-deep)' }}>
+            <svg width="11" height="11" fill="none" stroke={muted} strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari ad group / kampanye…"
+              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: fg, fontFamily: T.body, fontSize: 11.5 }}/>
+            {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', padding: 0, fontSize: 14, lineHeight: 1 }}>×</button>}
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.body, fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: 'var(--navy-deep)' }}>
+                <th style={{ padding: '8px 14px', textAlign: 'left', fontFamily: T.mono, fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: muted }}>Ad Group</th>
+                <th style={{ padding: '8px 14px', textAlign: 'left', fontFamily: T.mono, fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: muted }}>Kampanye</th>
+                <SortTh label="Spend"  sortKey="spend"       active={sortKey==='spend'}       dir={sortDir} onSort={toggleSort}/>
+                <SortTh label="Clicks" sortKey="clicks"      active={sortKey==='clicks'}      dir={sortDir} onSort={toggleSort}/>
+                <SortTh label="CTR"    sortKey="ctr"         active={sortKey==='ctr'}         dir={sortDir} onSort={toggleSort}/>
+                <SortTh label="CVR"    sortKey="cvr"         active={sortKey==='cvr'}         dir={sortDir} onSort={toggleSort}/>
+                <SortTh label="CPA"    sortKey="cpa"         active={sortKey==='cpa'}         dir={sortDir} onSort={toggleSort}/>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={i} style={{ borderTop: '1px solid rgba(51,71,102,.5)' }}>
+                  <td style={{ padding: '9px 14px', fontFamily: T.display, fontWeight: 600, color: fg, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.ad_group}</td>
+                  <td style={{ padding: '9px 14px', fontFamily: T.body, fontSize: 11, color: muted, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.campaign}</td>
+                  <td style={{ padding: '9px 14px', textAlign: 'right', fontFamily: T.mono, color: fg }}>{fmt.rupiahShort(r.spend)}</td>
+                  <td style={{ padding: '9px 14px', textAlign: 'right', fontFamily: T.mono, color: sec }}>{fmt.num(r.clicks)}</td>
+                  <td style={{ padding: '9px 14px', textAlign: 'right', fontFamily: T.mono, color: r.ctr > 3 ? '#16A34A' : sec }}>{fmt.pct(r.ctr)}</td>
+                  <td style={{ padding: '9px 14px', textAlign: 'right', fontFamily: T.mono, color: sec }}>{fmt.pct(r.cvr)}</td>
+                  <td style={{ padding: '9px 14px', textAlign: 'right', fontFamily: T.mono, color: sec }}>{fmt.rupiahShort(r.cpa)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+    </RCard>
+  );
+}
+
+// ─── Keywords table ────────────────────────────────────────────────
+function KeywordsTable({ keywords }) {
+  const [search,  setSearch]  = useState('');
+  const [sortKey, setSortKey] = useState('spend');
+  const [sortDir, setSortDir] = useState('desc');
+  const [show,    setShow]    = useState(false);
+
+  const toggleSort = key => {
+    if (sortKey === key) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+    else { setSortKey(key); setSortDir('desc'); }
+  };
+
+  const rows = keywords
+    .filter(r => !search || (r.keyword || '').toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => sortDir === 'desc' ? (b[sortKey] || 0) - (a[sortKey] || 0) : (a[sortKey] || 0) - (b[sortKey] || 0))
+    .slice(0, 100);
+
+  return (
+    <RCard padding={0} style={{ overflow: 'hidden', marginTop: 14 }}>
+      <div
+        onClick={() => setShow(v => !v)}
+        style={{ padding: '12px 18px', borderBottom: show ? '1px solid var(--navy-edge)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+      >
+        <div>
+          <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg }}>Keywords</div>
+          <div style={{ fontFamily: T.body, fontSize: 11, color: muted, marginTop: 2 }}>{keywords.length} keywords · klik untuk {show ? 'sembunyikan' : 'tampilkan'}</div>
+        </div>
+        <svg width="14" height="14" fill="none" stroke={muted} strokeWidth="2" viewBox="0 0 24 24" style={{ transform: show ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      {show && (
+        <>
+          <div style={{ padding: '8px 18px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', gap: 7, alignItems: 'center', background: 'var(--navy-deep)' }}>
+            <svg width="11" height="11" fill="none" stroke={muted} strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari keyword…"
+              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: fg, fontFamily: T.body, fontSize: 11.5 }}/>
+            {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', padding: 0, fontSize: 14, lineHeight: 1 }}>×</button>}
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.body, fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: 'var(--navy-deep)' }}>
+                <th style={{ padding: '8px 14px', textAlign: 'left', fontFamily: T.mono, fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: muted }}>Keyword</th>
+                <th style={{ padding: '8px 14px', textAlign: 'left', fontFamily: T.mono, fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: muted }}>Match</th>
+                <SortTh label="Spend"  sortKey="spend"  active={sortKey==='spend'}  dir={sortDir} onSort={toggleSort}/>
+                <SortTh label="Clicks" sortKey="clicks" active={sortKey==='clicks'} dir={sortDir} onSort={toggleSort}/>
+                <SortTh label="CTR"    sortKey="ctr"    active={sortKey==='ctr'}    dir={sortDir} onSort={toggleSort}/>
+                <SortTh label="CVR"    sortKey="cvr"    active={sortKey==='cvr'}    dir={sortDir} onSort={toggleSort}/>
+                <SortTh label="CPA"    sortKey="cpa"    active={sortKey==='cpa'}    dir={sortDir} onSort={toggleSort}/>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={i} style={{ borderTop: '1px solid rgba(51,71,102,.5)' }}>
+                  <td style={{ padding: '9px 14px', fontFamily: T.display, fontWeight: 600, color: fg, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.keyword}</td>
+                  <td style={{ padding: '9px 14px' }}>{r.match_type && <RChip color={muted}>{r.match_type}</RChip>}</td>
+                  <td style={{ padding: '9px 14px', textAlign: 'right', fontFamily: T.mono, color: fg }}>{fmt.rupiahShort(r.spend)}</td>
+                  <td style={{ padding: '9px 14px', textAlign: 'right', fontFamily: T.mono, color: sec }}>{fmt.num(r.clicks)}</td>
+                  <td style={{ padding: '9px 14px', textAlign: 'right', fontFamily: T.mono, color: r.ctr > 3 ? '#16A34A' : sec }}>{fmt.pct(r.ctr)}</td>
+                  <td style={{ padding: '9px 14px', textAlign: 'right', fontFamily: T.mono, color: sec }}>{fmt.pct(r.cvr)}</td>
+                  <td style={{ padding: '9px 14px', textAlign: 'right', fontFamily: T.mono, color: sec }}>{fmt.rupiahShort(r.cpa)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+    </RCard>
+  );
+}
+
 // ─── Meta Ads Section ──────────────────────────────────────────────
-function MetaAdsSection({ p }) {
+function MetaAdsSection({ p, editState, widgetConfigs }) {
   const ads      = p.meta     || p.ads;
   const adsPrev  = p.metaPrev || p.adsPrev;
   const series   = (p.metaSeries && p.metaSeries.labels && p.metaSeries.labels.length) ? p.metaSeries : p.series;
   const channels = (p.metaChannels && p.metaChannels.length) ? p.metaChannels : p.channels;
   const d = fmt.pctChange;
+  const kpiScale = FONT_SCALES[(widgetConfigs?.['kpi-strip'] || {}).fontSize] || 1;
+  const wn = id => widgetConfigs?.[WIDGET_CARD_TYPES[id] || id]?.name || null;
 
   const META_COLORS = ['#0EA5E9', violet, '#F43F5E', gold];
   const totalImpr = channels.reduce((s, c) => s + c.impressions, 0) || 1;
@@ -750,63 +2063,71 @@ function MetaAdsSection({ p }) {
     <Section>
       <SectionHead channel="meta" title="Meta Ads" subtitle="Facebook & Instagram · Reach, Traffic, Conversion"/>
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
-        <Kpi label="Total Spend"   value={fmt.rupiahShort(ads.spend)}       delta={d(ads.spend, adsPrev.spend)}             accent={gold} spark={safeClicks.slice(-7)}/>
-        <Kpi label="Reach (Impr.)" value={fmt.num(ads.impressions)}         delta={d(ads.impressions, adsPrev.impressions)} accent={'#0EA5E9'}/>
-        <Kpi label="Link Clicks"   value={fmt.num(ads.clicks)}              delta={d(ads.clicks, adsPrev.clicks)}           accent={'#0EA5E9'}/>
-        <Kpi label="Conversions"   value={fmt.num(ads.conversions)}         delta={d(ads.conversions, adsPrev.conversions)} accent={teal}/>
-        <Kpi label="CPM"           value={fmt.rupiahShort(cpm)}             sub="per 1k impresi"/>
-        <Kpi label="CTR"           value={fmt.pct(ads.ctr)}                 delta={d(ads.ctr, adsPrev.ctr)}                 accent={teal}/>
-        <Kpi label="CPA"           value={fmt.rupiahShort(ads.cpa)}         sub="per konversi"/>
-      </div>
+      <SelectableWidget id="meta-kpi" cardId="kpi-strip" editState={editState}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+          <Kpi label="Total Spend"   value={fmt.rupiahShort(ads.spend)}       delta={d(ads.spend, adsPrev.spend)}             accent={gold} spark={safeClicks.slice(-7)} scale={kpiScale}/>
+          <Kpi label="Reach (Impr.)" value={fmt.num(ads.impressions)}         delta={d(ads.impressions, adsPrev.impressions)} accent={'#0EA5E9'} scale={kpiScale}/>
+          <Kpi label="Link Clicks"   value={fmt.num(ads.clicks)}              delta={d(ads.clicks, adsPrev.clicks)}           accent={'#0EA5E9'} scale={kpiScale}/>
+          <Kpi label="Conversions"   value={fmt.num(ads.conversions)}         delta={d(ads.conversions, adsPrev.conversions)} accent={teal} scale={kpiScale}/>
+          <Kpi label="CPM"           value={fmt.rupiahShort(cpm)}             sub="per 1k impresi" scale={kpiScale}/>
+          <Kpi label="CTR"           value={fmt.pct(ads.ctr)}                 delta={d(ads.ctr, adsPrev.ctr)}                 accent={teal} scale={kpiScale}/>
+          <Kpi label="CPA"           value={fmt.rupiahShort(ads.cpa)}         sub="per konversi" scale={kpiScale}/>
+        </div>
+      </SelectableWidget>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 14 }}>
-        <ChartCard title="Reach vs Engagement Trend">
-          <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
-            <LegendDot color="#0EA5E9" label="Impressions (scaled)"/>
-            <LegendDot color={violet} label="Clicks"/>
-          </div>
-          <MultiArea
-            seriesA={imprScale.length >= 2 ? imprScale : [10, 20]}
-            seriesB={safeClicks.length >= 2 ? safeClicks : [5, 10]}
-            colorA="#0EA5E9" colorB={violet}
-            labelsX={safeImpr.length >= 4 ? ['W1', 'W2', 'W3', 'W4'] : []}
-            w={480} h={130}
-          />
-        </ChartCard>
-
-        <ChartCard title="Impresi per Tipe Iklan">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <MiniDonut
-              segments={donutSegs.length ? donutSegs : [{ value: 1, color: '#243350' }]}
-              size={88} thickness={9}
-              centerLabel={fmt.num(Math.round(ads.impressions / 1000)) + 'k'}
-              centerSub="reach"
-            />
-            <div style={{ flex: 1 }}>
-              {channels.slice(0, 4).map((ch, i) => (
-                <div key={ch.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: META_COLORS[i % META_COLORS.length], flexShrink: 0 }}/>
-                    <span style={{ fontFamily: T.mono, fontSize: 9, color: sec }}>{ch.name}</span>
-                  </div>
-                  <span style={{ fontFamily: T.mono, fontSize: 9, color: muted }}>
-                    {((ch.impressions / totalImpr) * 100).toFixed(1)}%
-                  </span>
-                </div>
-              ))}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr)', gap: 14 }}>
+        <SelectableWidget id="meta-trend" cardId="chart-area" editState={editState}>
+          <ChartCard title={wn('meta-trend') || "Reach vs Engagement Trend"}>
+            <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
+              <LegendDot color="#0EA5E9" label="Impressions (scaled)"/>
+              <LegendDot color={violet} label="Clicks"/>
             </div>
-          </div>
-        </ChartCard>
+            <MultiArea
+              seriesA={imprScale.length >= 2 ? imprScale : [10, 20]}
+              seriesB={safeClicks.length >= 2 ? safeClicks : [5, 10]}
+              colorA="#0EA5E9" colorB={violet}
+              labelsX={safeImpr.length >= 4 ? ['W1', 'W2', 'W3', 'W4'] : []}
+              w={480} h={130}
+            />
+          </ChartCard>
+        </SelectableWidget>
+
+        <SelectableWidget id="meta-donut" cardId="chart-donut" editState={editState}>
+          <ChartCard title={wn('meta-donut') || "Impresi per Tipe Iklan"}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <MiniDonut
+                segments={donutSegs.length ? donutSegs : [{ value: 1, color: '#243350' }]}
+                size={88} thickness={9}
+                centerLabel={fmt.num(Math.round(ads.impressions / 1000)) + 'k'}
+                centerSub="reach"
+              />
+              <div style={{ flex: 1 }}>
+                {channels.slice(0, 4).map((ch, i) => (
+                  <div key={ch.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: META_COLORS[i % META_COLORS.length], flexShrink: 0 }}/>
+                      <span style={{ fontFamily: T.mono, fontSize: 9, color: sec }}>{ch.name}</span>
+                    </div>
+                    <span style={{ fontFamily: T.mono, fontSize: 9, color: muted }}>
+                      {((ch.impressions / totalImpr) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ChartCard>
+        </SelectableWidget>
       </div>
     </Section>
   );
 }
 
 // ─── GA4 Analytics Section ────────────────────────────────────────
-function GA4Section({ p }) {
+function GA4Section({ p, editState, widgetConfigs }) {
   const { ga4, ga4Prev, series } = p;
   const d = fmt.pctChange;
+  const kpiScale = FONT_SCALES[(widgetConfigs?.['kpi-strip'] || {}).fontSize] || 1;
+  const wn = id => widgetConfigs?.[WIDGET_CARD_TYPES[id] || id]?.name || null;
 
   const rawHeat = series.impressions.length >= 28
     ? series.impressions
@@ -836,56 +2157,190 @@ function GA4Section({ p }) {
     <Section>
       <SectionHead channel="ga4" title="Google Analytics 4" subtitle="Organic, Referral & Direct traffic"/>
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
-        <Kpi label="Sessions"          value={fmt.num(ga4.sessions)}  delta={d(ga4.sessions, ga4Prev.sessions)}   accent={gold} spark={safeA7}/>
-        <Kpi label="Users"             value={fmt.num(ga4.users)}     delta={d(ga4.users, ga4Prev.users)}         accent={gold}/>
-        <Kpi label="Pageviews"         value={fmt.num(ga4.pageviews)} delta={d(ga4.pageviews, ga4Prev.pageviews)} accent={gold}/>
-        <Kpi label="Engaged Sessions"  value={fmt.num(ga4.engaged)}   delta={d(ga4.engaged, ga4Prev.engaged)}     accent={teal}/>
-        <Kpi label="Bounce Rate"       value={fmt.pct(ga4.bounce_rate)}
-          delta={d(ga4.bounce_rate, ga4Prev.bounce_rate) != null ? -d(ga4.bounce_rate, ga4Prev.bounce_rate) : null}/>
-        <Kpi label="Pages / Session"   value={pagesPerSession.toFixed(1)} sub="rata-rata"/>
-        <Kpi label="Engagement Rate"   value={engageRate.toFixed(1) + '%'} sub="dari total sessions"/>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 14, marginBottom: 14 }}>
-        <ChartCard title="Sessions vs Users Trend">
-          <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
-            <LegendDot color={gold} label="Sessions"/>
-            <LegendDot color={teal} label="Users"/>
-          </div>
-          <MultiArea
-            seriesA={safeA.length >= 2 ? safeA : [100, 120]}
-            seriesB={safeB.length >= 2 ? safeB : [80, 95]}
-            colorA={gold} colorB={teal}
-            labelsX={safeA.length >= 4 ? ['W1', 'W2', 'W3', 'W4'] : []}
-            w={480} h={130}
-          />
-        </ChartCard>
-
-        <ChartCard title="Traffic Intensity" sub="4 Minggu × Hari">
-          <MiniHeatmap
-            rows={4} cols={7}
-            values={heatValues}
-            labelsRow={['W1', 'W2', 'W3', 'W4']}
-            labelsCol={['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']}
-            cell={17} color={teal}
-          />
-        </ChartCard>
-      </div>
-
-      <ChartCard title="Volume Konversi Harian">
-        <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 700, color: fg, marginBottom: 8 }}>
-          {fmt.num(ga4.engaged)}{' '}
-          <span style={{ fontFamily: T.mono, fontSize: 10, color: muted, fontWeight: 400 }}>engaged sessions</span>
+      <SelectableWidget id="ga4-kpi" cardId="kpi-strip" editState={editState}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+          <Kpi label="Sessions"          value={fmt.num(ga4.sessions)}  delta={d(ga4.sessions, ga4Prev.sessions)}   accent={gold} spark={safeA7} scale={kpiScale}/>
+          <Kpi label="Users"             value={fmt.num(ga4.users)}     delta={d(ga4.users, ga4Prev.users)}         accent={gold} scale={kpiScale}/>
+          <Kpi label="Pageviews"         value={fmt.num(ga4.pageviews)} delta={d(ga4.pageviews, ga4Prev.pageviews)} accent={gold} scale={kpiScale}/>
+          <Kpi label="Engaged Sessions"  value={fmt.num(ga4.engaged)}   delta={d(ga4.engaged, ga4Prev.engaged)}     accent={teal} scale={kpiScale}/>
+          <Kpi label="Bounce Rate"       value={fmt.pct(ga4.bounce_rate)}
+            delta={d(ga4.bounce_rate, ga4Prev.bounce_rate) != null ? -d(ga4.bounce_rate, ga4Prev.bounce_rate) : null}
+            scale={kpiScale}/>
+          <Kpi label="Pages / Session"   value={pagesPerSession.toFixed(1)} sub="rata-rata" scale={kpiScale}/>
+          <Kpi label="Engagement Rate"   value={engageRate.toFixed(1) + '%'} sub="dari total sessions" scale={kpiScale}/>
         </div>
-        <MiniBar data={safeConv.length >= 2 ? safeConv : [1, 2]} w={800} h={56} color={teal} gap={3}/>
-      </ChartCard>
+      </SelectableWidget>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr)', gap: 14, marginBottom: 14 }}>
+        <SelectableWidget id="ga4-sessions" cardId="chart-area" editState={editState}>
+          <ChartCard title={wn('ga4-sessions') || "Sessions vs Users Trend"}>
+            <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
+              <LegendDot color={gold} label="Sessions"/>
+              <LegendDot color={teal} label="Users"/>
+            </div>
+            <MultiArea
+              seriesA={safeA.length >= 2 ? safeA : [100, 120]}
+              seriesB={safeB.length >= 2 ? safeB : [80, 95]}
+              colorA={gold} colorB={teal}
+              labelsX={safeA.length >= 4 ? ['W1', 'W2', 'W3', 'W4'] : []}
+              w={480} h={130}
+            />
+          </ChartCard>
+        </SelectableWidget>
+
+        <SelectableWidget id="ga4-heatmap" cardId="chart-heatmap" editState={editState}>
+          <ChartCard title={wn('ga4-heatmap') || "Traffic Intensity"} sub="4 Minggu × Hari">
+            <MiniHeatmap
+              rows={4} cols={7}
+              values={heatValues}
+              labelsRow={['W1', 'W2', 'W3', 'W4']}
+              labelsCol={['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']}
+              cell={17} color={teal}
+            />
+          </ChartCard>
+        </SelectableWidget>
+      </div>
+
+      <SelectableWidget id="ga4-conversion" cardId="chart-bar" editState={editState}>
+        <ChartCard title={wn('ga4-conversion') || "Volume Konversi Harian"}>
+          <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 700, color: fg, marginBottom: 8 }}>
+            {fmt.num(ga4.engaged)}{' '}
+            <span style={{ fontFamily: T.mono, fontSize: 10, color: muted, fontWeight: 400 }}>engaged sessions</span>
+          </div>
+          <MiniBar data={safeConv.length >= 2 ? safeConv : [1, 2]} w={800} h={56} color={teal} gap={3}/>
+        </ChartCard>
+      </SelectableWidget>
     </Section>
   );
 }
 
+// ─── Queries table with search + sort ────────────────────────────
+function QueriesTable({ queries }) {
+  const [search,  setSearch]  = useState('');
+  const [sortKey, setSortKey] = useState('clicks');
+  const [sortDir, setSortDir] = useState('desc');
+
+  const toggleSort = key => {
+    if (sortKey === key) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+    else { setSortKey(key); setSortDir('desc'); }
+  };
+
+  const rows = queries
+    .filter(q => !search || (q.query || '').toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => sortDir === 'desc' ? (b[sortKey] || 0) - (a[sortKey] || 0) : (a[sortKey] || 0) - (b[sortKey] || 0));
+
+  return (
+    <RCard padding={0} style={{ overflow: 'hidden' }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <div>
+          <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg }}>Top Queries · Organic</div>
+          <div style={{ fontFamily: T.body, fontSize: 11, color: muted, marginTop: 2 }}>{rows.length} kata kunci</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 10px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, minWidth: 180 }}>
+          <svg width="11" height="11" fill="none" stroke={muted} strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari query…"
+            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: fg, fontFamily: T.body, fontSize: 11.5 }}/>
+          {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', padding: 0, fontSize: 14, lineHeight: 1 }}>×</button>}
+        </div>
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.body, fontSize: 12 }}>
+        <thead>
+          <tr style={{ background: 'var(--navy-deep)' }}>
+            <th style={{ padding: '8px 14px', textAlign: 'left', fontFamily: T.mono, fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: muted }}>Query</th>
+            <SortTh label="Posisi"  sortKey="position"    active={sortKey==='position'}    dir={sortDir} onSort={toggleSort}/>
+            <SortTh label="Impresi" sortKey="impressions"  active={sortKey==='impressions'}  dir={sortDir} onSort={toggleSort}/>
+            <SortTh label="Klik"    sortKey="clicks"       active={sortKey==='clicks'}       dir={sortDir} onSort={toggleSort}/>
+            <SortTh label="CTR"     sortKey="ctr"          active={sortKey==='ctr'}          dir={sortDir} onSort={toggleSort}/>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 && <tr><td colSpan={5} style={{ padding: '20px', textAlign: 'center', fontFamily: T.mono, fontSize: 10, color: muted }}>Tidak ada hasil</td></tr>}
+          {rows.map((kw, i) => {
+            const pc = kw.position;
+            const pc_color = pc <= 3 ? '#16A34A' : pc <= 7 ? gold : '#E3170A';
+            return (
+              <tr key={i} style={{ borderTop: '1px solid rgba(51,71,102,.5)' }}>
+                <td style={{ padding: '10px 14px', fontFamily: T.body, fontSize: 11, color: fg, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{kw.query}</td>
+                <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, fontSize: 10 }}><span style={{ color: pc_color, fontWeight: 700 }}>#{pc.toFixed(1)}</span></td>
+                <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, fontSize: 10, color: sec }}>{fmt.num(kw.impressions)}</td>
+                <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, fontSize: 10, color: fg }}>{fmt.num(kw.clicks)}</td>
+                <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, fontSize: 10, color: teal }}>{kw.ctr.toFixed(2)}%</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </RCard>
+  );
+}
+
+// ─── Top Pages table ──────────────────────────────────────────────
+function PagesTable({ pages }) {
+  const [search,  setSearch]  = useState('');
+  const [sortKey, setSortKey] = useState('clicks');
+  const [sortDir, setSortDir] = useState('desc');
+
+  const toggleSort = key => {
+    if (sortKey === key) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+    else { setSortKey(key); setSortDir('desc'); }
+  };
+
+  const rows = pages
+    .filter(pg => !search || (pg.page || '').toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => sortDir === 'desc' ? (b[sortKey] || 0) - (a[sortKey] || 0) : (a[sortKey] || 0) - (b[sortKey] || 0));
+
+  const shortUrl = url => {
+    try { return new URL(url.startsWith('http') ? url : 'https://' + url).pathname || url; }
+    catch { return url; }
+  };
+
+  return (
+    <RCard padding={0} style={{ overflow: 'hidden', marginTop: 14 }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <div>
+          <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg }}>Top Pages · Organic</div>
+          <div style={{ fontFamily: T.body, fontSize: 11, color: muted, marginTop: 2 }}>{rows.length} halaman teratas</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 10px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, minWidth: 180 }}>
+          <svg width="11" height="11" fill="none" stroke={muted} strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari URL…"
+            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: fg, fontFamily: T.body, fontSize: 11.5 }}/>
+          {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', padding: 0, fontSize: 14, lineHeight: 1 }}>×</button>}
+        </div>
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.body, fontSize: 12 }}>
+        <thead>
+          <tr style={{ background: 'var(--navy-deep)' }}>
+            <th style={{ padding: '8px 14px', textAlign: 'left', fontFamily: T.mono, fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: muted }}>URL</th>
+            <SortTh label="Posisi"  sortKey="position"   active={sortKey==='position'}   dir={sortDir} onSort={toggleSort}/>
+            <SortTh label="Impresi" sortKey="impressions" active={sortKey==='impressions'} dir={sortDir} onSort={toggleSort}/>
+            <SortTh label="Klik"    sortKey="clicks"      active={sortKey==='clicks'}      dir={sortDir} onSort={toggleSort}/>
+            <SortTh label="CTR"     sortKey="ctr"         active={sortKey==='ctr'}         dir={sortDir} onSort={toggleSort}/>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 && <tr><td colSpan={5} style={{ padding: '20px', textAlign: 'center', fontFamily: T.mono, fontSize: 10, color: muted }}>Tidak ada hasil</td></tr>}
+          {rows.map((pg, i) => {
+            const pc = pg.position || 0;
+            const pc_color = pc <= 3 ? '#16A34A' : pc <= 7 ? gold : '#E3170A';
+            return (
+              <tr key={i} style={{ borderTop: '1px solid rgba(51,71,102,.5)' }}>
+                <td style={{ padding: '10px 14px', fontFamily: T.mono, fontSize: 10, color: teal, maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={pg.page}>{shortUrl(pg.page)}</td>
+                <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, fontSize: 10 }}><span style={{ color: pc_color, fontWeight: 700 }}>#{pc.toFixed(1)}</span></td>
+                <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, fontSize: 10, color: sec }}>{fmt.num(pg.impressions)}</td>
+                <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, fontSize: 10, color: fg }}>{fmt.num(pg.clicks)}</td>
+                <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, fontSize: 10, color: teal }}>{(pg.ctr || 0).toFixed(2)}%</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </RCard>
+  );
+}
+
 // ─── Search Console Section ────────────────────────────────────────
-function SearchSection({ p }) {
+function SearchSection({ p, editState, widgetConfigs }) {
   const gsc = p.gsc;
 
   // No GSC data yet for this period
@@ -919,88 +2374,73 @@ function SearchSection({ p }) {
   const safeClicks = series.clicks.length >= 2 ? series.clicks : [clicks];
   const safeImpr   = series.impressions.length >= 2 ? series.impressions : [impressions];
 
-  // Prev data
   const gscPrev = p.gscPrev;
-  const d = fmt.pctChange;
+  const d    = fmt.pctChange;
+  const wcfg = id => widgetConfigs?.[WIDGET_CARD_TYPES[id] || id] || {};
+  const kpiScale = FONT_SCALES[wcfg('search-kpi').fontSize] || 1;
+  const wn = id => wcfg(id).name || null;
 
   return (
     <Section>
       <SectionHead channel="search" title="Search Console" subtitle="Organic impressions, clicks & ranking"/>
 
-      {/* KPI row */}
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
-        <Kpi label="Total Impressions" value={fmt.num(impressions)}
-          delta={gscPrev ? d(impressions, gscPrev.impressions) : null} accent={blue}/>
-        <Kpi label="Organic Clicks"    value={fmt.num(clicks)}
-          delta={gscPrev ? d(clicks, gscPrev.clicks) : null} accent={teal}/>
-        <Kpi label="Avg CTR"           value={ctr.toFixed(2) + '%'}
-          delta={gscPrev ? d(ctr, gscPrev.ctr) : null} accent={teal}/>
-        <Kpi label="Avg Position"      value={'#' + position.toFixed(1)} sub={posLabel} accent={posColor}/>
-      </div>
+      <SelectableWidget id="search-kpi" cardId="kpi-strip" editState={editState}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+          <Kpi label="Total Impressions" value={fmt.num(impressions)}
+            delta={gscPrev ? d(impressions, gscPrev.impressions) : null} accent={blue} scale={kpiScale}/>
+          <Kpi label="Organic Clicks"    value={fmt.num(clicks)}
+            delta={gscPrev ? d(clicks, gscPrev.clicks) : null} accent={teal} scale={kpiScale}/>
+          <Kpi label="Avg CTR"           value={ctr.toFixed(2) + '%'}
+            delta={gscPrev ? d(ctr, gscPrev.ctr) : null} accent={teal} scale={kpiScale}/>
+          <Kpi label="Avg Position"      value={'#' + position.toFixed(1)} sub={posLabel} accent={posColor} scale={kpiScale}/>
+        </div>
+      </SelectableWidget>
 
-      {/* Charts */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
-        <ChartCard style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <Eyebrow>Rata-rata Posisi</Eyebrow>
-          <Ring value={parseFloat(Math.min(position, 10).toFixed(1))} max={10} size={96} thickness={8} color={posColor} label="AVG POS"/>
-          <div style={{ fontFamily: T.mono, fontSize: 9, color: posColor, textAlign: 'center' }}>{posLabel}</div>
-        </ChartCard>
+      <div style={{ display: 'grid', gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14, marginBottom: 14 }}>
+        <SelectableWidget id="search-position" cardId="chart-donut" editState={editState}>
+          <ChartCard style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <Eyebrow>Rata-rata Posisi</Eyebrow>
+            <Ring value={parseFloat(Math.min(position, 10).toFixed(1))} max={10} size={96} thickness={8} color={posColor} label="AVG POS"/>
+            <div style={{ fontFamily: T.mono, fontSize: 9, color: posColor, textAlign: 'center' }}>{posLabel}</div>
+          </ChartCard>
+        </SelectableWidget>
 
-        <ChartCard title="CTR Organik Harian">
-          <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 700, color: fg, marginBottom: 8 }}>
-            {ctr.toFixed(2)}%
-            <span style={{ fontFamily: T.mono, fontSize: 10, color: muted, fontWeight: 400, marginLeft: 6 }}>avg CTR</span>
-          </div>
-          <MiniLine data={safeCtr.length >= 2 ? safeCtr : [ctr, ctr]} w={260} h={66} color={blue} fill id="sc-ctr"/>
-        </ChartCard>
-
-        <ChartCard title="Organic Clicks Harian">
-          <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 700, color: fg, marginBottom: 8 }}>
-            {fmt.num(clicks)}
-          </div>
-          <MiniBar data={safeClicks.length >= 2 ? safeClicks : [clicks, clicks]} w={260} h={66} color={blue}/>
-        </ChartCard>
-      </div>
-
-      {/* Top queries table */}
-      {queries && queries.length > 0 && (
-        <RCard padding={0} style={{ overflow: 'hidden' }}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg }}>Top Queries · Organic</div>
-              <div style={{ fontFamily: T.body, fontSize: 11, color: muted, marginTop: 2 }}>
-                Search Console · {queries.length} kata kunci teratas
-              </div>
+        <SelectableWidget id="search-ctr" cardId="chart-area" editState={editState}>
+          <ChartCard title={wn('search-ctr') || "CTR Organik Harian"}>
+            <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 700, color: fg, marginBottom: 8 }}>
+              {ctr.toFixed(2)}%
+              <span style={{ fontFamily: T.mono, fontSize: 10, color: muted, fontWeight: 400, marginLeft: 6 }}>avg CTR</span>
             </div>
-            <ChannelLogo channel="search" size={20}/>
-          </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.body, fontSize: 12 }}>
-            <thead>
-              <tr style={{ background: 'var(--navy-deep)' }}>
-                {['Query', 'Posisi', 'Impresi', 'Klik', 'CTR'].map(h => (
-                  <th key={h} style={{ padding: '8px 14px', textAlign: h === 'Query' ? 'left' : 'right', fontFamily: T.mono, fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: muted }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {queries.map((kw, i) => {
-                const pc = kw.position;
-                const pc_color = pc <= 3 ? '#16A34A' : pc <= 7 ? gold : '#E3170A';
-                return (
-                  <tr key={i} style={{ borderTop: '1px solid rgba(51,71,102,.5)' }}>
-                    <td style={{ padding: '10px 14px', fontFamily: T.body, fontSize: 11, color: fg, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{kw.query}</td>
-                    <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, fontSize: 10 }}>
-                      <span style={{ color: pc_color, fontWeight: 700 }}>#{pc.toFixed(1)}</span>
-                    </td>
-                    <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, fontSize: 10, color: sec }}>{fmt.num(kw.impressions)}</td>
-                    <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, fontSize: 10, color: fg }}>{fmt.num(kw.clicks)}</td>
-                    <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: T.mono, fontSize: 10, color: teal }}>{kw.ctr.toFixed(2)}%</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </RCard>
+            <MiniLine data={safeCtr.length >= 2 ? safeCtr : [ctr, ctr]} w={260} h={66} color={blue} fill id="sc-ctr"/>
+          </ChartCard>
+        </SelectableWidget>
+
+        <SelectableWidget id="search-clicks" cardId="chart-bar" editState={editState}>
+          <ChartCard title={wn('search-clicks') || "Organic Clicks Harian"}>
+            <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 700, color: fg, marginBottom: 8 }}>
+              {fmt.num(clicks)}
+            </div>
+            <MiniBar data={safeClicks.length >= 2 ? safeClicks : [clicks, clicks]} w={260} h={66} color={blue}/>
+          </ChartCard>
+        </SelectableWidget>
+      </div>
+
+      {queries && queries.length > 0 && (
+        <SelectableWidget id="search-queries" cardId="table-rankings" editState={editState}>
+          <DataTable widgetId="search-queries" widgetConfig={wcfg('search-queries')}
+            rows={queries} availDims={SEARCH_TABLE_DIMS} availMetrics={SEARCH_TABLE_METRICS}
+            defaultDims={['query']} defaultMetrics={['impressions','clicks','ctr','position']}
+            defaultName="Top Queries · Search Console"/>
+        </SelectableWidget>
+      )}
+
+      {gsc.pages && gsc.pages.length > 0 && (
+        <SelectableWidget id="search-pages" cardId="table-rankings" editState={editState}>
+          <DataTable widgetId="search-pages" widgetConfig={wcfg('search-pages')}
+            rows={gsc.pages} availDims={SEARCH_TABLE_DIMS} availMetrics={SEARCH_TABLE_METRICS}
+            defaultDims={['page']} defaultMetrics={['impressions','clicks','ctr','position']}
+            defaultName="Top Pages · Search Console"/>
+        </SelectableWidget>
       )}
     </Section>
   );
@@ -1709,12 +3149,133 @@ function PresentMode({ client, p, isMock, onExit }) {
   );
 }
 
+// ─── Default layout filter ─────────────────────────────────────────
+function getDefaultLayout(connected) {
+  if (!connected) return { rows: [] };
+  const WIDGET_SOURCES = {
+    'google-': 'google', 'meta-': 'meta', 'ga4-': 'ga4', 'search-': 'search'
+  };
+  return {
+    rows: DEFAULT_DRAG_LAYOUT.rows.filter(row =>
+      row.some(({ id }) => {
+        const src = Object.entries(WIDGET_SOURCES).find(([prefix]) => id.startsWith(prefix));
+        return src ? !!connected[src[1]] : false;
+      })
+    )
+  };
+}
+
 // ─── Main ScreenReport ─────────────────────────────────────────────
 function ScreenReport({ clientId, onBack }) {
   const live = useLive();
   const [showPresent, setShowPresent] = useState(false);
   const [showEditor,  setShowEditor]  = useState(false);
   const [editorCardId, setEditorCardId] = useState('kpi-single');
+  const [selectedWidget, setSelectedWidget] = useState(null);
+  const [widgetConfigs, setWidgetConfigs] = useState({});
+  const [widgetLayouts, setWidgetLayouts] = useState(null);
+  const undoHistory = React.useRef([]);
+  const [historyLen, setHistoryLen] = useState(0);
+
+  const updateWidgetConfig = useCallback((id, changes) => {
+    setWidgetConfigs(prev => {
+      undoHistory.current = [...undoHistory.current.slice(-19), prev];
+      return { ...prev, [id]: { ...(prev[id] || {}), ...changes } };
+    });
+    setHistoryLen(l => l + 1);
+  }, []);
+
+  const undoWidgetConfig = useCallback(() => {
+    if (undoHistory.current.length === 0) return;
+    const prev = undoHistory.current[undoHistory.current.length - 1];
+    undoHistory.current = undoHistory.current.slice(0, -1);
+    setHistoryLen(undoHistory.current.length);
+    setWidgetConfigs(prev);
+  }, []);
+
+  const updateWidgetLayouts = useCallback((updater) => {
+    setWidgetLayouts(prev => {
+      const allClients = [...(window._avo_clients || []), ...(window.HOME_CLIENTS || [])];
+      const _client = allClients.find(c => c.id === clientId);
+      const current = prev || getDefaultLayout(_client?.connected);
+      return typeof updater === 'function' ? updater(current) : updater;
+    });
+  }, [clientId]);
+
+  // Load persisted configs + layouts when switching clients
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('widgetConfigs_' + clientId);
+      setWidgetConfigs(saved ? JSON.parse(saved) : {});
+    } catch { setWidgetConfigs({}); }
+    try {
+      const savedLayouts = localStorage.getItem('widgetLayouts_' + clientId);
+      setWidgetLayouts(savedLayouts ? JSON.parse(savedLayouts) : null);
+    } catch { setWidgetLayouts(null); }
+  }, [clientId]);
+
+  // Persist configs on every change
+  useEffect(() => {
+    if (!clientId || Object.keys(widgetConfigs).length === 0) return;
+    try { localStorage.setItem('widgetConfigs_' + clientId, JSON.stringify(widgetConfigs)); }
+    catch {}
+  }, [widgetConfigs, clientId]);
+
+  // Persist layouts on every change
+  useEffect(() => {
+    if (!clientId || !widgetLayouts) return;
+    try { localStorage.setItem('widgetLayouts_' + clientId, JSON.stringify(widgetLayouts)); }
+    catch {}
+  }, [widgetLayouts, clientId]);
+
+  // Ctrl+Z / Cmd+Z undo when editor is open
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && showEditor) {
+        e.preventDefault(); undoWidgetConfig();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undoWidgetConfig, showEditor]);
+
+  const handleSelectWidget = useCallback((id, cardId) => {
+    setSelectedWidget(id);
+    // Use card type from universal map so editor shows/edits the type-level config
+    setEditorCardId(WIDGET_CARD_TYPES[id] || cardId);
+  }, []);
+
+  const handleDeleteWidget = useCallback((id) => {
+    updateWidgetLayouts(prev => {
+      const rows = prev.rows
+        .map(row => row.filter(w => w.id !== id))
+        .filter(row => row.length > 0);
+      return { ...prev, rows };
+    });
+    setSelectedWidget(prev => prev === id ? null : prev);
+  }, [updateWidgetLayouts]);
+
+  // Delete/Backspace removes selected widget when editor is open
+  useEffect(() => {
+    const handler = (e) => {
+      if (!selectedWidget || !showEditor || _IS_VIEWER) return;
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      const tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
+      e.preventDefault();
+      handleDeleteWidget(selectedWidget);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [selectedWidget, showEditor, handleDeleteWidget]);
+
+  // Redirect config changes to the card TYPE key (universal config shared across
+  // all widgets of the same visual type)
+  const handleWidgetConfigChange = useCallback((widgetId, changes) => {
+    const cardTypeKey = WIDGET_CARD_TYPES[widgetId] || widgetId;
+    updateWidgetConfig(cardTypeKey, changes);
+  }, [updateWidgetConfig]);
+  const editState = showEditor && !_IS_VIEWER ? { selected: selectedWidget, onSelect: handleSelectWidget, onDelete: handleDeleteWidget } : null;
   // Retry counter — increments every 300ms until client is found (max 10 tries)
   const [retry, setRetry] = useState(0);
   useEffect(() => {
@@ -1791,9 +3352,13 @@ function ScreenReport({ clientId, onBack }) {
     _setAnySourceConnected(!!(c.google || c.meta || c.ga4 || c.search || c.pagespeed));
   }, [clientId, client?.connected]);
 
-  // Reset date range when switching clients (so we always start with All Time)
+  // Default date: this month to yesterday
   useEffect(() => {
-    if (setDateRange) setDateRange({ from: null, to: null });
+    if (!setDateRange) return;
+    const today = new Date();
+    const yest  = new Date(today); yest.setDate(today.getDate() - 1);
+    const som   = new Date(today.getFullYear(), today.getMonth(), 1);
+    setDateRange({ from: _drDs(som), to: _drDs(yest) });
   }, [clientId]);
 
   // Reset all filters when leaving this report
@@ -1876,54 +3441,74 @@ function ScreenReport({ clientId, onBack }) {
 
               {!hasAnySource && <FirstTimeEmptyState client={client} onBack={onBack}/>}
 
-              {connected && connected.google && (
+              {hasAnySource && showEditor ? (
+                /* Drag canvas mode when editor is open */
                 <>
-                  <GoogleAdsSection p={p}/>
-                  <SectionDivider/>
+                  <DragCanvas
+                    p={p}
+                    connected={connected}
+                    widgetConfigs={widgetConfigs}
+                    editState={editState}
+                    layouts={widgetLayouts || getDefaultLayout(connected)}
+                    onLayoutChange={updateWidgetLayouts}
+                  />
+                  {connected && connected.pagespeed && (
+                    <PageSpeedSection psi={p && p.psi} psiUrl={psiUrl}/>
+                  )}
                 </>
-              )}
-
-              {connected && connected.meta && (
+              ) : hasAnySource ? (
+                /* Normal section-based rendering */
                 <>
-                  <MetaAdsSection p={p}/>
-                  <SectionDivider/>
-                </>
-              )}
+                  {connected && connected.google && (
+                    <>
+                      <GoogleAdsSection p={p} editState={editState} widgetConfigs={widgetConfigs}/>
+                      <SectionDivider/>
+                    </>
+                  )}
 
-              {connected && connected.ga4 && (
-                <>
-                  {p.ga4 && p.ga4.sessions > 0
-                    ? <GA4Section p={p}/>
-                    : (
-                      <Section>
-                        <SectionHead channel="ga4" title="Google Analytics 4" subtitle="Organic, Referral & Direct traffic"/>
-                        <RCard padding={20}>
-                          <div style={{ fontFamily: T.mono, fontSize: 10, color: muted, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                            Belum ada data — sinkronisasi GA4 sedang disiapkan
-                          </div>
-                          <div style={{ fontFamily: T.body, fontSize: 12, color: sec, marginTop: 6 }}>
-                            {typeof connected.ga4 === 'object' && connected.ga4.name
-                              ? `Property: ${connected.ga4.name}`
-                              : 'Hubungkan property GA4 di Configure untuk memulai.'}
-                          </div>
-                        </RCard>
-                      </Section>
-                    )
-                  }
-                  <SectionDivider/>
-                </>
-              )}
+                  {connected && connected.meta && (
+                    <>
+                      <MetaAdsSection p={p} editState={editState} widgetConfigs={widgetConfigs}/>
+                      <SectionDivider/>
+                    </>
+                  )}
 
-              {connected && connected.search && (
-                <>
-                  <SearchSection p={p}/>
-                  <SectionDivider/>
-                </>
-              )}
+                  {connected && connected.ga4 && (
+                    <>
+                      {p.ga4 && p.ga4.sessions > 0
+                        ? <GA4Section p={p} editState={editState} widgetConfigs={widgetConfigs}/>
+                        : (
+                          <Section>
+                            <SectionHead channel="ga4" title="Google Analytics 4" subtitle="Organic, Referral & Direct traffic"/>
+                            <RCard padding={20}>
+                              <div style={{ fontFamily: T.mono, fontSize: 10, color: muted, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                Belum ada data — sinkronisasi GA4 sedang disiapkan
+                              </div>
+                              <div style={{ fontFamily: T.body, fontSize: 12, color: sec, marginTop: 6 }}>
+                                {typeof connected.ga4 === 'object' && connected.ga4.name
+                                  ? `Property: ${connected.ga4.name}`
+                                  : 'Hubungkan property GA4 di Configure untuk memulai.'}
+                              </div>
+                            </RCard>
+                          </Section>
+                        )
+                      }
+                      <SectionDivider/>
+                    </>
+                  )}
 
-              {connected && connected.pagespeed && (
-                <PageSpeedSection psi={p && p.psi} psiUrl={psiUrl}/>
-              )}
+                  {connected && connected.search && (
+                    <>
+                      <SearchSection p={p} editState={editState} widgetConfigs={widgetConfigs}/>
+                      <SectionDivider/>
+                    </>
+                  )}
+
+                  {connected && connected.pagespeed && (
+                    <PageSpeedSection psi={p && p.psi} psiUrl={psiUrl}/>
+                  )}
+                </>
+              ) : null}
             </>
           )}
         </div>
@@ -1932,6 +3517,11 @@ function ScreenReport({ clientId, onBack }) {
         {showEditor && window.CardEditorPanel && (
           <window.CardEditorPanel
             cardId={editorCardId}
+            widgetId={selectedWidget}
+            widgetConfig={selectedWidget ? (widgetConfigs[WIDGET_CARD_TYPES[selectedWidget] || editorCardId] || {}) : {}}
+            onConfigChange={handleWidgetConfigChange}
+            onUndo={historyLen > 0 ? undoWidgetConfig : null}
+            connectedSources={client?.connected || {}}
             onClose={() => setShowEditor(false)}
             style={{ flexShrink: 0 }}
           />

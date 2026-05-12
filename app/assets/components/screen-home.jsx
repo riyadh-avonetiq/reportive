@@ -180,6 +180,16 @@ async function _seedClients() {
   await _APP_SUPA.from('clients').insert(rows);
 }
 
+// ─── Viewer role helpers ──────────────────────────────────────────
+const _VIEWER_ROLE = sessionStorage.getItem('avo_role') === 'viewer';
+const _VIEWER_CLIENTS = (() => {
+  try { return JSON.parse(sessionStorage.getItem('avo_clients') || '[]'); } catch { return []; }
+})();
+async function _homeHashPw(pw) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 // ─── shared micro styles ───────────────────────────────────────────
 const HS = {
   display: 'var(--font-display)',
@@ -1014,7 +1024,7 @@ const QuickEditModal = ({ client, onSave, onClose }) => {
 };
 
 // ─── Client row ────────────────────────────────────────────────────
-const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete, featured, idx, onQuickRename }) => {
+const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete, featured, idx, onQuickRename, isViewer }) => {
   const [hovered, setHovered] = React.useState(false);
   const [nameHovered, setNameHovered] = React.useState(false);
   const connectedCount = Object.values(client.connected).filter(Boolean).length;
@@ -1069,18 +1079,20 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
         onMouseLeave={() => setNameHovered(false)}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
             <span style={{ fontFamily: HS.display, fontSize: 13.5, fontWeight: 700, color: '#FCFCFC', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{client.name}</span>
-            <button onClick={(e) => {e.stopPropagation();onQuickRename(client);}}
-            title="Quick edit"
-            style={{ width: 20, height: 20, border: 'none', borderRadius: 5, background: nameHovered ? 'rgba(0,194,184,.15)' : 'transparent', color: nameHovered ? '#00C2B8' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .12s, color .12s', padding: 0 }}>
-              <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z" /></svg>
-            </button>
+            {!isViewer && (
+              <button onClick={(e) => {e.stopPropagation();onQuickRename(client);}}
+              title="Quick edit"
+              style={{ width: 20, height: 20, border: 'none', borderRadius: 5, background: nameHovered ? 'rgba(0,194,184,.15)' : 'transparent', color: nameHovered ? '#00C2B8' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .12s, color .12s', padding: 0 }}>
+                <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z" /></svg>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Dup + Delete icons */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', opacity: hovered ? 1 : 0, transition: 'opacity .15s' }}>
-          <IconBtn title="Duplicate" icon="M8 17H5a2 2 0 01-2-2V5a2 2 0 012-2h8a2 2 0 012 2v3M11 21h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" onClick={() => onDuplicate(client)} />
-          <IconBtn title="Delete" icon="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" onClick={() => onDelete(client)} danger />
+        {/* Dup + Delete icons — hidden for viewers */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', opacity: (!isViewer && hovered) ? 1 : 0, transition: 'opacity .15s', pointerEvents: isViewer ? 'none' : 'auto' }}>
+          {!isViewer && <IconBtn title="Duplicate" icon="M8 17H5a2 2 0 01-2-2V5a2 2 0 012-2h8a2 2 0 012 2v3M11 21h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" onClick={() => onDuplicate(client)} />}
+          {!isViewer && <IconBtn title="Delete" icon="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" onClick={() => onDelete(client)} danger />}
         </div>
 
         {/* Sources */}
@@ -1104,29 +1116,35 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: 5, justifyContent: 'flex-end' }}>
-          <button onClick={handlePDF}
-          style={{ padding: '6px 10px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: 'var(--text-secondary)', fontFamily: HS.display, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, transition: 'border-color .15s, color .15s', minWidth: 62, whiteSpace: 'nowrap', flexShrink: 0 }}
-          onMouseEnter={(e) => {e.currentTarget.style.borderColor = 'rgba(248,180,0,.5)';e.currentTarget.style.color = '#F8B400';}}
-          onMouseLeave={(e) => {e.currentTarget.style.borderColor = 'var(--navy-edge)';e.currentTarget.style.color = 'var(--text-secondary)';}}>
-            <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><path d="M14 2v6h6M9 13h6M9 17h4" /></svg>
-            PDF
-          </button>
-          <button onClick={() => onConfigure(client)}
-          style={{ padding: '6px 10px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: 'var(--text-secondary)', fontFamily: HS.display, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, transition: 'border-color .15s, color .15s' }}
-          onMouseEnter={(e) => {e.currentTarget.style.borderColor = 'rgba(0,194,184,.5)';e.currentTarget.style.color = '#00C2B8';}}
-          onMouseLeave={(e) => {e.currentTarget.style.borderColor = 'var(--navy-edge)';e.currentTarget.style.color = 'var(--text-secondary)';}}>
-            <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>
-            Configure
-          </button>
+          {!isViewer && (
+            <button onClick={handlePDF}
+            style={{ padding: '6px 10px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: 'var(--text-secondary)', fontFamily: HS.display, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, transition: 'border-color .15s, color .15s', minWidth: 62, whiteSpace: 'nowrap', flexShrink: 0 }}
+            onMouseEnter={(e) => {e.currentTarget.style.borderColor = 'rgba(248,180,0,.5)';e.currentTarget.style.color = '#F8B400';}}
+            onMouseLeave={(e) => {e.currentTarget.style.borderColor = 'var(--navy-edge)';e.currentTarget.style.color = 'var(--text-secondary)';}}>
+              <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><path d="M14 2v6h6M9 13h6M9 17h4" /></svg>
+              PDF
+            </button>
+          )}
+          {!isViewer && (
+            <button onClick={() => onConfigure(client)}
+            style={{ padding: '6px 10px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: 'var(--text-secondary)', fontFamily: HS.display, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, transition: 'border-color .15s, color .15s' }}
+            onMouseEnter={(e) => {e.currentTarget.style.borderColor = 'rgba(0,194,184,.5)';e.currentTarget.style.color = '#00C2B8';}}
+            onMouseLeave={(e) => {e.currentTarget.style.borderColor = 'var(--navy-edge)';e.currentTarget.style.color = 'var(--text-secondary)';}}>
+              <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>
+              Configure
+            </button>
+          )}
           {(() => {
             const hasData = client.connected && Object.values(client.connected).some(v => !!v);
-            return hasData ? (
+            if (hasData) return (
               <button onClick={() => onOpen(client.id)}
               style={{ padding: '6px 12px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 7, color: '#0C182C', fontFamily: HS.display, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, boxShadow: '0 3px 10px rgba(0,194,184,.2)' }}>
                 Open
                 <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
               </button>
-            ) : (
+            );
+            if (isViewer) return null;
+            return (
               <button onClick={() => onConfigure(client)}
               style={{ padding: '6px 12px', background: 'rgba(248,180,0,.1)', border: '1px solid rgba(248,180,0,.4)', borderRadius: 7, color: '#F8B400', fontFamily: HS.display, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,180,0,.18)'; }}
@@ -1142,8 +1160,78 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
 
 };
 
+// ─── Viewer: Profile Settings Modal ──────────────────────────────
+const ViewerProfileModal = ({ onClose }) => {
+  const [name, setName]     = React.useState(sessionStorage.getItem('avo_name') || '');
+  const [newPw, setNewPw]   = React.useState('');
+  const [showPw, setShowPw] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  const [done, setDone]     = React.useState(false);
+  const email = sessionStorage.getItem('avo_email') || '';
+  const user  = _getSessionUser();
+
+  const handleSave = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    const update = { name: name.trim() };
+    if (newPw.trim()) update.password_hash = await _homeHashPw(newPw.trim());
+    if (_APP_SUPA) {
+      await _APP_SUPA.from('team_members').update(update).eq('email', email);
+    }
+    sessionStorage.setItem('avo_name', name.trim());
+    setSaving(false);
+    setDone(true);
+    setTimeout(onClose, 900);
+  };
+
+  return (
+    <div onClick={e => e.target === e.currentTarget && onClose()} style={{ position:'fixed', inset:0, zIndex:2000, background:'rgba(5,10,22,.75)', backdropFilter:'blur(10px)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div style={{ width:400, background:'rgba(14,24,42,.98)', border:'1px solid var(--navy-edge)', borderRadius:16, boxShadow:'0 40px 100px rgba(0,0,0,.6)', overflow:'hidden' }}>
+        <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid var(--navy-edge)', display:'flex', alignItems:'center', gap:12 }}>
+          <div style={{ width:40, height:40, borderRadius:10, background:user.grad, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:HS.display, fontWeight:800, fontSize:14, color:'#0C182C' }}>{user.initials}</div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontFamily:HS.display, fontSize:15, fontWeight:700, color:'#FCFCFC' }}>Profil Saya</div>
+            <div style={{ fontFamily:HS.body, fontSize:11.5, color:'var(--text-muted)', marginTop:1 }}>{email}</div>
+          </div>
+          <button onClick={onClose} style={{ width:28, height:28, border:'none', background:'var(--navy-elevated)', borderRadius:7, color:'var(--text-muted)', cursor:'pointer', fontSize:18, display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
+        </div>
+        <div style={{ padding:'18px 24px' }}>
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontFamily:HS.mono, fontSize:9.5, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'.12em', marginBottom:6 }}>Nama</div>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="Nama lengkap"
+              style={{ width:'100%', boxSizing:'border-box', padding:'9px 12px', background:'var(--navy-elevated)', border:'1px solid var(--navy-edge)', borderRadius:7, color:'#FCFCFC', fontFamily:HS.body, fontSize:13, outline:'none' }}/>
+          </div>
+          <div>
+            <div style={{ fontFamily:HS.mono, fontSize:9.5, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'.12em', marginBottom:6 }}>Password baru <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0 }}>(kosongkan jika tidak diubah)</span></div>
+            <div style={{ position:'relative' }}>
+              <input value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Password baru" type={showPw ? 'text' : 'password'}
+                style={{ width:'100%', boxSizing:'border-box', padding:'9px 36px 9px 12px', background:'var(--navy-elevated)', border:'1px solid var(--navy-edge)', borderRadius:7, color:'#FCFCFC', fontFamily:HS.body, fontSize:13, outline:'none' }}/>
+              <button type="button" onClick={() => setShowPw(v => !v)}
+                style={{ position:'absolute', right:8, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', alignItems:'center', padding:2 }}>
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                  {showPw
+                    ? <><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>
+                    : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>
+                  }
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div style={{ padding:'14px 24px', borderTop:'1px solid var(--navy-edge)', display:'flex', gap:8, background:'rgba(10,18,34,.5)' }}>
+          <button onClick={onClose} style={{ flex:1, padding:'9px 0', background:'var(--navy-elevated)', border:'1px solid var(--navy-edge)', borderRadius:7, color:'var(--text-secondary)', fontFamily:HS.display, fontSize:12, fontWeight:600, cursor:'pointer' }}>Batal</button>
+          <button onClick={handleSave} disabled={saving || done}
+            style={{ flex:2, padding:'9px 0', background: done ? 'rgba(22,163,74,.9)' : 'linear-gradient(135deg,#00C2B8,#009E96)', border:'none', borderRadius:7, color:'#0C182C', fontFamily:HS.display, fontSize:12, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 12px rgba(0,194,184,.25)' }}>
+            {done ? '✓ Tersimpan' : saving ? 'Menyimpan…' : 'Simpan'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Top bar ───────────────────────────────────────────────────────
-const HomeTopBar = ({ count, onNavigate }) => {
+const HomeTopBar = ({ count, onNavigate, onProfileClick }) => {
   const user = _getSessionUser();
   const NAV_ROUTES = { Home: 'home', Templates: 'templates', Access: 'access' };
   const handleLogout = () => {
@@ -1160,7 +1248,7 @@ const HomeTopBar = ({ count, onNavigate }) => {
         <div style={{ fontFamily: HS.mono, fontSize: 8.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>by Avonetiq</div>
       </div>
       <div style={{ width: 1, height: 20, background: 'var(--navy-edge)' }} />
-      {[['Home','active'],['Templates',''],['Access','']].map(([l,a]) =>
+      {(_VIEWER_ROLE ? [['Home','active']] : [['Home','active'],['Templates',''],['Access','']]).map(([l,a]) =>
         <div key={l} onClick={() => onNavigate && onNavigate(NAV_ROUTES[l])} style={{ padding: '6px 12px', borderRadius: 7, cursor: 'pointer', background: a ? 'rgba(0,194,184,.1)' : 'transparent', color: a ? '#00C2B8' : 'var(--text-secondary)', fontFamily: HS.display, fontSize: 12.5, fontWeight: a ? 700 : 500 }}>{l}</div>
       )}
       <div style={{ flex: 1 }} />
@@ -1170,7 +1258,7 @@ const HomeTopBar = ({ count, onNavigate }) => {
         Sign out
       </button>
       <div style={{ width: 1, height: 20, background: 'var(--navy-edge)' }} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+      <div onClick={_VIEWER_ROLE ? onProfileClick : undefined} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: _VIEWER_ROLE ? 'pointer' : 'default' }} title={_VIEWER_ROLE ? 'Edit profil saya' : undefined}>
         <div style={{ width: 32, height: 32, borderRadius: '50%', background: user.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: HS.display, fontWeight: 700, fontSize: 12, color: '#0C182C' }}>{user.initials}</div>
         <div>
           <div style={{ fontFamily: HS.display, fontSize: 12, fontWeight: 600, color: '#FCFCFC' }}>{user.name}</div>
@@ -1237,6 +1325,7 @@ const ScreenHome = ({ onOpenClient, onNavigate }) => {
   const [deleteTarget, setDeleteTarget] = React.useState(null);
   const [quickEditTarget, setQuickEditTarget] = React.useState(null);
   const [newReportOpen, setNewReportOpen] = React.useState(false);
+  const [profileOpen, setProfileOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const searchRef = React.useRef(null);
 
@@ -1290,9 +1379,12 @@ const ScreenHome = ({ onOpenClient, onNavigate }) => {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const filtered = searchQuery.trim()
-    ? clients.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  const _visibleClients = _VIEWER_ROLE && _VIEWER_CLIENTS.length > 0
+    ? clients.filter(c => _VIEWER_CLIENTS.includes(c.id))
     : clients;
+  const filtered = searchQuery.trim()
+    ? _visibleClients.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : _visibleClients;
 
   // ── Handlers (optimistic update + Supabase persist) ─────────────
   const handleQuickEdit = async (id, name, logo) => {
@@ -1355,7 +1447,7 @@ const ScreenHome = ({ onOpenClient, onNavigate }) => {
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--navy-base)', position: 'relative' }}>
       <RFlare intensity={0.18} />
-      <HomeTopBar count={0} onNavigate={onNavigate} />
+      <HomeTopBar count={0} onNavigate={onNavigate} onProfileClick={() => setProfileOpen(true)} />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
         <div style={{ width: 28, height: 28, border: '2.5px solid rgba(0,194,184,.25)', borderTopColor: '#00C2B8', borderRadius: '50%', animation: 'spin .7s linear infinite' }}/>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em' }}>Loading clients…</span>
@@ -1366,7 +1458,7 @@ const ScreenHome = ({ onOpenClient, onNavigate }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--navy-base)', position: 'relative' }}>
       <RFlare intensity={0.18} />
-      <HomeTopBar count={filtered.length} onNavigate={onNavigate} />
+      <HomeTopBar count={filtered.length} onNavigate={onNavigate} onProfileClick={() => setProfileOpen(true)} />
 
       <div style={{ flex: 1, overflow: 'auto', position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '26px 32px 48px' }}>
@@ -1391,11 +1483,13 @@ const ScreenHome = ({ onOpenClient, onNavigate }) => {
                   <span style={{ marginLeft: 'auto', fontFamily: HS.mono, fontSize: 9, color: 'var(--text-muted)', background: 'var(--navy-elevated)', padding: '1px 5px', borderRadius: 3, flexShrink: 0 }}>⌘K</span>
                 )}
               </div>
-              {/* New Report */}
-              <button onClick={() => setNewReportOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', color: '#0C182C', border: 'none', borderRadius: 8, fontFamily: HS.display, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,194,184,.25)', whiteSpace: 'nowrap' }}>
-                <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-                New Report
-              </button>
+              {/* New Report — hidden for viewers */}
+              {!_VIEWER_ROLE && (
+                <button onClick={() => setNewReportOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', color: '#0C182C', border: 'none', borderRadius: 8, fontFamily: HS.display, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,194,184,.25)', whiteSpace: 'nowrap' }}>
+                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+                  New Report
+                </button>
+              )}
             </div>
           </div>
 
@@ -1412,6 +1506,7 @@ const ScreenHome = ({ onOpenClient, onNavigate }) => {
             {filtered.map((c, i) =>
             <ClientRow
               key={c.id} client={c} idx={i} featured={c.featured}
+              isViewer={_VIEWER_ROLE}
               onOpen={onOpenClient || (() => {})}
               onEdit={() => setEditTarget(c)}
               onConfigure={() => setConfigTarget(c)}
@@ -1426,11 +1521,12 @@ const ScreenHome = ({ onOpenClient, onNavigate }) => {
       </div>
 
       {/* Modals */}
-      {newReportOpen && <NewReportModal onClose={() => setNewReportOpen(false)} onCreate={handleCreateReport} />}
-      {quickEditTarget && <QuickEditModal client={quickEditTarget} onSave={(name, logo) => handleQuickEdit(quickEditTarget.id, name, logo)} onClose={() => setQuickEditTarget(null)} />}
-      {editTarget && <EditModal client={editTarget} onSave={(form) => handleSaveEdit(editTarget.id, form)} onClose={() => setEditTarget(null)} />}
-      {configTarget && <ConfigurePanel client={configTarget} onClose={() => setConfigTarget(null)} onSave={(conn) => handleConfigureSave(configTarget.id, conn)} onOpenReport={(id) => { onOpenClient && onOpenClient(id); }} />}
-      {deleteTarget && <DeleteConfirm client={deleteTarget} onConfirm={handleDelete} onClose={() => setDeleteTarget(null)} />}
+      {profileOpen && <ViewerProfileModal onClose={() => setProfileOpen(false)} />}
+      {!_VIEWER_ROLE && newReportOpen && <NewReportModal onClose={() => setNewReportOpen(false)} onCreate={handleCreateReport} />}
+      {!_VIEWER_ROLE && quickEditTarget && <QuickEditModal client={quickEditTarget} onSave={(name, logo) => handleQuickEdit(quickEditTarget.id, name, logo)} onClose={() => setQuickEditTarget(null)} />}
+      {!_VIEWER_ROLE && editTarget && <EditModal client={editTarget} onSave={(form) => handleSaveEdit(editTarget.id, form)} onClose={() => setEditTarget(null)} />}
+      {!_VIEWER_ROLE && configTarget && <ConfigurePanel client={configTarget} onClose={() => setConfigTarget(null)} onSave={(conn) => handleConfigureSave(configTarget.id, conn)} onOpenReport={(id) => { onOpenClient && onOpenClient(id); }} />}
+      {!_VIEWER_ROLE && deleteTarget && <DeleteConfirm client={deleteTarget} onConfirm={handleDelete} onClose={() => setDeleteTarget(null)} />}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>);

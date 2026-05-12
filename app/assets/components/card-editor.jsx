@@ -71,7 +71,7 @@ const ESelect = ({ value, onChange, options, groups }) => (
       <optgroup key={g.label} label={g.label}>
         {g.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </optgroup>
-    )) : options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    )) : options?.map(o => <option key={o.value} value={o.value} disabled={!!o.disabled}>{o.label}</option>)}
   </select>
 );
 
@@ -143,6 +143,148 @@ const EChip = ({ children, color = EP.teal }) => (
 const EDivider = () => (
   <div style={{ height: 1, background: EP.edge, margin: '14px -16px', opacity: 0.7 }}/>
 );
+
+// ─── Drag-and-drop column/metric editor ──────────────────────────
+const ColumnsEditor = ({ columns, metrics, maxCols = 6, addLabel = 'Add column', onColumnsChange }) => {
+  const [dragIdx,  setDragIdx]  = React.useState(null);
+  const [dragOver, setDragOver] = React.useState(null);
+
+  const update = (i, val) => { const next = [...columns]; next[i] = val; onColumnsChange(next); };
+  const remove = (i) => onColumnsChange(columns.filter((_, j) => j !== i));
+  const add = () => {
+    const used = new Set(columns);
+    const first = metrics.find(m => !used.has(m.key));
+    if (first) onColumnsChange([...columns, first.key]);
+  };
+  const canAdd = columns.length < maxCols && metrics.some(m => !columns.includes(m.key));
+
+  const onDragEnd = () => {
+    if (dragIdx !== null && dragOver !== null && dragIdx !== dragOver) {
+      const next = [...columns];
+      const [moved] = next.splice(dragIdx, 1);
+      next.splice(dragOver, 0, moved);
+      onColumnsChange(next);
+    }
+    setDragIdx(null);
+    setDragOver(null);
+  };
+
+  return (
+    <div>
+      {columns.map((col, i) => (
+        <div
+          key={i}
+          draggable
+          onDragStart={() => setDragIdx(i)}
+          onDragEnter={() => setDragOver(i)}
+          onDragEnd={onDragEnd}
+          onDragOver={e => e.preventDefault()}
+          style={{
+            display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6,
+            opacity: dragIdx === i ? 0.4 : 1,
+            borderTop: dragOver === i && dragIdx !== i ? `2px solid ${EP.teal}` : '2px solid transparent',
+            transition: 'opacity .15s',
+          }}
+        >
+          <div title="Drag to reorder" style={{ cursor: 'grab', color: EP.muted, display: 'flex', alignItems: 'center', flexShrink: 0, padding: '0 2px' }}>
+            <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor">
+              <circle cx="3" cy="2.5" r="1.2"/><circle cx="7" cy="2.5" r="1.2"/>
+              <circle cx="3" cy="7" r="1.2"/><circle cx="7" cy="7" r="1.2"/>
+              <circle cx="3" cy="11.5" r="1.2"/><circle cx="7" cy="11.5" r="1.2"/>
+            </svg>
+          </div>
+          <div style={{ flex: 1 }}>
+            <ESelect
+              value={col}
+              onChange={v => update(i, v)}
+              options={metrics.map(m => ({ value: m.key, label: m.label, disabled: m.key !== col && columns.includes(m.key) }))}
+            />
+          </div>
+          <button
+            onClick={() => remove(i)}
+            title="Remove"
+            style={{
+              width: 30, height: 30, border: `1px solid rgba(220,38,38,.3)`,
+              borderRadius: 6, background: 'rgba(220,38,38,.08)',
+              color: EP.red, cursor: 'pointer', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', flexShrink: 0, padding: 0,
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/>
+            </svg>
+          </button>
+        </div>
+      ))}
+      <button
+        onClick={add}
+        disabled={!canAdd}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '6px 10px', background: 'transparent',
+          border: `1px dashed ${canAdd ? EP.teal + '66' : EP.edge}`,
+          borderRadius: 6, color: canAdd ? EP.teal : EP.muted,
+          cursor: canAdd ? 'pointer' : 'default',
+          fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 600,
+          width: '100%', justifyContent: 'center', marginTop: columns.length ? 2 : 0,
+          opacity: canAdd ? 1 : 0.45,
+        }}
+      >
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M5.5 1v9M1 5.5h9"/>
+        </svg>
+        {addLabel}
+      </button>
+    </div>
+  );
+};
+
+// ─── Variant-aware setup form (uses window.VARIANT_CONFIG_FIELDS) ─
+const VariantSetupForm = ({ variant, channel, config, onConfigChange }) => {
+  const schemas = (window.VARIANT_CONFIG_FIELDS || {})[variant] || [];
+  const metrics = (window.CHANNEL_METRICS || {})[channel] || [];
+
+  if (!schemas.length) return (
+    <div style={{ padding: '12px 0', fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted, lineHeight: 1.6, textAlign: 'center' }}>
+      No configurable fields for this variant.<br/>
+      <span style={{ fontSize: 9 }}>Use Browse to pick a different variant.</span>
+    </div>
+  );
+
+  return (
+    <>
+      {schemas.map(field => (
+        <ESection key={field.key} label={field.label}>
+          {field.type === 'enum' && (
+            <ESelect
+              value={config[field.key] ?? field.default}
+              onChange={v => onConfigChange({ ...config, [field.key]: v })}
+              options={field.options || []}
+            />
+          )}
+          {field.type === 'columns' && (
+            <ColumnsEditor
+              columns={Array.isArray(config[field.key]) ? config[field.key] : (Array.isArray(field.default) ? field.default : [])}
+              metrics={metrics.length ? metrics : [{ key: field.default, label: field.default }]}
+              maxCols={field.maxCols || 6}
+              onColumnsChange={cols => onConfigChange({ ...config, [field.key]: cols })}
+            />
+          )}
+          {field.type === 'dimensions' && (
+            <ColumnsEditor
+              columns={Array.isArray(config[field.key]) ? config[field.key] : (Array.isArray(field.default) ? field.default : [])}
+              metrics={((window.CHANNEL_DIMENSIONS || {})[channel] || []).length
+                ? (window.CHANNEL_DIMENSIONS[channel] || [])
+                : [{ key: Array.isArray(field.default) ? field.default[0] : field.default, label: field.default }]}
+              maxCols={field.maxCols || 4}
+              onColumnsChange={cols => onConfigChange({ ...config, [field.key]: cols })}
+            />
+          )}
+        </ESection>
+      ))}
+    </>
+  );
+};
 
 // ─── Chart type icon picker ───────────────────────────────────────
 const CHART_TYPES = [
@@ -531,6 +673,346 @@ const SetupCarousel = ({ state, setState }) => (
   </>
 );
 
+// ─── Source / metric / dim definitions (exposed on window) ──────────
+
+const SOURCE_METRICS = {
+  google: [
+    { key: 'spend',       label: 'Spend',         fmt: 'rupiah' },
+    { key: 'clicks',      label: 'Clicks',         fmt: 'num' },
+    { key: 'impressions', label: 'Impressions',    fmt: 'num' },
+    { key: 'conversions', label: 'Conversions',    fmt: 'num' },
+    { key: 'ctr',         label: 'CTR',            fmt: 'pct' },
+    { key: 'cpc',         label: 'Avg CPC',        fmt: 'rupiah' },
+    { key: 'cpa',         label: 'CPA',            fmt: 'rupiah' },
+    { key: 'roas',        label: 'ROAS',           fmt: 'roas' },
+    { key: 'cvr',         label: 'CVR',            fmt: 'pct' },
+  ],
+  meta: [
+    { key: 'spend',       label: 'Spend',             fmt: 'rupiah' },
+    { key: 'impressions', label: 'Impressions (Reach)', fmt: 'num' },
+    { key: 'clicks',      label: 'Link Clicks',        fmt: 'num' },
+    { key: 'conversions', label: 'Conversions',        fmt: 'num' },
+    { key: 'cpm',         label: 'CPM',                fmt: 'rupiah' },
+    { key: 'ctr',         label: 'CTR',                fmt: 'pct' },
+    { key: 'cpa',         label: 'CPA',                fmt: 'rupiah' },
+  ],
+  ga4: [
+    { key: 'sessions',    label: 'Sessions',          fmt: 'num' },
+    { key: 'users',       label: 'Users',             fmt: 'num' },
+    { key: 'pageviews',   label: 'Pageviews',         fmt: 'num' },
+    { key: 'engaged',     label: 'Engaged Sessions',  fmt: 'num' },
+    { key: 'bounce_rate', label: 'Bounce Rate',       fmt: 'pct' },
+  ],
+  search: [
+    { key: 'impressions', label: 'Impressions', fmt: 'num' },
+    { key: 'clicks',      label: 'Clicks',      fmt: 'num' },
+    { key: 'ctr',         label: 'CTR',         fmt: 'pct' },
+    { key: 'position',    label: 'Avg Position', fmt: 'num' },
+  ],
+};
+
+const SOURCE_DIMS = {
+  google: [
+    { key: 'name',          label: 'Campaign' },
+    { key: 'ad_group',      label: 'Ad Group' },
+    { key: 'keyword',       label: 'Keyword' },
+    { key: 'type',          label: 'Campaign Type' },
+    { key: 'device',        label: 'Device' },
+    { key: 'day',           label: 'Day' },
+    { key: 'month',         label: 'Month' },
+    { key: 'year',          label: 'Year' },
+  ],
+  meta: [
+    { key: 'campaign',  label: 'Campaign' },
+    { key: 'ad_set',    label: 'Ad Set' },
+    { key: 'ad',        label: 'Ad' },
+    { key: 'placement', label: 'Placement' },
+    { key: 'device',    label: 'Device' },
+    { key: 'gender',    label: 'Gender' },
+    { key: 'day',       label: 'Day' },
+    { key: 'month',     label: 'Month' },
+  ],
+  ga4: [
+    { key: 'source',  label: 'Source' },
+    { key: 'medium',  label: 'Medium' },
+    { key: 'channel', label: 'Channel' },
+    { key: 'device',  label: 'Device' },
+    { key: 'country', label: 'Country' },
+    { key: 'day',     label: 'Day' },
+    { key: 'month',   label: 'Month' },
+  ],
+  search: [
+    { key: 'query',   label: 'Query' },
+    { key: 'page',    label: 'Page' },
+    { key: 'country', label: 'Country' },
+    { key: 'device',  label: 'Device' },
+    { key: 'day',     label: 'Day' },
+    { key: 'month',   label: 'Month' },
+  ],
+};
+
+const CARD_DISPLAY_NAMES = {
+  'kpi-strip':       'KPI Strip',
+  'chart-area':      'Area Chart',
+  'chart-bar':       'Bar Chart',
+  'chart-donut':     'Donut Chart',
+  'chart-heatmap':   'Heatmap',
+  'table-campaigns': 'Campaigns Table',
+  'table-rankings':  'Rankings Table',
+};
+const SRC_DISPLAY = { google: 'Google Ads', meta: 'Meta Ads', ga4: 'GA4', search: 'Search Console' };
+const SRC_COLORS  = { google: '#4285F4', meta: '#0866FF', ga4: '#F9AB00', search: '#00C2B8' };
+
+// Per-card widget limits: how many metrics and dimensions make sense
+const WIDGET_LIMITS = {
+  'kpi-strip':      { maxMetrics: 6, maxDims: 0 },
+  'kpi-single':     { maxMetrics: 1, maxDims: 0 },
+  'chart-area':     { maxMetrics: 2, maxDims: 0 },
+  'chart-bar':      { maxMetrics: 2, maxDims: 0 },
+  'chart-donut':    { maxMetrics: 1, maxDims: 1 },
+  'chart-heatmap':  { maxMetrics: 0, maxDims: 0 },
+  'table-rankings': { maxMetrics: 8, maxDims: 4 },
+  'table-campaigns':{ maxMetrics: 8, maxDims: 4 },
+};
+
+// Extract human-readable account name from a connected source value
+const getSrcAccountLabel = (srcKey, connectedSources) => {
+  const src = (connectedSources || {})[srcKey];
+  if (!src) return null;
+  const name = typeof src === 'object' ? (src.name || src.id || '') : (typeof src === 'string' ? src : '');
+  return name ? `${SRC_DISPLAY[srcKey]}: ${name}` : SRC_DISPLAY[srcKey];
+};
+
+const getDefaultWidgetName = (cardId, srcKey) =>
+  `${CARD_DISPLAY_NAMES[cardId] || cardId} · ${SRC_DISPLAY[srcKey] || srcKey}`;
+
+// ─── Drag handle icon ─────────────────────────────────────────────
+const DragDots = () => (
+  <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" style={{ display: 'block' }}>
+    <circle cx="3" cy="2.5" r="1.2"/><circle cx="7" cy="2.5" r="1.2"/>
+    <circle cx="3" cy="7" r="1.2"/><circle cx="7" cy="7" r="1.2"/>
+    <circle cx="3" cy="11.5" r="1.2"/><circle cx="7" cy="11.5" r="1.2"/>
+  </svg>
+);
+
+// ─── TAB: Setup (simplified) ─────────────────────────────────────────
+const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connectedSources }) => {
+  const [dragMetIdx,  setDragMetIdx]  = React.useState(null);
+  const [dragMetOver, setDragMetOver] = React.useState(null);
+  const [dragDimIdx,  setDragDimIdx]  = React.useState(null);
+  const [dragDimOver, setDragDimOver] = React.useState(null);
+
+  if (!widgetId) {
+    return (
+      <div style={{ padding: '24px 0', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted, lineHeight: 1.7 }}>
+        Pilih widget di report<br/>untuk mengedit pengaturannya.
+      </div>
+    );
+  }
+
+  const srcKey  = (widgetId || '').split('-')[0];
+  const limits  = WIDGET_LIMITS[cardId] || { maxMetrics: 5, maxDims: 3 };
+  const showDims = limits.maxDims > 0 && (cardId || '').startsWith('table-') || limits.maxDims > 0;
+  const showMetrics = limits.maxMetrics > 0;
+  const isTable = (cardId || '').startsWith('table-');
+  const availM  = SOURCE_METRICS[srcKey] || [];
+  const availD  = SOURCE_DIMS[srcKey] || [];
+
+  const cfg = {
+    name: '',
+    metrics: availM.slice(0, Math.min(4, limits.maxMetrics)).map(m => m.key),
+    metricLabels: {},
+    dimensions: availD.slice(0, Math.min(1, limits.maxDims)).map(d => d.key),
+    filters: [],
+    fontSize: 'M',
+    pageSize: 10,
+    ...(widgetConfig || {}),
+  };
+
+  const up = changes => onConfigChange && onConfigChange(widgetId, changes);
+
+  const reorderMetrics = (from, to) => {
+    const nx = [...cfg.metrics]; const [m] = nx.splice(from, 1); nx.splice(to, 0, m); up({ metrics: nx });
+  };
+  const reorderDims = (from, to) => {
+    const nx = [...cfg.dimensions]; const [m] = nx.splice(from, 1); nx.splice(to, 0, m); up({ dimensions: nx });
+  };
+
+  const connectedList = ['google','meta','ga4','search'].filter(s => connectedSources?.[s]);
+
+  return (
+    <>
+      {/* Name */}
+      <ESection label="Widget name">
+        <EInput value={cfg.name} onChange={v => up({ name: v })} placeholder={getDefaultWidgetName(cardId, srcKey)}/>
+      </ESection>
+      <EDivider/>
+
+      {/* Data source — show account name */}
+      <ESection label="Data source">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {connectedList.map(s => {
+            const label = getSrcAccountLabel(s, connectedSources);
+            const isSrcWidget = s === srcKey;
+            return (
+              <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px', border: `1px solid ${isSrcWidget ? SRC_COLORS[s] : SRC_COLORS[s]+'44'}`, borderRadius: 7, background: isSrcWidget ? SRC_COLORS[s] + '18' : 'transparent', cursor: 'default' }}>
+                <ChannelLogo channel={s} size={13}/>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 700, color: isSrcWidget ? SRC_COLORS[s] : EP.sec, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
+                  {isSrcWidget && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, color: EP.muted, marginTop: 1 }}>Widget ini menggunakan sumber ini</div>}
+                </div>
+                {isSrcWidget && <div style={{ width: 7, height: 7, borderRadius: '50%', background: SRC_COLORS[s], flexShrink: 0 }}/>}
+              </div>
+            );
+          })}
+          {connectedList.length === 0 && (
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted, lineHeight: 1.6 }}>
+              Belum ada sumber data. Hubungkan di Configure.
+            </span>
+          )}
+        </div>
+      </ESection>
+
+      {/* Metrics */}
+      {showMetrics && availM.length > 0 && (
+        <>
+          <EDivider/>
+          <ESection label={`Metrics (${cfg.metrics.length}/${limits.maxMetrics})`}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 6 }}>
+              {cfg.metrics.map((key, i) => {
+                const meta = availM.find(m => m.key === key) || { key, label: key };
+                return (
+                  <div key={i}
+                    draggable
+                    onDragStart={() => setDragMetIdx(i)}
+                    onDragEnter={() => setDragMetOver(i)}
+                    onDragOver={e => e.preventDefault()}
+                    onDragEnd={() => { if (dragMetIdx !== null && dragMetOver !== null && dragMetIdx !== dragMetOver) reorderMetrics(dragMetIdx, dragMetOver); setDragMetIdx(null); setDragMetOver(null); }}
+                    style={{ display: 'flex', gap: 4, alignItems: 'center', opacity: dragMetIdx === i ? 0.4 : 1, borderTop: dragMetOver === i && dragMetIdx !== i ? `2px solid ${EP.teal}` : '2px solid transparent' }}
+                  >
+                    <div title="Drag to reorder" style={{ cursor: 'grab', color: EP.muted, display: 'flex', alignItems: 'center', flexShrink: 0 }}><DragDots/></div>
+                    <div style={{ flex: 1 }}>
+                      <ESelect value={key} onChange={v => { const nx = [...cfg.metrics]; nx[i] = v; up({ metrics: nx }); }}
+                        options={availM.map(m => ({ value: m.key, label: m.label, disabled: m.key !== key && cfg.metrics.includes(m.key) }))}/>
+                    </div>
+                    <input value={cfg.metricLabels?.[key] ?? meta.label}
+                      onChange={e => up({ metricLabels: { ...(cfg.metricLabels || {}), [key]: e.target.value } })}
+                      placeholder={meta.label}
+                      style={{ width: 72, padding: '6px 7px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}
+                    />
+                    <button onClick={() => up({ metrics: cfg.metrics.filter((_, j) => j !== i) })}
+                      disabled={cfg.metrics.length <= 1}
+                      style={{ width: 24, height: 24, border: `1px solid rgba(220,38,38,.3)`, borderRadius: 5, background: 'rgba(220,38,38,.08)', color: EP.red, cursor: cfg.metrics.length <= 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: cfg.metrics.length <= 1 ? 0.3 : 1 }}>
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            {cfg.metrics.length < limits.maxMetrics && (
+              <button onClick={() => { const f = availM.find(m => !cfg.metrics.includes(m.key)); if (f) up({ metrics: [...cfg.metrics, f.key] }); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px dashed ${EP.teal}66`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 1v8M1 5h8"/></svg>
+                Add metric
+              </button>
+            )}
+          </ESection>
+        </>
+      )}
+
+      {/* Dimensions — tables and donut only */}
+      {showDims && availD.length > 0 && (
+        <>
+          <EDivider/>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0 10px' }}>
+            <div style={{ flex: 1, height: 1, background: EP.edge }}/>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, color: EP.muted, textTransform: 'uppercase', letterSpacing: '0.12em', whiteSpace: 'nowrap' }}>Dimensions</span>
+            <div style={{ flex: 1, height: 1, background: EP.edge }}/>
+          </div>
+          <ESection label={`Dimensions (${cfg.dimensions.length}/${limits.maxDims})`}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 6 }}>
+              {cfg.dimensions.map((key, i) => (
+                <div key={i}
+                  draggable
+                  onDragStart={() => setDragDimIdx(i)}
+                  onDragEnter={() => setDragDimOver(i)}
+                  onDragOver={e => e.preventDefault()}
+                  onDragEnd={() => { if (dragDimIdx !== null && dragDimOver !== null && dragDimIdx !== dragDimOver) reorderDims(dragDimIdx, dragDimOver); setDragDimIdx(null); setDragDimOver(null); }}
+                  style={{ display: 'flex', gap: 4, alignItems: 'center', opacity: dragDimIdx === i ? 0.4 : 1, borderTop: dragDimOver === i && dragDimIdx !== i ? `2px solid ${EP.teal}` : '2px solid transparent' }}
+                >
+                  <div title="Drag to reorder" style={{ cursor: 'grab', color: EP.muted, display: 'flex', alignItems: 'center', flexShrink: 0 }}><DragDots/></div>
+                  <div style={{ flex: 1 }}>
+                    <ESelect value={key} onChange={v => { const nx = [...cfg.dimensions]; nx[i] = v; up({ dimensions: nx }); }}
+                      options={availD.map(d => ({ value: d.key, label: d.label, disabled: d.key !== key && cfg.dimensions.includes(d.key) }))}/>
+                  </div>
+                  <button onClick={() => up({ dimensions: cfg.dimensions.filter((_, j) => j !== i) })}
+                    disabled={cfg.dimensions.length <= 1}
+                    style={{ width: 24, height: 24, border: `1px solid rgba(220,38,38,.3)`, borderRadius: 5, background: 'rgba(220,38,38,.08)', color: EP.red, cursor: cfg.dimensions.length <= 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: cfg.dimensions.length <= 1 ? 0.3 : 1 }}>
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+            {cfg.dimensions.length < limits.maxDims && availD.some(d => !cfg.dimensions.includes(d.key)) && (
+              <button onClick={() => { const f = availD.find(d => !cfg.dimensions.includes(d.key)); if (f) up({ dimensions: [...cfg.dimensions, f.key] }); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px dashed ${EP.teal}66`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 1v8M1 5h8"/></svg>
+                Add dimension
+              </button>
+            )}
+          </ESection>
+
+          {/* Filters */}
+          {isTable && (
+            <>
+              <EDivider/>
+              <ESection label="Filters">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 6 }}>
+                  {(cfg.filters || []).map((f, fi) => (
+                    <div key={fi} style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                      <div style={{ width: 82 }}>
+                        <ESelect value={f.dim || cfg.dimensions[0]} onChange={v => { const nf = [...cfg.filters]; nf[fi] = { ...f, dim: v }; up({ filters: nf }); }}
+                          options={cfg.dimensions.map(k => { const d = availD.find(x => x.key === k)||{key:k,label:k}; return { value:k, label:d.label }; })}/>
+                      </div>
+                      <div style={{ width: 42 }}>
+                        <ESelect value={f.op || 'contains'} onChange={v => { const nf = [...cfg.filters]; nf[fi] = { ...f, op: v }; up({ filters: nf }); }}
+                          options={[{value:'contains',label:'~'},{value:'is',label:'='},{value:'not',label:'≠'},{value:'starts',label:'^'}]}/>
+                      </div>
+                      <input value={f.val || ''} onChange={e => { const nf = [...cfg.filters]; nf[fi] = { ...f, val: e.target.value }; up({ filters: nf }); }}
+                        placeholder="value"
+                        style={{ flex: 1, minWidth: 0, padding: '6px 7px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}/>
+                      <button onClick={() => up({ filters: cfg.filters.filter((_, j) => j !== fi) })}
+                        style={{ width: 22, height: 22, border: `1px solid ${EP.edge}`, borderRadius: 4, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13, lineHeight: 1 }}>×</button>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={() => up({ filters: [...(cfg.filters||[]), { dim: cfg.dimensions[0] || 'campaign', op: 'contains', val: '' }] })}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 5, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 600 }}>
+                  <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4.5 1v7M1 4.5h7"/></svg>
+                  Add filter
+                </button>
+              </ESection>
+              <EDivider/>
+              <ESection label="Rows per page">
+                <div style={{ display: 'flex', gap: 5 }}>
+                  {[5, 10, 20, 50].map(n => (
+                    <button key={n} onClick={() => up({ pageSize: n })}
+                      style={{ flex: 1, padding: '6px 0', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, borderRadius: 6, cursor: 'pointer', border: `1px solid ${(cfg.pageSize || 10) === n ? EP.teal : EP.edge}`, background: (cfg.pageSize || 10) === n ? EP.teal + '22' : 'transparent', color: (cfg.pageSize || 10) === n ? EP.teal : EP.muted }}
+                    >{n}</button>
+                  ))}
+                </div>
+              </ESection>
+            </>
+          )}
+        </>
+      )}
+
+      <EDivider/>
+      <ESizeButtons label="Font size" value={cfg.fontSize || 'M'} onChange={v => up({ fontSize: v })}/>
+    </>
+  );
+};
+
 // ─── TAB: Style ───────────────────────────────────────────────────
 
 const ACCENT_COLORS = ['#F8B400', '#00C2B8', '#7000FF', '#4285F4', '#16A34A', '#E3170A', '#0EA5E9', '#EC4899'];
@@ -650,6 +1132,523 @@ const PagesTab = ({ state, setState }) => {
   );
 };
 
+// ─── Widget thumbnail mockups ────────────────────────────────────
+const CardThumbnail = ({ cardId }) => {
+  const T = '#00C2B8', Td = 'rgba(0,194,184,.22)', Ts = 'rgba(0,194,184,.12)';
+  const Au = '#F8B400', Gr = '#4ADE80', Pu = 'rgba(148,80,255,.8)';
+  const sp = { width: '100%', viewBox: '0 0 110 62', fill: 'none',
+               style: { display: 'block' } };
+  // dark thumbnail bg that works on all card states
+  const bg = <rect width="110" height="62" fill="rgba(5,12,28,.55)"/>;
+
+  switch (cardId) {
+    /* ── KPI ───────────────────────────────────────────────── */
+    case 'kpi-single': return (
+      <svg {...sp}>{bg}
+        <text x="10" y="16" fontFamily="monospace" fontSize="5.5" fill="rgba(255,255,255,.3)" letterSpacing=".5">SESSIONS</text>
+        <text x="10" y="34" fontFamily="monospace" fontSize="17" fontWeight="700" fill={T}>24.830</text>
+        <text x="10" y="46" fontFamily="monospace" fontSize="7" fill={Gr}>▲ 8.1%</text>
+        <polyline points="62,54 70,48 78,44 86,46 94,36 102,28 110,20" stroke={T} strokeWidth="1.5" opacity=".7"/>
+        <path d="M62,54 70,48 78,44 86,46 94,36 102,28 110,20 110,62 62,62Z" fill={Ts} opacity=".6"/>
+      </svg>);
+
+    case 'kpi-strip': return (
+      <svg {...sp}>{bg}
+        {[0,1,2,3].map(i=>(
+          <g key={i} transform={`translate(${i*27+2},7)`}>
+            <rect width="24" height="48" rx="3" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.06)" strokeWidth=".5"/>
+            <rect x="4" y="5" width="16" height="3" rx="1.5" fill="rgba(255,255,255,.18)"/>
+            <text x="12" y="27" textAnchor="middle" fontFamily="monospace" fontSize="9" fontWeight="700" fill={T}>1.4K</text>
+            <text x="12" y="38" textAnchor="middle" fontFamily="monospace" fontSize="5.5" fill={Gr}>▲ 5%</text>
+            <rect x="4" y="43" width="16" height="2" rx="1" fill="rgba(255,255,255,.09)"/>
+          </g>))}
+      </svg>);
+
+    case 'kpi-compare': return (
+      <svg {...sp}>{bg}
+        <line x1="55" y1="8" x2="55" y2="54" stroke="rgba(255,255,255,.07)" strokeWidth=".8"/>
+        <text x="9" y="17" fontFamily="monospace" fontSize="5" fill="rgba(255,255,255,.3)">THIS PERIOD</text>
+        <text x="9" y="33" fontFamily="monospace" fontSize="14" fontWeight="700" fill={T}>2.4K</text>
+        <text x="9" y="45" fontFamily="monospace" fontSize="6.5" fill={Gr}>▲ 12.3%</text>
+        <text x="60" y="17" fontFamily="monospace" fontSize="5" fill="rgba(255,255,255,.3)">PREV PERIOD</text>
+        <text x="60" y="33" fontFamily="monospace" fontSize="14" fontWeight="700" fill="rgba(255,255,255,.45)">2.1K</text>
+        <text x="60" y="45" fontFamily="monospace" fontSize="6.5" fill="rgba(255,255,255,.25)">Mar 2025</text>
+      </svg>);
+
+    case 'kpi-stacked': return (
+      <svg {...sp}>{bg}
+        {[0,1,2,3].map(i=>(
+          <g key={i} transform={`translate(0,${i*13+7})`}>
+            <rect x="6" y="0" width={[36,28,40,22][i]} height="3" rx="1.5" fill="rgba(255,255,255,.2)"/>
+            <rect x="62" y="0" width={[28,20,24,16][i]} height="3" rx="1.5" fill={i<3?Td:'rgba(255,255,255,.1)'}/>
+            <text x="100" y="4" textAnchor="middle" fontFamily="monospace" fontSize="7" fill={i===3?'rgba(220,80,80,.8)':Gr}>{i===3?'▼':'▲'}</text>
+          </g>))}
+      </svg>);
+
+    /* ── Charts ────────────────────────────────────────────── */
+    case 'chart-area': return (
+      <svg {...sp}>{bg}
+        {[16,30,44].map(y=><line key={y} x1="8" y1={y} x2="106" y2={y} stroke="rgba(255,255,255,.04)" strokeWidth=".5"/>)}
+        <path d="M8,52 22,44 38,38 54,30 70,25 88,18 106,12 106,56 8,56Z" fill={Td} opacity=".7"/>
+        <polyline points="8,52 22,44 38,38 54,30 70,25 88,18 106,12" stroke={T} strokeWidth="1.5"/>
+        <path d="M8,56 22,52 38,48 54,44 70,40 88,36 106,32 106,56 8,56Z" fill="rgba(248,180,0,.13)" opacity=".7"/>
+        <polyline points="8,56 22,52 38,48 54,44 70,40 88,36 106,32" stroke={Au} strokeWidth="1.2" strokeDasharray="3 2"/>
+      </svg>);
+
+    case 'chart-area-axes': return (
+      <svg {...sp}>{bg}
+        <line x1="18" y1="52" x2="106" y2="52" stroke="rgba(255,255,255,.2)" strokeWidth=".8"/>
+        <line x1="18" y1="8"  x2="18"  y2="52" stroke="rgba(255,255,255,.2)" strokeWidth=".8"/>
+        {[10,26,42].map((y,i)=><text key={i} x="15" y={y} textAnchor="end" fontFamily="monospace" fontSize="4.5" fill="rgba(255,255,255,.28)">{(3-i)*10}</text>)}
+        {[36,58,80,100].map((x,i)=><text key={i} x={x} y="59" textAnchor="middle" fontFamily="monospace" fontSize="4.5" fill="rgba(255,255,255,.28)">W{i+1}</text>)}
+        <path d="M20,46 38,38 56,30 74,23 92,18 106,13 106,52 20,52Z" fill={Td} opacity=".6"/>
+        <polyline points="20,46 38,38 56,30 74,23 92,18 106,13" stroke={T} strokeWidth="1.5"/>
+      </svg>);
+
+    case 'chart-line': return (
+      <svg {...sp}>{bg}
+        <text x="9" y="16" fontFamily="monospace" fontSize="5.5" fill="rgba(255,255,255,.3)">SESSIONS</text>
+        <text x="9" y="31" fontFamily="monospace" fontSize="14" fontWeight="700" fill={T}>24.830</text>
+        <text x="9" y="41" fontFamily="monospace" fontSize="7" fill={Gr}>▲ 8.1%</text>
+        <path d="M0,62 20,55 42,51 62,48 80,40 96,30 110,20 110,62Z" fill={Ts} opacity=".5"/>
+        <polyline points="0,62 20,55 42,51 62,48 80,40 96,30 110,20" stroke={T} strokeWidth="1.5"/>
+        <circle cx="96" cy="30" r="3" fill={T}/>
+      </svg>);
+
+    case 'chart-bar': return (
+      <svg {...sp}>{bg}
+        {[[10,36],[24,22],[38,30],[52,16],[66,28],[80,20],[94,34]].map(([x,y],i)=>(
+          <rect key={i} x={x} y={y} width="12" height={54-y} rx="2"
+            fill={i===3?T:Td} opacity={i===3?1:.75}/>))}
+        <line x1="5" y1="54" x2="108" y2="54" stroke="rgba(255,255,255,.1)" strokeWidth=".7"/>
+      </svg>);
+
+    case 'chart-donut': return (
+      <svg {...sp}>{bg}
+        <circle cx="34" cy="31" r="21" stroke="rgba(255,255,255,.06)" strokeWidth="10" fill="none"/>
+        <circle cx="34" cy="31" r="21" stroke={T}  strokeWidth="10" fill="none"
+          strokeDasharray="83 48.8" strokeDashoffset="33"/>
+        <circle cx="34" cy="31" r="21" stroke={Au} strokeWidth="10" fill="none"
+          strokeDasharray="30 101.8" strokeDashoffset="-50"/>
+        <circle cx="34" cy="31" r="21" stroke="rgba(148,80,255,.7)" strokeWidth="10" fill="none"
+          strokeDasharray="18.8 113" strokeDashoffset="-80"/>
+        <text x="34" y="34" textAnchor="middle" fontFamily="monospace" fontSize="8" fontWeight="700" fill={T}>65%</text>
+        {[[T,'Search 63%'],[Au,'Display 23%'],[Pu,'Video 14%']].map(([c,l],i)=>(
+          <g key={i} transform={`translate(66,${i*12+14})`}>
+            <rect width="6" height="6" rx="1.5" fill={c}/>
+            <text x="9" y="5.5" fontFamily="monospace" fontSize="6" fill="rgba(255,255,255,.45)">{l}</text>
+          </g>))}
+      </svg>);
+
+    case 'chart-heatmap': return (
+      <svg {...sp}>{bg}
+        {Array.from({length:5},(_,r)=>Array.from({length:7},(_,c)=>{
+          const v=Math.sin(r*1.3+c*0.9)*0.5+0.5;
+          return <rect key={`${r}${c}`} x={c*14+8} y={r*10+5} width="12" height="8" rx="1.5"
+            fill={`rgba(0,194,184,${(0.08+v*0.72).toFixed(2)})`}/>;
+        }))}
+      </svg>);
+
+    case 'chart-sparks': return (
+      <svg {...sp}>{bg}
+        {[
+          {y:7,  pts:"24,17 34,14 44,10 54,12 64,8  74,6  84,9"},
+          {y:20, pts:"24,29 34,26 44,28 54,24 64,22 74,20 84,24"},
+          {y:33, pts:"24,42 34,40 44,43 54,38 64,36 74,41 84,37"},
+          {y:46, pts:"24,55 34,52 44,54 54,51 64,50 74,53 84,49"},
+        ].map(({y,pts},i)=>(
+          <g key={i}>
+            <rect x="6"  y={y+2} width="15" height="2.5" rx="1.2" fill="rgba(255,255,255,.2)"/>
+            <polyline points={pts} stroke={T} strokeWidth="1.2" opacity=".9"/>
+            <rect x="88" y={y+2} width="16" height="2.5" rx="1.2" fill="rgba(255,255,255,.35)"/>
+          </g>))}
+      </svg>);
+
+    /* ── Tables ────────────────────────────────────────────── */
+    case 'table-channels': return (
+      <svg {...sp}>{bg}
+        <rect x="4" y="5" width="102" height="9" rx="2" fill="rgba(255,255,255,.07)"/>
+        {[8,32,56,80].map((x,i)=><rect key={i} x={x} y="7.5" width={[18,16,16,16][i]} height="3.5" rx="1" fill="rgba(255,255,255,.22)"/>)}
+        {[17,27,37,47].map((y,ri)=>(
+          <g key={ri}>
+            <rect x="4" y={y} width="102" height="8.5" rx="1" fill={ri%2===0?'rgba(255,255,255,.03)':'none'}/>
+            {[0,1,2,3].map(ci=>(
+              <rect key={ci} x={[8,32,56,80][ci]} y={y+2.5} width={[18,16,16,16][ci]} height="3" rx="1"
+                fill={ci===0?'rgba(255,255,255,.22)':ci===1?`rgba(0,194,184,${0.18+ri*0.04})`:'rgba(255,255,255,.1)'}/>))}
+          </g>))}
+      </svg>);
+
+    case 'table-campaigns': return (
+      <svg {...sp}>{bg}
+        {[0,1,2,3,4].map(i=>(
+          <g key={i} transform={`translate(6,${i*11+6})`}>
+            <circle cx="5" cy="4.5" r="4" fill={[T,Au,'#7C3AED','rgba(255,255,255,.3)',T][i]} opacity=".8"/>
+            <rect x="14" y="2" width={[42,32,38,26,34][i]} height="3" rx="1.5" fill="rgba(255,255,255,.22)"/>
+            <rect x="72" y="2" width="14" height="3" rx="1.5" fill="rgba(255,255,255,.14)"/>
+            <rect x="90" y="2" width="12" height="3" rx="1.5" fill={i<3?Td:'rgba(255,255,255,.1)'}/>
+          </g>))}
+      </svg>);
+
+    case 'table-rankings': return (
+      <svg {...sp}>{bg}
+        {[0,1,2,3,4].map(i=>(
+          <g key={i} transform={`translate(6,${i*11+6})`}>
+            <text x="7" y="7.5" textAnchor="middle" fontFamily="monospace" fontSize="6.5" fontWeight="700"
+              fill={i<3?T:'rgba(255,255,255,.28)'}>{i+1}</text>
+            <rect x="16" y="2" width={[50,42,36,28,20][i]} height="3" rx="1.5" fill="rgba(255,255,255,.22)"/>
+            <rect x="72" y="2" width="14" height="3" rx="1.5" fill="rgba(255,255,255,.14)"/>
+            <rect x="90" y="2" width={[28,22,16,10,6][i]} height="3" rx="1.5" fill={Td}/>
+          </g>))}
+      </svg>);
+
+    /* ── Progress ──────────────────────────────────────────── */
+    case 'progress-psi': return (
+      <svg {...sp}>{bg}
+        {[[26,22],[84,22],[26,48],[84,48]].map(([cx,cy],i)=>(
+          <g key={i}>
+            <circle cx={cx} cy={cy} r="13" stroke="rgba(255,255,255,.07)" strokeWidth="5" fill="none"/>
+            <circle cx={cx} cy={cy} r="13" stroke={[T,T,Gr,Au][i]} strokeWidth="5" fill="none"
+              strokeDasharray={`${[51,40,46,30][i]} 81.7`} strokeDashoffset="20.4" strokeLinecap="round"/>
+            <text x={cx} y={cy+3} textAnchor="middle" fontFamily="monospace" fontSize="6" fontWeight="700"
+              fill="rgba(255,255,255,.85)">{[90,78,86,65][i]}</text>
+          </g>))}
+      </svg>);
+
+    case 'progress-score': return (
+      <svg {...sp}>{bg}
+        <circle cx="38" cy="31" r="24" stroke="rgba(255,255,255,.06)" strokeWidth="9" fill="none"/>
+        <circle cx="38" cy="31" r="24" stroke={T} strokeWidth="9" fill="none"
+          strokeDasharray="122 150.8" strokeDashoffset="37.7" strokeLinecap="round"/>
+        <text x="38" y="28" textAnchor="middle" fontFamily="monospace" fontSize="11" fontWeight="700" fill={T}>85</text>
+        <text x="38" y="38" textAnchor="middle" fontFamily="monospace" fontSize="5" fill="rgba(255,255,255,.35)">SCORE</text>
+        {[10,22,34,46].map((y,i)=>(
+          <g key={i}>
+            <rect x="74" y={y} width={[28,22,26,18][i]} height="3" rx="1" fill="rgba(255,255,255,.18)"/>
+            <rect x="106" y={y} width="0" height="3" rx="1" fill={Td}/>
+          </g>))}
+        {[16,28,40,52].map((y,i)=>(
+          <rect key={i} x="74" y={y} width={[16,10,14,8][i]} height="2.5" rx="1" fill={i<2?Td:'rgba(255,255,255,.1)'}/>))}
+      </svg>);
+
+    case 'progress-goals': return (
+      <svg {...sp}>{bg}
+        {[[0.82,T],[0.55,Au],[0.91,Gr],[0.38,'rgba(255,255,255,.38)']].map(([pct,color],i)=>(
+          <g key={i} transform={`translate(8,${i*13+7})`}>
+            <rect x="0" y="0" width="18" height="3" rx="1.5" fill="rgba(255,255,255,.18)"/>
+            <rect x="22" y="0" width="76" height="5" rx="2.5" fill="rgba(255,255,255,.07)"/>
+            <rect x="22" y="0" width={76*pct} height="5" rx="2.5" fill={color} opacity=".8"/>
+          </g>))}
+      </svg>);
+
+    case 'progress-pacing': return (
+      <svg {...sp}>{bg}
+        <text x="8" y="14" fontFamily="monospace" fontSize="5.5" fill="rgba(255,255,255,.3)">BUDGET PACING</text>
+        <rect x="8" y="22" width="94" height="11" rx="5.5" fill="rgba(255,255,255,.07)"/>
+        <rect x="8" y="22" width="66" height="11" rx="5.5" fill={T} opacity=".75"/>
+        <line x1="74" y1="18" x2="74" y2="37" stroke="rgba(255,255,255,.55)" strokeWidth="1.5"/>
+        <text x="8"  y="48" fontFamily="monospace" fontSize="7.5" fontWeight="700" fill={T}>1.5 Jt</text>
+        <text x="52" y="48" fontFamily="monospace" fontSize="6.5" fill="rgba(255,255,255,.28)">of 2.0 Jt (70%)</text>
+      </svg>);
+
+    case 'progress-grid': return (
+      <svg {...sp}>{bg}
+        {[[24,22],[86,22],[24,48],[86,48]].map(([cx,cy],i)=>(
+          <g key={i}>
+            <circle cx={cx} cy={cy} r="16" stroke="rgba(255,255,255,.07)" strokeWidth="6" fill="none"/>
+            <circle cx={cx} cy={cy} r="16" stroke={[T,Au,Gr,Pu][i]} strokeWidth="6" fill="none"
+              strokeDasharray={`${[63,46,55,38][i]} 100.5`} strokeDashoffset="25.1" strokeLinecap="round"/>
+            <text x={cx} y={cy+3.5} textAnchor="middle" fontFamily="monospace" fontSize="7" fontWeight="700"
+              fill="rgba(255,255,255,.88)">{[92,74,88,62][i]}</text>
+          </g>))}
+      </svg>);
+
+    /* ── Lists ─────────────────────────────────────────────── */
+    case 'list-keywords': return (
+      <svg {...sp}>{bg}
+        {[0,1,2,3,4].map(i=>(
+          <g key={i} transform={`translate(6,${i*11+6})`}>
+            <text x="7" y="7.5" textAnchor="middle" fontFamily="monospace" fontSize="6"
+              fill={i<3?T:'rgba(255,255,255,.28)'}>{i+1}</text>
+            <rect x="16" y="2.5" width={[52,44,58,36,48][i]} height="3" rx="1.5" fill="rgba(255,255,255,.22)"/>
+          </g>))}
+      </svg>);
+
+    case 'list-pages': return (
+      <svg {...sp}>{bg}
+        {[0,1,2,3,4].map(i=>(
+          <g key={i} transform={`translate(6,${i*11+6})`}>
+            <rect x="0" y="2" width={[44,36,40,28,34][i]} height="3" rx="1.5" fill="rgba(255,255,255,.2)"/>
+            <rect x="52" y="1" width="48" height="5" rx="2.5" fill="rgba(255,255,255,.07)"/>
+            <rect x="52" y="1" width={[40,28,44,14,32][i]} height="5" rx="2.5" fill={Td} opacity=".9"/>
+          </g>))}
+      </svg>);
+
+    case 'list-countries': return (
+      <svg {...sp}>{bg}
+        {[[0.88,'US'],[0.60,'ID'],[0.40,'AU'],[0.24,'SG']].map(([pct,lbl],i)=>(
+          <g key={i} transform={`translate(6,${i*13+7})`}>
+            <text x="9" y="7.5" textAnchor="middle" fontFamily="monospace" fontSize="5.5"
+              fill="rgba(255,255,255,.38)">{lbl}</text>
+            <rect x="20" y="2"  width="80"    height="6" rx="3" fill="rgba(255,255,255,.07)"/>
+            <rect x="20" y="2"  width={80*pct} height="6" rx="3" fill={T} opacity=".7"/>
+          </g>))}
+      </svg>);
+
+    case 'list-devices': return (
+      <svg {...sp}>{bg}
+        <text x="8" y="14" fontFamily="monospace" fontSize="5.5" fill="rgba(255,255,255,.3)">DEVICE SPLIT</text>
+        <rect x="8"  y="22" width="58" height="11" rx="2" fill={T}  opacity=".75"/>
+        <rect x="68" y="22" width="26" height="11" rx="2" fill={Au} opacity=".75"/>
+        <rect x="96" y="22" width="10" height="11" rx="2" fill={Pu}/>
+        {[[T,'Desktop 53%'],[Au,'Mobile 24%'],[Pu,'Tablet 9%']].map(([c,l],i)=>(
+          <g key={i} transform={`translate(${i*36+8},42)`}>
+            <rect width="5" height="5" rx="1.2" fill={c}/>
+            <text x="8" y="4.5" fontFamily="monospace" fontSize="5" fill="rgba(255,255,255,.38)">{l}</text>
+          </g>))}
+      </svg>);
+
+    /* ── Highlights ────────────────────────────────────────── */
+    case 'carousel-highlights': return (
+      <svg {...sp}>{bg}
+        <rect x="6"  y="5"  width="92" height="52" rx="5" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.08)" strokeWidth=".5"/>
+        <rect x="14" y="11" width="50" height="3" rx="1.5" fill={T} opacity=".7"/>
+        <rect x="14" y="17" width="70" height="2.5" rx="1.25" fill="rgba(255,255,255,.22)"/>
+        <rect x="14" y="22" width="58" height="2.5" rx="1.25" fill="rgba(255,255,255,.15)"/>
+        <text x="14" y="40" fontFamily="monospace" fontSize="12" fontWeight="700" fill="rgba(255,255,255,.88)">24.830</text>
+        <text x="14" y="50" fontFamily="monospace" fontSize="7" fill={Gr}>▲ 8.1%</text>
+        {[0,1,2].map(i=><circle key={i} cx={50+i*6} cy="58" r={i===0?2:1.5} fill={i===0?T:'rgba(255,255,255,.22)'}/>)}
+      </svg>);
+
+    /* ── Narrative / Text ─────────────────────────────────── */
+    case 'narrative-hero': return (
+      <svg {...sp}>{bg}
+        {/* top accent bar */}
+        <rect x="0" y="0" width="110" height="5" fill={T} opacity=".55"/>
+        {/* eyebrow label */}
+        <rect x="9" y="11" width="28" height="3" rx="1.5" fill={T} opacity=".55"/>
+        {/* headline — large */}
+        <rect x="9" y="18" width="88" height="7" rx="2" fill="rgba(255,255,255,.55)"/>
+        <rect x="9" y="28" width="68" height="7" rx="2" fill="rgba(255,255,255,.4)"/>
+        {/* body copy lines */}
+        <rect x="9" y="40" width="90" height="3" rx="1.5" fill="rgba(255,255,255,.18)"/>
+        <rect x="9" y="46" width="76" height="3" rx="1.5" fill="rgba(255,255,255,.13)"/>
+        <rect x="9" y="52" width="50" height="3" rx="1.5" fill="rgba(255,255,255,.1)"/>
+      </svg>);
+
+    case 'narrative-note': return (
+      <svg {...sp}>{bg}
+        {[0,1,2].map(i=>(
+          <g key={i} transform={`translate(0,${i*19+4})`}>
+            {i>0 && <line x1="8" y1="0" x2="102" y2="0" stroke="rgba(255,255,255,.07)" strokeWidth=".5"/>}
+            {/* numbered bullet */}
+            <circle cx="17" cy="10" r="6" fill={Td}/>
+            <text x="17" y="13" textAnchor="middle" fontFamily="monospace" fontSize="7" fontWeight="700" fill={T}>{i+1}</text>
+            {/* text lines */}
+            <rect x="28" y="6"  width={[56,48,60][i]} height="3"   rx="1.5" fill="rgba(255,255,255,.45)"/>
+            <rect x="28" y="12" width={[44,54,38][i]} height="2.5" rx="1.25" fill="rgba(255,255,255,.18)"/>
+          </g>))}
+      </svg>);
+
+    case 'narrative-callout': return (
+      <svg {...sp}>{bg}
+        {/* thick left accent border */}
+        <rect x="0" y="0" width="5" height="62" fill={T} opacity=".7"/>
+        {/* inner box */}
+        <rect x="8" y="5" width="97" height="52" rx="3" fill="rgba(0,194,184,.05)" stroke={Td} strokeWidth=".8"/>
+        {/* icon circle */}
+        <circle cx="22" cy="19" r="7" fill={Td}/>
+        <text x="22" y="22" textAnchor="middle" fontFamily="monospace" fontSize="9" fill={T}>!</text>
+        {/* heading */}
+        <rect x="33" y="13" width="48" height="5" rx="2" fill="rgba(255,255,255,.5)"/>
+        <rect x="33" y="21" width="36" height="3" rx="1.5" fill="rgba(255,255,255,.2)"/>
+        {/* body lines */}
+        <rect x="14" y="32" width="82" height="2.5" rx="1.25" fill="rgba(255,255,255,.18)"/>
+        <rect x="14" y="37" width="70" height="2.5" rx="1.25" fill="rgba(255,255,255,.13)"/>
+        {/* CTA button */}
+        <rect x="14" y="44" width="36" height="9" rx="4.5" fill={T} opacity=".8"/>
+        <rect x="54" y="44" width="42" height="9" rx="4.5" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.15)" strokeWidth=".5"/>
+      </svg>);
+
+    case 'narrative-quote': return (
+      <svg {...sp}>{bg}
+        {/* decorative quote marks */}
+        <text x="10" y="22" fontFamily="serif" fontSize="28" fontWeight="700" fill={T} opacity=".35">"</text>
+        {/* quote text lines */}
+        <rect x="22" y="10" width="78" height="4.5" rx="2" fill="rgba(255,255,255,.45)"/>
+        <rect x="22" y="17" width="72" height="4.5" rx="2" fill="rgba(255,255,255,.35)"/>
+        <rect x="22" y="24" width="52" height="4.5" rx="2" fill="rgba(255,255,255,.28)"/>
+        {/* closing quote */}
+        <text x="92" y="38" fontFamily="serif" fontSize="22" fontWeight="700" fill={T} opacity=".3">"</text>
+        {/* divider */}
+        <line x1="22" y1="41" x2="88" y2="41" stroke="rgba(255,255,255,.1)" strokeWidth=".7"/>
+        {/* attribution */}
+        <circle cx="28" cy="51" r="5" fill="rgba(255,255,255,.12)"/>
+        <rect x="36" y="47.5" width="32" height="3" rx="1.5" fill="rgba(255,255,255,.3)"/>
+        <rect x="36" y="53" width="22" height="2.5" rx="1.25" fill="rgba(255,255,255,.15)"/>
+      </svg>);
+
+    default: return (
+      <svg {...sp}>{bg}
+        <text x="55" y="34" textAnchor="middle" fontFamily="monospace" fontSize="8" fill="rgba(255,255,255,.2)">{cardId}</text>
+      </svg>);
+  }
+};
+
+// ─── TAB: Browse ─────────────────────────────────────────────────
+const BrowseTab = ({ activeCardId, onSelect }) => {
+  const cats  = window.CATS  || [];
+  const cards = window.CARDS || [];
+  const [activeCat, setActiveCat] = React.useState(() => {
+    const ac = cards.find(c => c.id === activeCardId);
+    return (ac && ac.cat) || (cats[0] && cats[0].id) || 'kpi';
+  });
+  const [pendingId, setPendingId] = React.useState(null);
+  const [hoveredId, setHoveredId] = React.useState(null);
+
+  const filtered = cards.filter(c => c.cat === activeCat);
+  const catMeta  = cats.find(c => c.id === activeCat);
+  const pendingCard = pendingId ? cards.find(c => c.id === pendingId) : null;
+
+  const handleCardClick = (id) => {
+    setPendingId(prev => (prev === id ? null : id));
+  };
+
+  const handleApply = () => {
+    if (pendingId) { onSelect && onSelect(pendingId); setPendingId(null); }
+  };
+
+  return (
+    <>
+      {/* Category chips */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
+        {cats.map(c => {
+          const active = c.id === activeCat;
+          return (
+            <button key={c.id} onClick={() => setActiveCat(c.id)} style={{
+              padding: '4px 10px', borderRadius: 20, border: `1px solid ${active ? EP.teal+'99' : EP.edge}`,
+              background: active ? 'rgba(0,194,184,.12)' : EP.elevated,
+              color: active ? EP.teal : EP.sec, cursor: 'pointer',
+              fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600,
+              transition: 'background .12s, color .12s',
+            }}>{c.title}</button>
+          );
+        })}
+      </div>
+
+      {catMeta && (
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: EP.muted, marginBottom: 10 }}>
+          {catMeta.desc}
+        </div>
+      )}
+
+      {/* Usage hint */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 7,
+        padding: '7px 10px', borderRadius: 7, marginBottom: 12,
+        background: 'rgba(0,194,184,.06)', border: '1px solid rgba(0,194,184,.18)',
+      }}>
+        <svg width="11" height="11" viewBox="0 0 9 12" fill="none" style={{ flexShrink: 0 }}>
+          {[[1,1],[1,5],[1,9],[5,1],[5,5],[5,9]].map(([cx,cy],i)=>
+            <circle key={i} cx={cx} cy={cy} r="1.3" fill="#00C2B8" opacity=".7"/>)}
+        </svg>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.teal, letterSpacing: '0.06em' }}>
+          Drag widget ke dalam canvas untuk menambahkan
+        </span>
+      </div>
+
+      {/* Card grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: pendingCard ? 12 : 0 }}>
+        {filtered.map(c => {
+          const isActive = c.id === activeCardId;
+          const isPending = c.id === pendingId;
+          return (
+            <div
+              key={c.id}
+              onClick={() => handleCardClick(c.id)}
+              draggable
+              onDragStart={e => { e.dataTransfer.setData('browseCardId', c.id); e.dataTransfer.effectAllowed = 'copy'; }}
+              onMouseEnter={() => setHoveredId(c.id)}
+              onMouseLeave={() => setHoveredId(null)}
+              style={{
+                borderRadius: 8, cursor: 'grab', overflow: 'hidden',
+                position: 'relative', transition: 'border-color .12s, background .12s',
+                background: isActive ? 'rgba(0,194,184,.1)' : isPending ? 'rgba(248,180,0,.08)' : EP.elevated,
+                border: `1.5px solid ${isActive ? EP.teal : isPending ? EP.gold : EP.edge}`,
+              }}
+            >
+              {/* Thumbnail */}
+              <div style={{ position: 'relative' }}>
+                <CardThumbnail cardId={c.id} />
+
+                {/* Drag-to-canvas overlay — bottom strip on thumbnail, shown on hover only */}
+                {hoveredId === c.id && (
+                  <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0,
+                    display: 'flex', alignItems: 'center', gap: 5, padding: '4px 7px',
+                    background: 'linear-gradient(to top, rgba(5,12,28,.82) 60%, transparent)',
+                  }}>
+                    {/* 2×3 drag-handle dots */}
+                    <svg width="9" height="12" viewBox="0 0 9 12" fill="none" style={{ flexShrink: 0 }}>
+                      {[[1,1],[1,5],[1,9],[5,1],[5,5],[5,9]].map(([cx,cy],i)=>
+                        <circle key={i} cx={cx} cy={cy} r="1.3" fill={isPending ? EP.gold : EP.teal} opacity={isPending?'.8':'.6'}/>)}
+                    </svg>
+                    <span style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 7.5, letterSpacing: '.04em',
+                      color: isPending ? EP.gold : EP.teal, opacity: isPending ? .9 : .65,
+                    }}>drag to canvas</span>
+                    {/* right arrow */}
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none"
+                      stroke={isPending ? EP.gold : EP.teal} strokeWidth="2.5"
+                      strokeLinecap="round" strokeLinejoin="round"
+                      style={{ marginLeft: 'auto', opacity: isPending ? .9 : .55 }}>
+                      <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                  </div>
+                )}
+
+                {/* State badge — overlays top-right of thumbnail */}
+                {(isActive || isPending) && (
+                  <span style={{
+                    position: 'absolute', top: 6, right: 6,
+                    fontFamily: 'var(--font-mono)', fontSize: 7, fontWeight: 700,
+                    color: isActive ? EP.teal : EP.gold,
+                    background: isActive ? 'rgba(0,194,184,.22)' : 'rgba(248,180,0,.22)',
+                    border: `1px solid ${isActive ? 'rgba(0,194,184,.45)' : 'rgba(248,180,0,.45)'}`,
+                    padding: '2px 5px', borderRadius: 3, letterSpacing: '0.08em',
+                    backdropFilter: 'blur(4px)',
+                  }}>{isActive ? 'ACTIVE' : 'SELECTED'}</span>
+                )}
+              </div>
+
+              {/* Title row */}
+              <div style={{ padding: '7px 9px 9px' }}>
+                <div style={{
+                  fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700, lineHeight: 1.3,
+                  color: isActive ? EP.teal : isPending ? EP.gold : EP.fg,
+                }}>{c.title}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Apply button — appears when a non-active card is selected */}
+      {pendingCard && (
+        <button onClick={handleApply} style={{
+          width: '100%', padding: '10px 0',
+          background: 'linear-gradient(135deg, #F8B400, #E5A000)',
+          border: 'none', borderRadius: 8, cursor: 'pointer',
+          fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700,
+          color: '#0C182C', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+        }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          Apply "{pendingCard.title}"
+        </button>
+      )}
+    </>
+  );
+};
+
 // ─── Main CardEditorPanel ─────────────────────────────────────────
 
 const CAT_SETUP = {
@@ -667,19 +1666,36 @@ const CARD_SETUP_OVERRIDE = {
   'progress-psi': SetupPageSpeed,
 };
 
-const CardEditorPanel = ({ cardId = 'kpi-single', onClose, defaultTab = 'setup', style = {} }) => {
+const CardEditorPanel = ({
+  cardId = 'kpi-single',
+  widgetId = null,
+  widgetConfig = {},
+  onConfigChange = null,
+  onUndo = null,
+  connectedSources = {},
+  onClose,
+  defaultTab = 'browse',
+  style = {},
+}) => {
   const [tab, setTab] = React.useState(defaultTab);
-  const [setupState, setSetupState] = React.useState({ showComparison: true, compPeriod: 'prev', dateRange: 'report', bgOpacity: 1 });
+  const [activeCardId, setActiveCardId] = React.useState(cardId);
   const [styleState, setStyleState] = React.useState({ showTitle: true, titleSize: 'M', valueSize: 'M', accent: '#00C2B8', compact: true, precision: 0, bgOpacity: 1, radius: '12' });
-  const [pagesState, setPagesState] = React.useState({});
 
-  const card = (window.CARDS || []).find(c => c.id === cardId) || { id: cardId, cat: 'kpi', title: 'Card' };
-  const SetupBody = CARD_SETUP_OVERRIDE[cardId] || CAT_SETUP[card.cat] || SetupKPI;
+  const card = (window.CARDS || []).find(c => c.id === activeCardId) || { id: activeCardId, cat: 'kpi', title: 'Card' };
+
+  const handleSelectCard = (id) => { setActiveCardId(id); setTab('setup'); };
+
+  const _initialMount = React.useRef(true);
+  React.useEffect(() => {
+    if (_initialMount.current) { _initialMount.current = false; return; }
+    setActiveCardId(cardId);
+    setTab('setup');
+  }, [cardId]);
 
   const TABS = [
-    { id: 'setup', label: 'Setup' },
-    { id: 'style', label: 'Style' },
-    { id: 'pages', label: 'Pages' },
+    { id: 'browse', label: 'Browse' },
+    { id: 'setup',  label: 'Setup' },
+    { id: 'style',  label: 'Style' },
   ];
 
   return (
@@ -723,26 +1739,32 @@ const CardEditorPanel = ({ cardId = 'kpi-single', onClose, defaultTab = 'setup',
 
       {/* Body */}
       <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+        {tab === 'browse' && <BrowseTab activeCardId={activeCardId} onSelect={handleSelectCard}/>}
         {tab === 'setup' && (
-          <>
-            <ESection label="Title & description">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <EInput value={card.title} placeholder="Card title"/>
-                <EInput value={`${card.cat} card · March 2025`} placeholder="Description (optional)"/>
-              </div>
-            </ESection>
-            <EDivider/>
-            <SetupBody state={setupState} setState={setSetupState}/>
-          </>
+          <SimpleSetupTab
+            widgetId={widgetId}
+            cardId={activeCardId}
+            widgetConfig={widgetConfig}
+            onConfigChange={onConfigChange}
+            connectedSources={connectedSources}
+          />
         )}
         {tab === 'style' && <StyleTab state={styleState} setState={setStyleState}/>}
-        {tab === 'pages' && <PagesTab state={pagesState} setState={setPagesState}/>}
       </div>
 
       {/* Footer */}
       <div style={{ padding: '10px 16px', borderTop: `1px solid ${EP.edge}`, display: 'flex', gap: 6, flexShrink: 0, background: 'rgba(10,18,34,.5)' }}>
-        {onClose && <button onClick={onClose} style={{ flex: 1, padding: '8px 0', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 7, color: EP.sec, fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>}
-        <button style={{ flex: 2, padding: '8px 0', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 7, color: '#0C182C', fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,194,184,.25)' }}>Apply changes</button>
+        {onClose && <button onClick={onClose} style={{ flex: 1, padding: '8px 0', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 7, color: EP.sec, fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Close</button>}
+        {onUndo && (
+          <button onClick={onUndo} title="Undo (Ctrl+Z)" style={{ flex: 1, padding: '8px 0', background: 'rgba(248,180,0,.08)', border: '1px solid rgba(248,180,0,.3)', borderRadius: 7, color: EP.gold, fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9h10a5 5 0 1 1 0 10H3"/><polyline points="3 9 7 5 3 9 7 13"/></svg>
+            Undo
+          </button>
+        )}
+        <div style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '8px 0', background: 'rgba(0,194,184,.06)', border: '1px solid rgba(0,194,184,.2)', borderRadius: 7 }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00C2B8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#00C2B8', letterSpacing: '0.06em' }}>Auto-saved</span>
+        </div>
       </div>
     </div>
   );
@@ -770,4 +1792,4 @@ const DashboardWithEditor = ({ cardId = 'kpi-single', editorTab = 'setup', slots
   );
 };
 
-Object.assign(window, { CardEditorPanel, DashboardWithEditor });
+Object.assign(window, { CardEditorPanel, DashboardWithEditor, SOURCE_METRICS, SOURCE_DIMS });

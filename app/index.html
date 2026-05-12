@@ -70,6 +70,24 @@
 </div>
 
 <script>
+  // Catch script-level errors (e.g. Babel compile failures) before React starts
+  window.addEventListener('error', function(e) {
+    var label = document.getElementById('boot-label');
+    if (label) {
+      label.innerHTML = 'Script Error: ' + (e.message || 'unknown') +
+        '<br><span style="font-size:9px;opacity:.5;">' + (e.filename || '') + ':' + (e.lineno || '') + '</span>' +
+        '<br><span style="font-size:9px;opacity:.4;">Buka DevTools (F12) → Console untuk detail.</span>';
+      label.style.maxWidth = '400px';
+      label.style.lineHeight = '1.6';
+      label.style.color = '#E3170A';
+    }
+    var splash = document.getElementById('boot-splash');
+    if (splash) {
+      var mark = splash.querySelector('.mark');
+      if (mark) { mark.style.animationPlayState = 'paused'; mark.style.opacity = '0.2'; }
+    }
+  });
+
   // If app hasn't mounted after 8s, show a helpful error instead of spinning forever
   setTimeout(function() {
     var root = document.getElementById('root');
@@ -118,8 +136,8 @@
 
 <!-- ── Reportive components (handoff, register on window) ─────── -->
 <script type="text/babel" src="assets/components/chrome.jsx"></script>
-<script type="text/babel" src="assets/components/charts.jsx"></script>
-<script type="text/babel" src="assets/components/cards.jsx"></script>
+<script type="text/babel" src="assets/components/charts.jsx?v=2"></script>
+<script type="text/babel" src="assets/components/cards.jsx?v=2"></script>
 <script type="text/babel" src="assets/components/screen-dashboard.jsx"></script>
 <script type="text/babel" src="assets/components/screen-home.jsx?v=7"></script>
 <script type="text/babel" src="assets/components/screen-access.jsx?v=6"></script>
@@ -127,15 +145,15 @@
 <script type="text/babel" src="assets/components/library-sheets.jsx"></script>
 <script type="text/babel" src="assets/components/screen-login.jsx"></script>
 <!-- Card editor and design canvas are heavy; only load when explicitly used -->
-<script type="text/babel" src="assets/components/card-editor.jsx"></script>
+<script type="text/babel" src="assets/components/card-editor.jsx?v=23"></script>
 <script type="text/babel" src="assets/components/design-canvas.jsx"></script>
 
 <!-- ── Reportive runtime (data + app shell) ───────────────────── -->
-<script type="text/babel" src="assets/js/data-bridge.jsx?v=26"></script>
+<script type="text/babel" src="assets/js/data-bridge.jsx?v=34"></script>
 <script type="text/babel" src="assets/js/live-cards.jsx"></script>
 <!-- screen-report depends on window.LIVE (from data-bridge) so must load after it -->
-<script type="text/babel" src="assets/components/screen-report.jsx?v=17"></script>
-<script type="text/babel" src="assets/js/app.jsx?v=2"></script>
+<script type="text/babel" src="assets/components/screen-report.jsx?v=58"></script>
+<script type="text/babel" src="assets/js/app.jsx?v=3"></script>
 
 </body>
 </html>

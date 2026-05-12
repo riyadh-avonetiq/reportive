@@ -26,11 +26,11 @@
 // ════════════════════════════════════════════════════════════════
 const PSI_CONFIG = {
   // Google Cloud API Key dengan PageSpeed Insights API enabled
-  PSI_API_KEY: 'AIzaSyBhBZC5HdzefmMhTA7gNJ1T2Ra13Q3fCkA',
+  PSI_API_KEY: 'AIzaSyBxwvPxDIWELOeWHd-s1w8yGSbsfs6fMBE',
 
-  // Supabase — project khusus PSI
+  // Supabase — GA4 project (pagespeed disimpan di sini)
   SUPABASE_URL: 'https://dpthobkylyuajaleykyf.supabase.co',
-  SUPABASE_SERVICE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwdGhvYmt5bHl1YWphbGV5a3lmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjgzOTEwNiwiZXhwIjoyMDkyNDE1MTA2fQ.e3eoggi1HnlPn74oWu4r2N_dzkHWdlq5TRniG1NRGSo',
+  SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwdGhvYmt5bHl1YWphbGV5a3lmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MzkxMDYsImV4cCI6MjA5MjQxNTEwNn0.eGomVe5yQDecapanuMG08LdXRrw0Z5vkZdJyVgEQlE8',
 
   // URL yang ingin di-test (tambah/kurangi sesuai kebutuhan)
   URLS_TO_TEST: [
@@ -232,14 +232,14 @@ function _fetchPSI(url, strategy, day) {
  * Upsert satu baris ke Supabase (ON CONFLICT → update)
  */
 function _upsertToSupabase(row) {
-  const res = UrlFetchApp.fetch(PSI_CONFIG.SUPABASE_URL + '/rest/v1/pagespeed', {
+  const res = UrlFetchApp.fetch(PSI_CONFIG.SUPABASE_URL + '/rest/v1/pagespeed?on_conflict=url,strategy,day', {
     method:           'POST',
     muteHttpExceptions: true,
     headers: {
-      'apikey':        PSI_CONFIG.SUPABASE_SERVICE_KEY,
-      'Authorization': 'Bearer ' + PSI_CONFIG.SUPABASE_SERVICE_KEY,
+      'apikey':        PSI_CONFIG.SUPABASE_KEY,
+      'Authorization': 'Bearer ' + PSI_CONFIG.SUPABASE_KEY,
       'Content-Type':  'application/json',
-      'Prefer':        'resolution=merge-duplicates',  // ON CONFLICT DO UPDATE
+      'Prefer':        'resolution=merge-duplicates,return=minimal',
     },
     payload: JSON.stringify(row),
   });
@@ -265,8 +265,8 @@ function _alreadySynced(url, strategy, day) {
   const res = UrlFetchApp.fetch(PSI_CONFIG.SUPABASE_URL + '/rest/v1/pagespeed?' + qs, {
     muteHttpExceptions: true,
     headers: {
-      'apikey':        PSI_CONFIG.SUPABASE_SERVICE_KEY,
-      'Authorization': 'Bearer ' + PSI_CONFIG.SUPABASE_SERVICE_KEY,
+      'apikey':        PSI_CONFIG.SUPABASE_KEY,
+      'Authorization': 'Bearer ' + PSI_CONFIG.SUPABASE_KEY,
     },
   });
 

@@ -1,303 +1,378 @@
-/**
- * Reportive by Avonetiq — GA4 Daily Sync  v1.0
- * =============================================
- * Fetch data harian dari Google Analytics 4 Data API
- * dan simpan ke Supabase tabel "ga4_daily" setiap hari.
- *
- * ── SETUP (lakukan sekali) ─────────────────────────────────────
- * 1. Buka script.google.com → New project → paste file ini
- * 2. Isi CONFIG di bawah (GA4_PROPERTY_ID, SUPABASE_*)
- * 3. Di Apps Script editor: Extensions → Services → cari
- *    "Google Analytics Data API" → Add (ini wajib!)
- * 4. Jalankan testSync() pertama kali → authorize permissions
- * 5. Jalankan setupDailyTrigger() untuk auto-run setiap hari
- *
- * ── CARA DAPAT GA4 PROPERTY ID ───────────────────────────────
- * Analytics.google.com → Admin (roda gigi) → Property Settings
- * → "Property ID" (angka, contoh: 123456789)
- *
- * ── PERMISSION YANG DIPERLUKAN ────────────────────────────────
- * Akun Google yang menjalankan script ini harus punya akses
- * "Viewer" atau lebih tinggi ke properti GA4.
- * Tidak perlu Service Account — Apps Script pakai OAuth otomatis.
- *
- * ── CARA DAPAT SUPABASE SERVICE KEY ──────────────────────────
- * Supabase Dashboard → Settings → API → service_role key
- */
+// ===========================================================================
+// GA4 -> Supabase Sync - Final
+// ===========================================================================
+// Tabel yang diisi:
+//   ga4_totals       - 1 baris per (property, date) -> dipakai dashboard utama
+//   ga4_sessions     - granular per (channel/medium/source/device/country/city)
+//   ga4_demographics - breakdown usia & gender
+//   ga4_pages        - breakdown per halaman
+//
+// Trigger (pisah agar tidak timeout):
+//   syncTotalsDaily()        -> setiap hari jam 07:00  (cepat, critical)
+//   syncSessionsDaily()      -> setiap hari jam 07:30  (granular, lebih lambat)
+//   syncDemographicsWeekly() -> setiap Senin jam 08:00 (opsional)
+//   syncPagesWeekly()        -> setiap Senin jam 08:30 (opsional)
+//
+// Setup:
+//   1. Paste script ini ke script.google.com
+//   2. Jalankan testConnection() -> authorize
+//   3. Jalankan syncHistoricalTotals() untuk backfill 3 bulan
+//   4. Jalankan createAllTriggers() untuk setup trigger otomatis
+// ===========================================================================
 
-// ════════════════════════════════════════════════════════════════
-//  CONFIG — isi sesuai project Anda
-// ════════════════════════════════════════════════════════════════
-const GA4_CONFIG = {
-  // GA4 Property ID (hanya angkanya, tanpa "properties/")
-  GA4_PROPERTY_ID: 'ISI_PROPERTY_ID_DISINI',  // contoh: '123456789'
-
-  // Supabase
-  SUPABASE_URL: 'https://qmzgincouzpbyfxfddxt.supabase.co',
-  SUPABASE_SERVICE_KEY: 'ISI_SERVICE_ROLE_KEY_DISINI',
-
-  // Berapa hari ke belakang yang di-backfill pertama kali
-  // Gunakan 90 untuk backfill 3 bulan. Setelah itu ganti ke 1.
-  DAYS_TO_SYNC: 1,   // 1 = kemarin saja (mode harian normal)
-
-  // Channel yang ingin di-breakdown. Kosongkan array [] untuk skip breakdown.
-  // 'all' selalu dimasukkan (total semua channel).
-  CHANNEL_BREAKDOWN: true,
-
-  // Kirim notifikasi email jika sync gagal
-  NOTIFY_EMAIL: '',  // kosongkan jika tidak perlu
-
-  // Apakah ada tracking revenue / e-commerce?
-  INCLUDE_REVENUE: false,
+var CFG = {
+  supaUrl     : 'https://dpthobkylyuajaleykyf.supabase.co',
+  supaKey     : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwdGhvYmt5bHl1YWphbGV5a3lmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MzkxMDYsImV4cCI6MjA5MjQxNTEwNn0.eGomVe5yQDecapanuMG08LdXRrw0Z5vkZdJyVgEQlE8',
+  ga4Data     : 'https://analyticsdata.googleapis.com/v1beta/properties/',
+  ga4Admin    : 'https://analyticsadmin.googleapis.com/v1beta/accountSummaries',
+  maxRuntimeMs: 300000  // Apps Script limit 6 menit; stop di 5 menit
 };
 
-// ════════════════════════════════════════════════════════════════
-//  MAIN FUNCTIONS
-// ════════════════════════════════════════════════════════════════
+// -- Time guard ---------------------------------------------------------------
+var _startTime;
+function _startTimer() { _startTime = Date.now(); }
+function _isTimeSafe()  { return (Date.now() - _startTime) < CFG.maxRuntimeMs; }
 
-/**
- * Entry point utama — dipanggil oleh trigger harian
- */
-function syncGA4() {
-  const startTime = Date.now();
-  Logger.log('=== GA4 Sync Start: ' + new Date() + ' ===');
+// -- Ambil semua property {id, name} -----------------------------------------
+function _getPropertyIds() {
+  var token     = ScriptApp.getOAuthToken();
+  var props     = [];
+  var pageToken = null;
 
-  const propertyId = 'properties/' + GA4_CONFIG.GA4_PROPERTY_ID;
-  const dates      = _getDateRange(GA4_CONFIG.DAYS_TO_SYNC);
-  let totalRows = 0, errors = 0;
-
-  for (const { startDate, endDate } of dates) {
-    try {
-      Logger.log('[FETCH] ' + startDate + ' → ' + endDate);
-
-      // 1. Fetch total semua channel (channel = 'all')
-      const totalData = _runGA4Report(propertyId, startDate, endDate, false);
-      _upsertBatch(totalData);
-      totalRows += totalData.length;
-      Logger.log('[OK] ' + startDate + ' total: ' + totalData.length + ' rows');
-
-      // 2. Fetch breakdown per channel (opsional)
-      if (GA4_CONFIG.CHANNEL_BREAKDOWN) {
-        const channelData = _runGA4Report(propertyId, startDate, endDate, true);
-        _upsertBatch(channelData);
-        totalRows += channelData.length;
-        Logger.log('[OK] ' + startDate + ' channel breakdown: ' + channelData.length + ' rows');
-      }
-
-    } catch (e) {
-      errors++;
-      Logger.log('[ERROR] ' + startDate + ': ' + e.message);
+  do {
+    var url = CFG.ga4Admin + (pageToken ? '?pageToken=' + pageToken : '');
+    var res = UrlFetchApp.fetch(url, {
+      headers           : { Authorization: 'Bearer ' + token },
+      muteHttpExceptions: true
+    });
+    var code = res.getResponseCode();
+    if (code !== 200) {
+      Logger.log('Admin API error (' + code + '): ' + res.getContentText().slice(0, 300));
+      break;
     }
-  }
+    var body = JSON.parse(res.getContentText());
+    (body.accountSummaries || []).forEach(function(acc) {
+      (acc.propertySummaries || []).forEach(function(p) {
+        props.push({ id: p.property.replace('properties/', ''), name: p.displayName });
+      });
+    });
+    pageToken = body.nextPageToken || null;
+  } while (pageToken);
 
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  Logger.log('=== GA4 Sync Done: ' + totalRows + ' rows, ' + errors + ' errors — ' + elapsed + 's ===');
-
-  if (errors > 0 && GA4_CONFIG.NOTIFY_EMAIL) {
-    _sendErrorEmail(errors + ' date range gagal disync. Cek Apps Script logs.');
-  }
+  Logger.log('Properties ditemukan: ' + props.length);
+  props.forEach(function(p) { Logger.log('  [' + p.id + '] ' + p.name); });
+  return props;
 }
 
-/**
- * Backfill histori — sync 90 hari ke belakang sekaligus
- * Jalankan sekali untuk isi data awal.
- */
-function backfill90Days() {
-  const orig = GA4_CONFIG.DAYS_TO_SYNC;
-  GA4_CONFIG.DAYS_TO_SYNC = 90;
-  Logger.log('=== BACKFILL 90 HARI — ini mungkin lambat, harap tunggu ===');
-  syncGA4();
-  GA4_CONFIG.DAYS_TO_SYNC = orig;
-}
+// -- GA4 Data API (dengan pagination) ----------------------------------------
+function _report(propertyId, dateRange, dimensions, metrics) {
+  var token    = ScriptApp.getOAuthToken();
+  var allRows  = [];
+  var pageSize = 10000;
+  var offset   = 0;
 
-/**
- * Test manual — jalankan ini pertama kali
- */
-function testSync() {
-  Logger.log('=== TEST GA4 Sync — kemarin ===');
-  const propertyId = 'properties/' + GA4_CONFIG.GA4_PROPERTY_ID;
-  const yesterday  = _offsetDate(-1);
-
-  const data = _runGA4Report(propertyId, yesterday, yesterday, false);
-  Logger.log('Preview data (baris pertama):');
-  Logger.log(JSON.stringify(data[0], null, 2));
-  Logger.log('Total rows: ' + data.length);
-  Logger.log('Kirim ke Supabase...');
-  _upsertBatch(data);
-  Logger.log('Selesai! Cek tabel ga4_daily di Supabase.');
-}
-
-/**
- * Setup trigger harian (jalankan sekali saja)
- */
-function setupDailyTrigger() {
-  ScriptApp.getProjectTriggers()
-    .filter(t => t.getHandlerFunction() === 'syncGA4')
-    .forEach(t => ScriptApp.deleteTrigger(t));
-
-  // Jam 07:00 — setelah tengah malam data GA4 biasanya sudah final
-  ScriptApp.newTrigger('syncGA4')
-    .timeBased()
-    .everyDays(1)
-    .atHour(7)
-    .create();
-
-  Logger.log('Trigger dibuat: syncGA4() jalan setiap hari jam 07:00');
-}
-
-// ════════════════════════════════════════════════════════════════
-//  INTERNAL HELPERS
-// ════════════════════════════════════════════════════════════════
-
-/**
- * Jalankan GA4 Data API report
- * Perlu: Services → Google Analytics Data API diaktifkan
- */
-function _runGA4Report(propertyId, startDate, endDate, byChannel) {
-  const dimensions = byChannel
-    ? [{ name: 'date' }, { name: 'sessionDefaultChannelGrouping' }]
-    : [{ name: 'date' }];
-
-  const metrics = [
-    { name: 'sessions' },
-    { name: 'totalUsers' },
-    { name: 'newUsers' },
-    { name: 'screenPageViews' },
-    { name: 'engagedSessions' },
-    { name: 'engagementRate' },        // 0-1
-    { name: 'bounceRate' },            // 0-1
-    { name: 'averageSessionDuration' },// detik
-    { name: 'screenPageViewsPerSession' },
-    { name: 'conversions' },
-    { name: 'sessionConversionRate' }, // 0-1
-  ];
-
-  if (GA4_CONFIG.INCLUDE_REVENUE) {
-    metrics.push({ name: 'totalRevenue' });
-  }
-
-  const request = {
-    dateRanges:         [{ startDate, endDate }],
-    dimensions,
-    metrics,
-    keepEmptyRows:      false,
-    metricAggregations: ['TOTAL'],
-  };
-
-  // Panggil GA4 Data API via built-in Apps Script service
-  // Pastikan service "Google Analytics Data API" sudah diaktifkan!
-  let response;
-  try {
-    response = AnalyticsData.Properties.runReport(request, propertyId);
-  } catch (e) {
-    if (e.message.includes('is not defined') || e.message.includes('AnalyticsData')) {
-      throw new Error(
-        'Service "Google Analytics Data API" belum diaktifkan.\n' +
-        'Caranya: Extensions → Services → Google Analytics Data API → Add'
-      );
-    }
-    throw e;
-  }
-
-  if (!response.rows || response.rows.length === 0) {
-    Logger.log('[WARN] Tidak ada data untuk ' + startDate + ' - ' + endDate);
-    return [];
-  }
-
-  return response.rows.map(row => {
-    const dim = row.dimensionValues.map(d => d.value);
-    const met = row.metricValues.map(m => parseFloat(m.value) || 0);
-
-    const [
-      sessions, users, newUsers, pageviews, engagedSessions,
-      engagementRate, bounceRate, avgDuration, pagesPerSess,
-      conversions, convRate, revenue
-    ] = met;
-
-    return {
-      property_id:           GA4_CONFIG.GA4_PROPERTY_ID,
-      day:                   _formatDate(dim[0]),  // YYYYMMDD → YYYY-MM-DD
-      channel:               byChannel ? (dim[1] || 'Unassigned') : 'all',
-      sessions:              Math.round(sessions),
-      users:                 Math.round(users),
-      new_users:             Math.round(newUsers),
-      returning_users:       Math.round(users - newUsers),
-      pageviews:             Math.round(pageviews),
-      screen_pageviews:      Math.round(pageviews),
-      engaged_sessions:      Math.round(engagedSessions),
-      engagement_rate:       Math.round(engagementRate * 10000) / 100,  // → persen
-      bounce_rate:           Math.round(bounceRate    * 10000) / 100,  // → persen
-      avg_session_duration:  Math.round(avgDuration * 100) / 100,
-      pages_per_session:     Math.round(pagesPerSess * 100) / 100,
-      conversions:           Math.round(conversions),
-      conversion_rate:       Math.round(convRate * 10000) / 100,       // → persen
-      total_revenue:         GA4_CONFIG.INCLUDE_REVENUE ? (Math.round((revenue || 0) * 100) / 100) : 0,
-    };
-  });
-}
-
-/**
- * Upsert batch rows ke Supabase (maks 500 per request)
- */
-function _upsertBatch(rows) {
-  if (!rows || rows.length === 0) return;
-  const BATCH_SIZE = 500;
-
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const batch = rows.slice(i, i + BATCH_SIZE);
-    const res   = UrlFetchApp.fetch(GA4_CONFIG.SUPABASE_URL + '/rest/v1/ga4_daily', {
-      method:             'POST',
-      muteHttpExceptions: true,
-      headers: {
-        'apikey':        GA4_CONFIG.SUPABASE_SERVICE_KEY,
-        'Authorization': 'Bearer ' + GA4_CONFIG.SUPABASE_SERVICE_KEY,
-        'Content-Type':  'application/json',
-        'Prefer':        'resolution=merge-duplicates',
-      },
-      payload: JSON.stringify(batch),
+  while (true) {
+    var res = UrlFetchApp.fetch(CFG.ga4Data + propertyId + ':runReport', {
+      method            : 'POST',
+      headers           : { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      payload           : JSON.stringify({
+        dateRanges   : [{ startDate: dateRange.startDate, endDate: dateRange.endDate }],
+        dimensions   : dimensions.map(function(n) { return { name: n }; }),
+        metrics      : metrics.map(function(n)    { return { name: n }; }),
+        limit        : pageSize,
+        offset       : offset,
+        keepEmptyRows: false
+      }),
+      muteHttpExceptions: true
     });
 
-    const code = res.getResponseCode();
-    if (code !== 200 && code !== 201) {
-      throw new Error('Supabase upsert gagal (' + code + '): ' + res.getContentText().substring(0, 300));
+    if (res.getResponseCode() !== 200) {
+      Logger.log('Data API error [' + propertyId + ']: ' + res.getContentText().slice(0, 300));
+      break;
     }
+
+    var body = JSON.parse(res.getContentText());
+    if (!body.rows || body.rows.length === 0) break;
+
+    body.rows.forEach(function(row) {
+      var obj = {};
+      dimensions.forEach(function(n, i) { obj[n] = row.dimensionValues[i].value; });
+      metrics.forEach(function(n, i)    { obj[n] = row.metricValues[i].value; });
+      allRows.push(obj);
+    });
+
+    offset += pageSize;
+    if (offset >= (body.rowCount || 0) || body.rows.length < pageSize) break;
+  }
+
+  return allRows;
+}
+
+// -- Upsert ke Supabase -------------------------------------------------------
+function _upsert(table, rows) {
+  if (!rows.length) return;
+  var conflictKeys = {
+    'ga4_totals'      : 'property_id,date',
+    'ga4_sessions'    : 'property_id,date,channel_group,medium,source,device,country,region,city',
+    'ga4_demographics': 'property_id,date,age,gender,country',
+    'ga4_pages'       : 'property_id,date,page_path,device'
+  };
+  var qs = conflictKeys[table] ? '?on_conflict=' + conflictKeys[table] : '';
+
+  for (var i = 0; i < rows.length; i += 500) {
+    var res = UrlFetchApp.fetch(CFG.supaUrl + '/rest/v1/' + table + qs, {
+      method            : 'POST',
+      headers           : {
+        apikey          : CFG.supaKey,
+        Authorization   : 'Bearer ' + CFG.supaKey,
+        'Content-Type'  : 'application/json',
+        'Prefer'        : 'resolution=merge-duplicates,return=minimal'
+      },
+      payload           : JSON.stringify(rows.slice(i, i + 500)),
+      muteHttpExceptions: true
+    });
+    if (res.getResponseCode() >= 400)
+      Logger.log('Supabase error [' + table + ']: ' + res.getContentText().slice(0, 200));
   }
 }
 
-/**
- * Buat array date range { startDate, endDate } berdasarkan DAYS_TO_SYNC
- * Satu range per hari (untuk granularitas maksimal)
- */
-function _getDateRange(daysBack) {
-  const ranges = [];
-  for (let d = daysBack; d >= 1; d--) {
-    const date = _offsetDate(-d);
-    ranges.push({ startDate: date, endDate: date });
+// -- Helpers ------------------------------------------------------------------
+function _isoDate(s) { return s.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'); }
+function _fmt(d)     { return Utilities.formatDate(d, 'UTC', 'yyyy-MM-dd'); }
+
+function _range(daysBack) {
+  var today     = new Date();
+  var yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+  var start     = new Date(today); start.setDate(today.getDate() - daysBack);
+  return { startDate: _fmt(start), endDate: _fmt(yesterday) };
+}
+
+// -- Sync ga4_totals ----------------------------------------------------------
+// Fetch tanpa dimensi breakdown -> angka TEPAT seperti GA4 dashboard.
+// SUM dari data granular akan double-count user multi-device/channel.
+function _syncTotals(prop, range) {
+  var rows = _report(prop.id, range,
+    ['date'],
+    ['activeUsers', 'newUsers', 'sessions', 'engagedSessions',
+     'bounceRate', 'engagementRate', 'averageSessionDuration', 'screenPageViews']
+  ).map(function(r) {
+    return {
+      property_id         : prop.id,
+      property_name       : prop.name,
+      date                : _isoDate(r.date),
+      total_users         : parseInt(r.activeUsers)              || 0,
+      new_users           : parseInt(r.newUsers)                 || 0,
+      sessions            : parseInt(r.sessions)                 || 0,
+      engaged_sessions    : parseInt(r.engagedSessions)          || 0,
+      bounce_rate         : parseFloat(r.bounceRate)             || 0,
+      engagement_rate     : parseFloat(r.engagementRate)         || 0,
+      avg_session_duration: parseFloat(r.averageSessionDuration) || 0,
+      event_count         : parseInt(r.screenPageViews)          || 0,
+      synced_at           : new Date().toISOString()
+    };
+  });
+  _upsert('ga4_totals', rows);
+  Logger.log('[' + prop.id + '] ' + prop.name + ' -> totals: ' + rows.length + ' rows');
+}
+
+// -- Sync ga4_sessions --------------------------------------------------------
+function _syncSessions(prop, range) {
+  var rows = _report(prop.id, range,
+    ['date', 'sessionPrimaryChannelGroup', 'sessionMedium', 'sessionSource',
+     'deviceCategory', 'country', 'region', 'city'],
+    ['activeUsers', 'newUsers', 'bounceRate', 'sessions',
+     'averageSessionDuration', 'engagedSessions', 'engagementRate',
+     'userEngagementDuration', 'eventCount']
+  ).map(function(r) {
+    var active = parseInt(r.activeUsers) || 0;
+    var newU   = parseInt(r.newUsers)    || 0;
+    return {
+      property_id             : prop.id,
+      property_name           : prop.name,
+      date                    : _isoDate(r.date),
+      channel_group           : r.sessionPrimaryChannelGroup || '',
+      medium                  : r.sessionMedium              || '',
+      source                  : r.sessionSource              || '',
+      device                  : r.deviceCategory             || '',
+      country                 : r.country                    || '',
+      region                  : r.region                     || '',
+      city                    : r.city                       || '',
+      total_users             : active,
+      new_users               : newU,
+      returning_users         : Math.max(0, active - newU),
+      bounce_rate             : parseFloat(r.bounceRate)             || 0,
+      sessions                : parseInt(r.sessions)                 || 0,
+      avg_session_duration    : parseFloat(r.averageSessionDuration) || 0,
+      engaged_sessions        : parseInt(r.engagedSessions)          || 0,
+      engagement_rate         : parseFloat(r.engagementRate)         || 0,
+      user_engagement_duration: parseFloat(r.userEngagementDuration) || 0,
+      event_count             : parseInt(r.eventCount)               || 0,
+      synced_at               : new Date().toISOString()
+    };
+  });
+  _upsert('ga4_sessions', rows);
+  Logger.log('[' + prop.id + '] ' + prop.name + ' -> sessions: ' + rows.length + ' rows');
+}
+
+// -- Sync ga4_demographics ----------------------------------------------------
+function _syncDemographics(prop, range) {
+  var rows = _report(prop.id, range,
+    ['date', 'userAgeBracket', 'userGender', 'country'],
+    ['activeUsers', 'sessions', 'newUsers']
+  ).map(function(r) {
+    return {
+      property_id  : prop.id,
+      property_name: prop.name,
+      date         : _isoDate(r.date),
+      age          : r.userAgeBracket || '',
+      gender       : r.userGender     || '',
+      country      : r.country        || '',
+      total_users  : parseInt(r.activeUsers) || 0,
+      sessions     : parseInt(r.sessions)    || 0,
+      new_users    : parseInt(r.newUsers)    || 0,
+      synced_at    : new Date().toISOString()
+    };
+  });
+  _upsert('ga4_demographics', rows);
+  Logger.log('[' + prop.id + '] ' + prop.name + ' -> demographics: ' + rows.length + ' rows');
+}
+
+// -- Sync ga4_pages -----------------------------------------------------------
+function _syncPages(prop, range) {
+  var rows = _report(prop.id, range,
+    ['date', 'pagePath', 'deviceCategory'],
+    ['activeUsers', 'sessions', 'engagedSessions', 'bounceRate', 'screenPageViews']
+  ).map(function(r) {
+    return {
+      property_id     : prop.id,
+      property_name   : prop.name,
+      date            : _isoDate(r.date),
+      page_path       : r.pagePath       || '',
+      device          : r.deviceCategory || '',
+      total_users     : parseInt(r.activeUsers)     || 0,
+      sessions        : parseInt(r.sessions)        || 0,
+      engaged_sessions: parseInt(r.engagedSessions) || 0,
+      bounce_rate     : parseFloat(r.bounceRate)    || 0,
+      event_count     : parseInt(r.screenPageViews) || 0,
+      synced_at       : new Date().toISOString()
+    };
+  });
+  _upsert('ga4_pages', rows);
+  Logger.log('[' + prop.id + '] ' + prop.name + ' -> pages: ' + rows.length + ' rows');
+}
+
+// ===========================================================================
+// ENTRY POINTS
+// ===========================================================================
+
+function testConnection() {
+  Logger.log('Testing Admin API...');
+  _getPropertyIds();
+}
+
+// Totals: critical untuk dashboard, cepat (tidak ada breakdown dimensi)
+function syncTotalsDaily() {
+  _startTimer();
+  var props = _getPropertyIds();
+  var range = _range(3);
+  Logger.log('syncTotalsDaily: ' + range.startDate + ' -> ' + range.endDate);
+  for (var i = 0; i < props.length; i++) {
+    if (!_isTimeSafe()) { Logger.log('WARNING: Time limit approaching, stopping.'); break; }
+    try { _syncTotals(props[i], range); } catch(e) { Logger.log('ERR totals [' + props[i].id + ']: ' + e); }
   }
-  return ranges;
+  Logger.log('OK: syncTotalsDaily selesai');
 }
 
-/**
- * Offset hari dari hari ini (negatif = ke belakang)
- * Returns: 'YYYY-MM-DD'
- */
-function _offsetDate(offset) {
-  const d  = new Date();
-  d.setDate(d.getDate() + offset);
-  const tz = Session.getScriptTimeZone() || 'Asia/Jakarta';
-  return Utilities.formatDate(d, tz, 'yyyy-MM-dd');
+// Sessions: granular, trigger terpisah agar tidak timeout
+function syncSessionsDaily() {
+  _startTimer();
+  var props = _getPropertyIds();
+  var range = _range(3);
+  Logger.log('syncSessionsDaily: ' + range.startDate + ' -> ' + range.endDate);
+  for (var i = 0; i < props.length; i++) {
+    if (!_isTimeSafe()) { Logger.log('WARNING: Time limit approaching, stopping.'); break; }
+    try { _syncSessions(props[i], range); } catch(e) { Logger.log('ERR sessions [' + props[i].id + ']: ' + e); }
+  }
+  Logger.log('OK: syncSessionsDaily selesai');
 }
 
-/**
- * Format date GA4 (YYYYMMDD) → SQL (YYYY-MM-DD)
- */
-function _formatDate(d) {
-  if (!d || d.length !== 8) return d;
-  return d.substring(0, 4) + '-' + d.substring(4, 6) + '-' + d.substring(6, 8);
+// Demographics: mingguan
+function syncDemographicsWeekly() {
+  _startTimer();
+  var props = _getPropertyIds();
+  var range = _range(7);
+  Logger.log('syncDemographicsWeekly: ' + range.startDate + ' -> ' + range.endDate);
+  for (var i = 0; i < props.length; i++) {
+    if (!_isTimeSafe()) { Logger.log('WARNING: Time limit approaching, stopping.'); break; }
+    try { _syncDemographics(props[i], range); } catch(e) { Logger.log('ERR demographics [' + props[i].id + ']: ' + e); }
+  }
+  Logger.log('OK: syncDemographicsWeekly selesai');
 }
 
-function _sendErrorEmail(message) {
-  if (!GA4_CONFIG.NOTIFY_EMAIL) return;
-  MailApp.sendEmail(GA4_CONFIG.NOTIFY_EMAIL,
-    '[Reportive] GA4 Sync Error — ' + _offsetDate(0), message);
+// Pages: mingguan
+function syncPagesWeekly() {
+  _startTimer();
+  var props = _getPropertyIds();
+  var range = _range(7);
+  Logger.log('syncPagesWeekly: ' + range.startDate + ' -> ' + range.endDate);
+  for (var i = 0; i < props.length; i++) {
+    if (!_isTimeSafe()) { Logger.log('WARNING: Time limit approaching, stopping.'); break; }
+    try { _syncPages(props[i], range); } catch(e) { Logger.log('ERR pages [' + props[i].id + ']: ' + e); }
+  }
+  Logger.log('OK: syncPagesWeekly selesai');
+}
+
+// Backfill 3 bulan untuk totals (jalankan sekali)
+function syncHistoricalTotals() {
+  _startTimer();
+  var props = _getPropertyIds();
+  var range = _range(90);
+  Logger.log('syncHistoricalTotals: ' + range.startDate + ' -> ' + range.endDate);
+  for (var i = 0; i < props.length; i++) {
+    if (!_isTimeSafe()) {
+      Logger.log('WARNING: Time limit approaching. Jalankan ulang syncHistoricalTotals() untuk lanjutkan.');
+      break;
+    }
+    try { _syncTotals(props[i], range); } catch(e) { Logger.log('ERR totals [' + props[i].id + ']: ' + e); }
+  }
+  Logger.log('OK: syncHistoricalTotals selesai');
+}
+
+// Backfill 3 bulan untuk sessions (jalankan sekali, mungkin perlu beberapa kali run)
+function syncHistoricalSessions() {
+  _startTimer();
+  var props = _getPropertyIds();
+  var range = _range(90);
+  Logger.log('syncHistoricalSessions: ' + range.startDate + ' -> ' + range.endDate);
+  for (var i = 0; i < props.length; i++) {
+    if (!_isTimeSafe()) {
+      Logger.log('WARNING: Time limit approaching. Jalankan ulang syncHistoricalSessions() untuk lanjutkan.');
+      break;
+    }
+    try { _syncSessions(props[i], range); } catch(e) { Logger.log('ERR sessions [' + props[i].id + ']: ' + e); }
+  }
+  Logger.log('OK: syncHistoricalSessions selesai');
+}
+
+// Setup semua trigger otomatis (jalankan sekali)
+function createAllTriggers() {
+  ScriptApp.getProjectTriggers().forEach(function(t) { ScriptApp.deleteTrigger(t); });
+
+  ScriptApp.newTrigger('syncTotalsDaily')
+    .timeBased().everyDays(1).atHour(7).create();
+
+  ScriptApp.newTrigger('syncSessionsDaily')
+    .timeBased().everyDays(1).atHour(7).nearMinute(30).create();
+
+  ScriptApp.newTrigger('syncDemographicsWeekly')
+    .timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8).create();
+
+  ScriptApp.newTrigger('syncPagesWeekly')
+    .timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8).nearMinute(30).create();
+
+  Logger.log('OK: Semua trigger aktif:');
+  Logger.log('  syncTotalsDaily        -> setiap hari 07:00');
+  Logger.log('  syncSessionsDaily      -> setiap hari 07:30');
+  Logger.log('  syncDemographicsWeekly -> setiap Senin 08:00');
+  Logger.log('  syncPagesWeekly        -> setiap Senin 08:30');
 }

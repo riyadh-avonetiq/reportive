@@ -256,7 +256,7 @@ async function adminLogin() {
     const hash = await hashPassword(pass.trim());
     const { data: member, error } = await _supa
       .from('team_members')
-      .select('role, password_hash, name, email, status')
+      .select('role, password_hash, name, email, status, clients')
       .eq('email', email)
       .maybeSingle();
 
@@ -277,7 +277,7 @@ async function adminLogin() {
       // Success — update last_active fire-and-forget
       _supa.from('team_members').update({ last_active: new Date().toISOString() })
         .eq('email', email).then(() => {}).catch(err => console.warn('[last_active]', err));
-      grantAccess(member.email, member.role, member.name);
+      grantAccess(member.email, member.role, member.name, member.clients);
     }
   } catch (e) {
     console.error('[Login]', e);
@@ -293,10 +293,11 @@ function forgotPassword() {
   alert('Please contact the workspace owner to reset your password.');
 }
 
-function grantAccess(email, role, name) {
+function grantAccess(email, role, name, clients) {
   sessionStorage.setItem('avo_role', role || 'viewer');
   sessionStorage.setItem('avo_email', email || '');
   sessionStorage.setItem('avo_name', name || '');
+  sessionStorage.setItem('avo_clients', JSON.stringify(Array.isArray(clients) ? clients : []));
   document.body.style.transition = 'opacity .3s ease';
   document.body.style.opacity = '0';
   setTimeout(() => { window.location.href = 'index.html'; }, 320);
