@@ -3428,8 +3428,7 @@ function ScreenReport({ clientId, onBack }) {
 
   const handleSelectWidget = useCallback((id, cardId) => {
     setSelectedWidget(id);
-    // Use card type from universal map so editor shows/edits the type-level config
-    setEditorCardId(WIDGET_CARD_TYPES[id] || cardId);
+    setEditorCardId(cardId);
   }, []);
 
   const handleDeleteWidget = useCallback((id) => {
@@ -3456,11 +3455,8 @@ function ScreenReport({ clientId, onBack }) {
     return () => window.removeEventListener('keydown', handler);
   }, [selectedWidget, showEditor, handleDeleteWidget]);
 
-  // Redirect config changes to the card TYPE key (universal config shared across
-  // all widgets of the same visual type)
   const handleWidgetConfigChange = useCallback((widgetId, changes) => {
-    const cardTypeKey = WIDGET_CARD_TYPES[widgetId] || widgetId;
-    updateWidgetConfig(cardTypeKey, changes);
+    updateWidgetConfig(widgetId, changes);
   }, [updateWidgetConfig]);
   const editState = showEditor && !_IS_VIEWER ? {
     selected: selectedWidget,
@@ -3469,11 +3465,10 @@ function ScreenReport({ clientId, onBack }) {
     onDeselect: () => setSelectedWidget(null),
   } : null;
 
-  // Count how many widgets in the current layout share the same card type as the selected widget
+  // Count how many widgets in the current layout share the same widget type as the selected widget
   const _layouts = widgetLayouts || getDefaultLayout(client?.connected);
-  const _selectedCardType = selectedWidget ? WIDGET_CARD_TYPES[selectedWidget] : null;
-  const sharedWidgetCount = _selectedCardType
-    ? _layouts.rows.flat().filter(w => WIDGET_CARD_TYPES[w.id] === _selectedCardType).length
+  const sharedWidgetCount = (selectedWidget && editorCardId && _layouts)
+    ? _layouts.rows.flat().filter(w => w.type === editorCardId || WIDGET_CARD_TYPES[w.id] === editorCardId).length
     : 0;
 
   // Retry counter — increments every 300ms until client is found (max 10 tries)
