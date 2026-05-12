@@ -1063,6 +1063,225 @@ function CampaignsTable({ campaigns }) {
   );
 }
 
+// ─── Universal sub-renderers ───────────────────────────────────────
+
+function KpiStripWidget({ instance, p, cfg }) {
+  const reg = window.DATA_REGISTRY?.[instance.source] || {};
+  const scale = FONT_SCALES[cfg.fontSize] || 1;
+  const metrics = cfg.metrics || [];
+  const ACCENT_COLORS = [teal, blue, gold, '#A78BFA', '#F87171'];
+  return (
+    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+      {metrics.map((key, i) => {
+        const def = reg[key];
+        if (!def) return null;
+        const val  = def.value ? def.value(p) : null;
+        const prev = def.prev  ? def.prev(p)  : null;
+        const label = (cfg.metricLabels?.[key]) || def.label;
+        const spark = def.series ? def.series(p) : null;
+        return (
+          <Kpi key={key}
+            label={label}
+            value={fmtMetricVal(val, def.format)}
+            delta={prev != null && val != null ? d(val, prev) : null}
+            accent={ACCENT_COLORS[i % ACCENT_COLORS.length]}
+            spark={i === 0 && spark?.length >= 2 ? spark.slice(-7) : null}
+            scale={scale}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function SingleStatWidget({ instance, p, cfg }) {
+  const reg = window.DATA_REGISTRY?.[instance.source] || {};
+  const scale = FONT_SCALES[cfg.fontSize] || 1;
+  const key = cfg.metric;
+  const def = reg[key] || {};
+  const val  = def.value ? def.value(p) : null;
+  const prev = def.prev  ? def.prev(p)  : null;
+  const label = cfg.label || def.label || key;
+  return (
+    <div style={{ display: 'flex', gap: 10 }}>
+      <Kpi
+        label={label}
+        value={fmtMetricVal(val, def.format)}
+        delta={prev != null && val != null ? d(val, prev) : null}
+        accent={teal}
+        scale={scale * 1.4}
+      />
+    </div>
+  );
+}
+
+function ChartAreaWidget({ instance, p, cfg }) {
+  const reg = window.DATA_REGISTRY?.[instance.source] || {};
+  const key = cfg.metric;
+  const def = reg[key] || {};
+  const series = def.series ? (def.series(p) || []) : [];
+  const safeSeries = series.length >= 2 ? series : [0, 0];
+  const title = cfg.name || def.label || key;
+  const totalVal = def.value ? def.value(p) : null;
+  const sub = totalVal != null ? `Total: ${fmtMetricVal(totalVal, def.format)}` : null;
+  return (
+    <ChartCard title={title} sub={sub}>
+      <MiniLine data={safeSeries} w={300} h={72} color={teal} fill id={`uni-area-${instance.id}`}/>
+    </ChartCard>
+  );
+}
+
+function ChartBarWidget({ instance, p, cfg }) {
+  const reg = window.DATA_REGISTRY?.[instance.source] || {};
+  const key = cfg.metric;
+  const def = reg[key] || {};
+  const series = def.series ? (def.series(p) || []) : [];
+  const safeSeries = series.length >= 2 ? series : [0, 0];
+  const title = cfg.name || def.label || key;
+  return (
+    <ChartCard title={title}>
+      <MiniBar data={safeSeries} w={300} h={72} color={blue}/>
+    </ChartCard>
+  );
+}
+
+function ChartDonutWidget({ instance, p, cfg }) {
+  const reg  = window.DATA_REGISTRY?.[instance.source] || {};
+  const rows = (window.TABLE_DATA_REGISTRY?.[instance.source] || (() => []))(p) || [];
+  const metricKey = cfg.metric;
+  const groupKey  = cfg.groupBy || cfg.dimension;
+  const def = reg[metricKey] || {};
+  const title = cfg.name || def.label || metricKey;
+  const COLORS = [teal, blue, gold, '#A78BFA', '#F87171'];
+
+  const grouped = {};
+  rows.forEach(row => {
+    const gKey = row[groupKey] || row.name || 'Other';
+    grouped[gKey] = (grouped[gKey] || 0) + (Number(row[metricKey]) || 0);
+  });
+  const entries = Object.entries(grouped).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const total = entries.reduce((s, [, v]) => s + v, 0) || 1;
+  const segments = entries.length
+    ? entries.map(([, v], i) => ({ value: v, color: COLORS[i % COLORS.length] }))
+    : [{ value: 1, color: '#243350' }];
+
+  return (
+    <ChartCard title={title}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <MiniDonut segments={segments} size={88} thickness={9}
+          centerLabel={String(entries.length || '—')} centerSub="groups"/>
+        <div style={{ flex: 1 }}>
+          {entries.map(([label, val], i) => (
+            <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: COLORS[i % COLORS.length], flexShrink: 0 }}/>
+                <span style={{ fontFamily: T.mono, fontSize: 9, color: sec }}>{label}</span>
+              </div>
+              <span style={{ fontFamily: T.mono, fontSize: 9, color: muted }}>
+                {((val / total) * 100).toFixed(1)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </ChartCard>
+  );
+}
+
+function ChartHeatmapWidget({ instance, p, cfg }) {
+  const reg = window.DATA_REGISTRY?.[instance.source] || {};
+  const firstMetric = Object.keys(reg)[0];
+  const def = firstMetric ? (reg[firstMetric] || {}) : {};
+  const rawSeries = def.series ? (def.series(p) || []) : [];
+  const flat = rawSeries.slice(0, 28);
+  const heatMax = Math.max(...flat) || 1;
+  const heatValues = Array.from({ length: 4 }, (_, r) =>
+    Array.from({ length: 7 }, (_, c) => (flat[r * 7 + c] || 0) / heatMax)
+  );
+  const title = cfg.name || 'Traffic Intensity';
+  return (
+    <ChartCard title={title} sub="4 Minggu × Hari">
+      <MiniHeatmap
+        rows={4} cols={7}
+        values={heatValues}
+        labelsRow={['W1','W2','W3','W4']}
+        labelsCol={['Sen','Sel','Rab','Kam','Jum','Sab','Min']}
+        cell={17} color={teal}
+      />
+    </ChartCard>
+  );
+}
+
+function UniversalTableWidget({ instance, p, cfg }) {
+  const reg  = window.DATA_REGISTRY?.[instance.source] || {};
+  const dims = window.DIM_REGISTRY?.[instance.source]  || [];
+  const rows = (window.TABLE_DATA_REGISTRY?.[instance.source] || (() => []))(p) || [];
+  const availMetrics = Object.entries(reg).map(([key, def]) => ({
+    key, label: def.label, fmt: def.format,
+  }));
+  return (
+    <DataTable
+      widgetId={instance.id}
+      widgetConfig={cfg}
+      rows={rows}
+      availDims={dims}
+      availMetrics={availMetrics}
+      defaultDims={cfg.dimensions || dims.slice(0,1).map(d => d.key)}
+      defaultMetrics={cfg.metrics  || availMetrics.slice(0,4).map(m => m.key)}
+      defaultName={cfg.name || 'Data Table'}
+    />
+  );
+}
+
+function TextWidget({ cfg }) {
+  return (
+    <RCard padding={20}>
+      {cfg.title && (
+        <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 700, color: fg, marginBottom: cfg.body ? 10 : 0 }}>
+          {cfg.title}
+        </div>
+      )}
+      {cfg.body && (
+        <div style={{ fontFamily: T.body, fontSize: 13, color: sec, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+          {cfg.body}
+        </div>
+      )}
+      {!cfg.title && !cfg.body && (
+        <div style={{ fontFamily: T.mono, fontSize: 11, color: muted, textAlign: 'center', padding: '16px 0' }}>
+          Klik Edit → ketik judul dan teks
+        </div>
+      )}
+    </RCard>
+  );
+}
+
+function UniversalWidget({ instance, p, widgetConfig, editState }) {
+  const src  = instance.source;
+  const type = instance.type;
+  const cfg  = window.getWidgetCfg ? window.getWidgetCfg(type, src, widgetConfig) : (widgetConfig || {});
+
+  const inner = (() => {
+    switch (type) {
+      case 'kpi-strip':    return <KpiStripWidget    instance={instance} p={p} cfg={cfg}/>;
+      case 'single-stat':  return <SingleStatWidget  instance={instance} p={p} cfg={cfg}/>;
+      case 'chart-area':   return <ChartAreaWidget   instance={instance} p={p} cfg={cfg}/>;
+      case 'chart-bar':    return <ChartBarWidget    instance={instance} p={p} cfg={cfg}/>;
+      case 'chart-donut':  return <ChartDonutWidget  instance={instance} p={p} cfg={cfg}/>;
+      case 'chart-heatmap':return <ChartHeatmapWidget instance={instance} p={p} cfg={cfg}/>;
+      case 'table':        return <UniversalTableWidget instance={instance} p={p} cfg={cfg}/>;
+      case 'text':         return <TextWidget        cfg={cfg}/>;
+      default:             return <div style={{ padding: 20, color: muted, fontFamily: T.mono, fontSize: 11 }}>Unknown type: {type}</div>;
+    }
+  })();
+
+  if (!editState) return inner;
+  return (
+    <SelectableWidget id={instance.id} cardId={type} editState={editState}>
+      {inner}
+    </SelectableWidget>
+  );
+}
+
 // ─── Widget map builder ────────────────────────────────────────────
 // Returns { [widgetId]: ReactNode } for all widgets across all sections.
 function buildWidgetMap(p, connected, widgetConfigs, editState) {
