@@ -778,7 +778,7 @@ const DragDots = () => (
 );
 
 // ─── TAB: Setup (simplified) ─────────────────────────────────────────
-const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connectedSources, sharedWidgetCount = 0 }) => {
+const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connectedSources, sharedWidgetCount = 0, instanceSource, onSourceChange }) => {
   const [dragMetIdx,  setDragMetIdx]  = React.useState(null);
   const [dragMetOver, setDragMetOver] = React.useState(null);
   const [dragDimIdx,  setDragDimIdx]  = React.useState(null);
@@ -808,7 +808,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     </div>
   ) : null;
 
-  const srcKey  = (widgetId || '').split('-')[0];
+  const srcKey  = instanceSource || (widgetId || '').split('-')[0];
   const limits  = WIDGET_LIMITS[cardId] || { maxMetrics: 5, maxDims: 3 };
   const showDims = limits.maxDims > 0 && (cardId || '').startsWith('table-') || limits.maxDims > 0;
   const showMetrics = limits.maxMetrics > 0;
@@ -847,20 +847,24 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
       </ESection>
       <EDivider/>
 
-      {/* Data source — show account name */}
+      {/* Data source */}
       <ESection label="Data source">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           {connectedList.map(s => {
             const label = getSrcAccountLabel(s, connectedSources);
-            const isSrcWidget = s === srcKey;
+            const isCurrent = s === srcKey;
+            const canSwitch = !!onSourceChange;
             return (
-              <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px', border: `1px solid ${isSrcWidget ? SRC_COLORS[s] : SRC_COLORS[s]+'44'}`, borderRadius: 7, background: isSrcWidget ? SRC_COLORS[s] + '18' : 'transparent', cursor: 'default' }}>
+              <div key={s}
+                onClick={canSwitch && !isCurrent ? () => onSourceChange(widgetId, s) : undefined}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px', border: `1px solid ${isCurrent ? SRC_COLORS[s] : SRC_COLORS[s]+'44'}`, borderRadius: 7, background: isCurrent ? SRC_COLORS[s] + '18' : 'transparent', cursor: canSwitch && !isCurrent ? 'pointer' : 'default', transition: 'background .12s' }}>
                 <ChannelLogo channel={s} size={13}/>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 700, color: isSrcWidget ? SRC_COLORS[s] : EP.sec, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
-                  {isSrcWidget && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, color: EP.muted, marginTop: 1 }}>Widget ini menggunakan sumber ini</div>}
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 700, color: isCurrent ? SRC_COLORS[s] : EP.sec, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
+                  {isCurrent && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, color: EP.muted, marginTop: 1 }}>Sumber aktif widget ini</div>}
+                  {!isCurrent && canSwitch && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, color: EP.muted, marginTop: 1 }}>klik untuk ganti</div>}
                 </div>
-                {isSrcWidget && <div style={{ width: 7, height: 7, borderRadius: '50%', background: SRC_COLORS[s], flexShrink: 0 }}/>}
+                {isCurrent && <div style={{ width: 7, height: 7, borderRadius: '50%', background: SRC_COLORS[s], flexShrink: 0 }}/>}
               </div>
             );
           })}
@@ -1494,33 +1498,36 @@ const CardThumbnail = ({ cardId }) => {
 };
 
 // ─── TAB: Browse ─────────────────────────────────────────────────
-const BrowseTab = ({ activeCardId, onSelect }) => {
-  const cats  = window.CATS  || [];
-  const cards = window.CARDS || [];
-  const [activeCat, setActiveCat] = React.useState(() => {
-    const ac = cards.find(c => c.id === activeCardId);
-    return (ac && ac.cat) || (cats[0] && cats[0].id) || 'kpi';
-  });
-  const [pendingId, setPendingId] = React.useState(null);
+const UNIVERSAL_CATS = [
+  { id: 'kpi',    title: 'KPI',    desc: 'Key performance indicators dan angka ringkasan' },
+  { id: 'charts', title: 'Charts', desc: 'Grafik untuk memvisualisasikan tren dan perbandingan' },
+  { id: 'table',  title: 'Table',  desc: 'Tabel data dengan dimensi dan metrik yang bisa dikustom' },
+  { id: 'text',   title: 'Text',   desc: 'Widget teks dan narasi untuk penjelasan laporan' },
+];
+
+const UNIVERSAL_WIDGET_TYPES = [
+  { id: 'kpi-strip',     cat: 'kpi',    title: 'KPI Strip',    desc: '4–6 metrik dalam satu baris', defaultSource: 'google' },
+  { id: 'single-stat',   cat: 'kpi',    title: 'Single Stat',  desc: 'Satu angka besar dengan tren', defaultSource: 'google' },
+  { id: 'chart-area',    cat: 'charts', title: 'Area Chart',   desc: 'Tren metrik sepanjang waktu',  defaultSource: 'google' },
+  { id: 'chart-bar',     cat: 'charts', title: 'Bar Chart',    desc: 'Perbandingan nilai per kategori', defaultSource: 'google' },
+  { id: 'chart-donut',   cat: 'charts', title: 'Donut Chart',  desc: 'Distribusi persentase',        defaultSource: 'google' },
+  { id: 'chart-heatmap', cat: 'charts', title: 'Heatmap',      desc: 'Aktivitas berdasarkan hari & jam', defaultSource: 'ga4' },
+  { id: 'table',         cat: 'table',  title: 'Data Table',   desc: 'Tabel dengan dimensi & metrik', defaultSource: 'google' },
+  { id: 'text',          cat: 'text',   title: 'Text / Narasi',desc: 'Judul dan paragraf bebas',     defaultSource: null },
+];
+
+const BrowseTab = ({ onSelect, connectedSources }) => {
+  const [activeCat, setActiveCat] = React.useState('kpi');
   const [hoveredId, setHoveredId] = React.useState(null);
 
-  const filtered = cards.filter(c => c.cat === activeCat);
-  const catMeta  = cats.find(c => c.id === activeCat);
-  const pendingCard = pendingId ? cards.find(c => c.id === pendingId) : null;
-
-  const handleCardClick = (id) => {
-    setPendingId(prev => (prev === id ? null : id));
-  };
-
-  const handleApply = () => {
-    if (pendingId) { onSelect && onSelect(pendingId); setPendingId(null); }
-  };
+  const filtered = UNIVERSAL_WIDGET_TYPES.filter(w => w.cat === activeCat);
+  const catMeta   = UNIVERSAL_CATS.find(c => c.id === activeCat);
 
   return (
     <>
       {/* Category chips */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
-        {cats.map(c => {
+        {UNIVERSAL_CATS.map(c => {
           const active = c.id === activeCat;
           return (
             <button key={c.id} onClick={() => setActiveCat(c.id)} style={{
@@ -1555,95 +1562,62 @@ const BrowseTab = ({ activeCardId, onSelect }) => {
         </span>
       </div>
 
-      {/* Card grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: pendingCard ? 12 : 0 }}>
-        {filtered.map(c => {
-          const isActive = c.id === activeCardId;
-          const isPending = c.id === pendingId;
+      {/* Widget type grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        {filtered.map(w => {
+          const firstSrc = w.defaultSource
+            ? (['google','meta','ga4','search'].find(s => connectedSources?.[s]) || w.defaultSource)
+            : null;
           return (
             <div
-              key={c.id}
-              onClick={() => handleCardClick(c.id)}
+              key={w.id}
               draggable
-              onDragStart={e => { e.dataTransfer.setData('browseCardId', c.id); e.dataTransfer.effectAllowed = 'copy'; }}
-              onMouseEnter={() => setHoveredId(c.id)}
+              onDragStart={e => {
+                const def = { type: w.id, source: firstSrc };
+                e.dataTransfer.setData('browseCardId', w.id);
+                e.dataTransfer.setData('browseWidgetDef', JSON.stringify(def));
+                e.dataTransfer.effectAllowed = 'copy';
+              }}
+              onMouseEnter={() => setHoveredId(w.id)}
               onMouseLeave={() => setHoveredId(null)}
               style={{
                 borderRadius: 8, cursor: 'grab', overflow: 'hidden',
                 position: 'relative', transition: 'border-color .12s, background .12s',
-                background: isActive ? 'rgba(0,194,184,.1)' : isPending ? 'rgba(248,180,0,.08)' : EP.elevated,
-                border: `1.5px solid ${isActive ? EP.teal : isPending ? EP.gold : EP.edge}`,
+                background: EP.elevated,
+                border: `1.5px solid ${EP.edge}`,
               }}
             >
               {/* Thumbnail */}
               <div style={{ position: 'relative' }}>
-                <CardThumbnail cardId={c.id} />
-
-                {/* Drag-to-canvas overlay — bottom strip on thumbnail, shown on hover only */}
-                {hoveredId === c.id && (
+                <CardThumbnail cardId={w.id} />
+                {hoveredId === w.id && (
                   <div style={{
                     position: 'absolute', bottom: 0, left: 0, right: 0,
                     display: 'flex', alignItems: 'center', gap: 5, padding: '4px 7px',
                     background: 'linear-gradient(to top, rgba(5,12,28,.82) 60%, transparent)',
                   }}>
-                    {/* 2×3 drag-handle dots */}
                     <svg width="9" height="12" viewBox="0 0 9 12" fill="none" style={{ flexShrink: 0 }}>
                       {[[1,1],[1,5],[1,9],[5,1],[5,5],[5,9]].map(([cx,cy],i)=>
-                        <circle key={i} cx={cx} cy={cy} r="1.3" fill={isPending ? EP.gold : EP.teal} opacity={isPending?'.8':'.6'}/>)}
+                        <circle key={i} cx={cx} cy={cy} r="1.3" fill={EP.teal} opacity=".6"/>)}
                     </svg>
-                    <span style={{
-                      fontFamily: 'var(--font-mono)', fontSize: 7.5, letterSpacing: '.04em',
-                      color: isPending ? EP.gold : EP.teal, opacity: isPending ? .9 : .65,
-                    }}>drag to canvas</span>
-                    {/* right arrow */}
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7.5, letterSpacing: '.04em', color: EP.teal, opacity: .65 }}>drag to canvas</span>
                     <svg width="9" height="9" viewBox="0 0 24 24" fill="none"
-                      stroke={isPending ? EP.gold : EP.teal} strokeWidth="2.5"
-                      strokeLinecap="round" strokeLinejoin="round"
-                      style={{ marginLeft: 'auto', opacity: isPending ? .9 : .55 }}>
+                      stroke={EP.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                      style={{ marginLeft: 'auto', opacity: .55 }}>
                       <path d="M5 12h14M12 5l7 7-7 7"/>
                     </svg>
                   </div>
                 )}
-
-                {/* State badge — overlays top-right of thumbnail */}
-                {(isActive || isPending) && (
-                  <span style={{
-                    position: 'absolute', top: 6, right: 6,
-                    fontFamily: 'var(--font-mono)', fontSize: 7, fontWeight: 700,
-                    color: isActive ? EP.teal : EP.gold,
-                    background: isActive ? 'rgba(0,194,184,.22)' : 'rgba(248,180,0,.22)',
-                    border: `1px solid ${isActive ? 'rgba(0,194,184,.45)' : 'rgba(248,180,0,.45)'}`,
-                    padding: '2px 5px', borderRadius: 3, letterSpacing: '0.08em',
-                    backdropFilter: 'blur(4px)',
-                  }}>{isActive ? 'ACTIVE' : 'SELECTED'}</span>
-                )}
               </div>
-
-              {/* Title row */}
+              {/* Title + desc */}
               <div style={{ padding: '7px 9px 9px' }}>
-                <div style={{
-                  fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700, lineHeight: 1.3,
-                  color: isActive ? EP.teal : isPending ? EP.gold : EP.fg,
-                }}>{c.title}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700, lineHeight: 1.3, color: EP.fg }}>{w.title}</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 9.5, color: EP.muted, marginTop: 2, lineHeight: 1.4 }}>{w.desc}</div>
               </div>
             </div>
           );
         })}
       </div>
-
-      {/* Apply button — appears when a non-active card is selected */}
-      {pendingCard && (
-        <button onClick={handleApply} style={{
-          width: '100%', padding: '10px 0',
-          background: 'linear-gradient(135deg, #F8B400, #E5A000)',
-          border: 'none', borderRadius: 8, cursor: 'pointer',
-          fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700,
-          color: '#0C182C', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-        }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-          Apply "{pendingCard.title}"
-        </button>
-      )}
     </>
   );
 };
@@ -1675,6 +1649,8 @@ const CardEditorPanel = ({
   onClose,
   defaultTab = 'browse',
   sharedWidgetCount = 0,
+  instanceSource = null,
+  onSourceChange = null,
   style = {},
 }) => {
   const [tab, setTab] = React.useState(defaultTab);
@@ -1739,7 +1715,7 @@ const CardEditorPanel = ({
 
       {/* Body */}
       <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
-        {tab === 'browse' && <BrowseTab activeCardId={activeCardId} onSelect={handleSelectCard}/>}
+        {tab === 'browse' && <BrowseTab activeCardId={activeCardId} onSelect={handleSelectCard} connectedSources={connectedSources}/>}
         {tab === 'setup' && (
           <SimpleSetupTab
             widgetId={widgetId}
@@ -1748,6 +1724,8 @@ const CardEditorPanel = ({
             onConfigChange={onConfigChange}
             connectedSources={connectedSources}
             sharedWidgetCount={sharedWidgetCount}
+            instanceSource={instanceSource}
+            onSourceChange={onSourceChange}
           />
         )}
         {tab === 'style' && <StyleTab state={styleState} setState={setStyleState}/>}

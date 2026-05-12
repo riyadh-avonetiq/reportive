@@ -1861,8 +1861,22 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
   // ── Browse → Canvas drag helpers ─────────────────────────────────
   const isBrowseDrag = e => e.dataTransfer?.types && Array.from(e.dataTransfer.types).includes('browsecardid');
 
+  const _parseBrowseDef = e => {
+    try { const s = e.dataTransfer?.getData('browseWidgetDef'); return s ? JSON.parse(s) : null; } catch { return null; }
+  };
+
   // Drop ON center of widget → replace it
   const handleWidgetBrowseDrop = (widgetId, e) => {
+    const def = _parseBrowseDef(e);
+    if (def) {
+      e.preventDefault(); e.stopPropagation();
+      const newId = window.genWidgetId ? window.genWidgetId() : 'w_' + Date.now();
+      onLayoutChange(prev => ({
+        ...prev,
+        rows: prev.rows.map(r => r.map(w => w.id === widgetId ? { id: newId, type: def.type, source: def.source, span: w.span } : w)),
+      }));
+      return;
+    }
     const cardId = e.dataTransfer?.getData('browseCardId');
     if (!cardId) return;
     e.preventDefault(); e.stopPropagation();
@@ -1874,6 +1888,17 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
 
   // Drop on left/right edge of widget → insert before/after in the row
   const handleBetweenDrop = (rowIdx, insertPos, e) => {
+    const def = _parseBrowseDef(e);
+    if (def) {
+      e.preventDefault(); e.stopPropagation();
+      const newId = window.genWidgetId ? window.genWidgetId() : 'w_' + Date.now();
+      onLayoutChange(prev => {
+        const rows = prev.rows.map(r => [...r]);
+        rows[rowIdx].splice(insertPos, 0, { id: newId, type: def.type, source: def.source, span: 4 });
+        return { ...prev, rows };
+      });
+      return;
+    }
     const cardId = e.dataTransfer?.getData('browseCardId');
     if (!cardId) return;
     e.preventDefault(); e.stopPropagation();
@@ -1912,6 +1937,17 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
 
   // Drop on between-row zone → insert new row
   const handleNewRowDrop = (insertAt, e) => {
+    const def = _parseBrowseDef(e);
+    if (def) {
+      e.preventDefault(); e.stopPropagation();
+      const newId = window.genWidgetId ? window.genWidgetId() : 'w_' + Date.now();
+      onLayoutChange(prev => {
+        const rows = [...prev.rows];
+        rows.splice(insertAt, 0, [{ id: newId, type: def.type, source: def.source, span: 12 }]);
+        return { ...prev, rows };
+      });
+      return;
+    }
     const cardId = e.dataTransfer?.getData('browseCardId');
     if (!cardId) return;
     e.preventDefault(); e.stopPropagation();
@@ -3714,6 +3750,13 @@ function ScreenReport({ clientId, onBack }) {
   const handleWidgetConfigChange = useCallback((widgetId, changes) => {
     updateWidgetConfig(widgetId, changes);
   }, [updateWidgetConfig]);
+
+  const handleSourceChange = useCallback((widgetId, newSource) => {
+    updateWidgetLayouts(prev => ({
+      ...prev,
+      rows: prev.rows.map(row => row.map(w => w.id === widgetId ? { ...w, source: newSource } : w)),
+    }));
+  }, [updateWidgetLayouts]);
   const editState = showEditor && !_IS_VIEWER ? {
     selected: selectedWidget,
     onSelect: handleSelectWidget,
@@ -3726,6 +3769,10 @@ function ScreenReport({ clientId, onBack }) {
   const sharedWidgetCount = (selectedWidget && editorCardId && _layouts)
     ? _layouts.rows.flat().filter(w => w.type === editorCardId || WIDGET_CARD_TYPES[w.id] === editorCardId).length
     : 0;
+  const _selectedInstance = selectedWidget && _layouts
+    ? _layouts.rows.flat().find(w => w.id === selectedWidget)
+    : null;
+  const instanceSource = _selectedInstance?.source || null;
 
   // Retry counter — increments every 300ms until client is found (max 10 tries)
   const [retry, setRetry] = useState(0);
@@ -3969,12 +4016,14 @@ function ScreenReport({ clientId, onBack }) {
           <window.CardEditorPanel
             cardId={editorCardId}
             widgetId={selectedWidget}
-            widgetConfig={selectedWidget ? (widgetConfigs[WIDGET_CARD_TYPES[selectedWidget] || editorCardId] || {}) : {}}
+            widgetConfig={selectedWidget ? (widgetConfigs[selectedWidget] || {}) : {}}
             onConfigChange={handleWidgetConfigChange}
             onUndo={historyLen > 0 ? undoWidgetConfig : null}
             connectedSources={client?.connected || {}}
             onClose={() => setShowEditor(false)}
             sharedWidgetCount={sharedWidgetCount}
+            instanceSource={instanceSource}
+            onSourceChange={handleSourceChange}
             style={{ flexShrink: 0 }}
           />
         )}
