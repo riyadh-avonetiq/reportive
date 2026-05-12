@@ -1879,7 +1879,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
       const newId = window.genWidgetId ? window.genWidgetId() : 'w_' + Date.now();
       onLayoutChange(prev => ({
         ...prev,
-        rows: prev.rows.map(r => r.map(w => w.id === widgetId ? { id: newId, type: def.type, source: def.source, span: w.span } : w)),
+        rows: prev.rows.map(r => r.map(w => w.id === widgetId ? { id: newId, type: def.type, source: def.source, span: w.span, ...(def._cardId ? { _cardId: def._cardId } : {}) } : w)),
       }));
       return;
     }
@@ -1900,7 +1900,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
       const newId = window.genWidgetId ? window.genWidgetId() : 'w_' + Date.now();
       onLayoutChange(prev => {
         const rows = prev.rows.map(r => [...r]);
-        rows[rowIdx].splice(insertPos, 0, { id: newId, type: def.type, source: def.source, span: 4 });
+        rows[rowIdx].splice(insertPos, 0, { id: newId, type: def.type, source: def.source, span: 4, ...(def._cardId ? { _cardId: def._cardId } : {}) });
         return { ...prev, rows };
       });
       return;
@@ -1949,7 +1949,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
       const newId = window.genWidgetId ? window.genWidgetId() : 'w_' + Date.now();
       onLayoutChange(prev => {
         const rows = [...prev.rows];
-        rows.splice(insertAt, 0, [{ id: newId, type: def.type, source: def.source, span: 12 }]);
+        rows.splice(insertAt, 0, [{ id: newId, type: def.type, source: def.source, span: 12, ...(def._cardId ? { _cardId: def._cardId } : {}) }]);
         return { ...prev, rows };
       });
       return;

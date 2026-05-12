@@ -1757,7 +1757,7 @@ const BrowseTab = ({ onSelect, connectedSources }) => {
               key={w.id}
               draggable
               onDragStart={e => {
-                const def = { type: uniType, source: firstSrc };
+                const def = { type: uniType, source: firstSrc, _cardId: w.id };
                 e.dataTransfer.setData('browseCardId', w.id);
                 e.dataTransfer.setData('browseWidgetDef', JSON.stringify(def));
                 e.dataTransfer.effectAllowed = 'copy';
