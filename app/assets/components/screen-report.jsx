@@ -1272,7 +1272,11 @@ function UniversalWidget({ instance, p, widgetConfig, editState }) {
       case 'chart-heatmap':return <ChartHeatmapWidget instance={instance} p={p} cfg={cfg}/>;
       case 'table':        return <UniversalTableWidget instance={instance} p={p} cfg={cfg}/>;
       case 'text':         return <TextWidget        cfg={cfg}/>;
-      default:             return <div style={{ padding: 20, color: muted, fontFamily: T.mono, fontSize: 11 }}>Unknown type: {type}</div>;
+      default: {
+        const cardDef = (window.CARDS || []).find(c => c.id === type);
+        if (cardDef?.render) return React.createElement(cardDef.render, {});
+        return <div style={{ padding: 20, color: muted, fontFamily: T.mono, fontSize: 11 }}>Unknown type: {type}</div>;
+      }
     }
   })();
 

@@ -1652,36 +1652,46 @@ const UNIVERSAL_WIDGET_TYPES = [
   { id: 'text',          cat: 'text',   title: 'Text / Narasi',desc: 'Judul dan paragraf bebas',     defaultSource: null },
 ];
 
-// Maps old window.CARDS card IDs → universal widget type + default source
+// Maps old window.CARDS card IDs → universal widget type + default source.
+// Data-connected types (kpi-strip, single-stat, chart-*, table) map to universal types
+// that read from DATA_REGISTRY. Design-only types keep their original ID so
+// UniversalWidget can fall back to window.CARDS[id].render().
 const CARD_TO_UNIVERSAL = {
-  'narrative-hero':      { type: 'text',         defaultSource: null },
-  'narrative-note':      { type: 'text',         defaultSource: null },
-  'narrative-callout':   { type: 'text',         defaultSource: null },
-  'narrative-quote':     { type: 'text',         defaultSource: null },
-  'kpi-single':          { type: 'single-stat',  defaultSource: 'google' },
-  'kpi-strip':           { type: 'kpi-strip',    defaultSource: 'google' },
-  'kpi-compare':         { type: 'single-stat',  defaultSource: 'google' },
-  'kpi-stacked':         { type: 'kpi-strip',    defaultSource: 'google' },
-  'chart-area':          { type: 'chart-area',   defaultSource: 'google' },
-  'chart-area-axes':     { type: 'chart-area',   defaultSource: 'google' },
-  'chart-line':          { type: 'chart-area',   defaultSource: 'google' },
-  'chart-bar':           { type: 'chart-bar',    defaultSource: 'google' },
-  'chart-donut':         { type: 'chart-donut',  defaultSource: 'google' },
-  'chart-heatmap':       { type: 'chart-heatmap',defaultSource: 'ga4' },
-  'chart-sparks':        { type: 'kpi-strip',    defaultSource: 'google' },
-  'table-channels':      { type: 'table',        defaultSource: 'google' },
-  'table-campaigns':     { type: 'table',        defaultSource: 'google' },
-  'table-rankings':      { type: 'table',        defaultSource: 'google' },
-  'progress-psi':        { type: 'chart-heatmap',defaultSource: 'ga4' },
-  'progress-score':      { type: 'single-stat',  defaultSource: 'ga4' },
-  'progress-goals':      { type: 'single-stat',  defaultSource: 'google' },
-  'progress-pacing':     { type: 'single-stat',  defaultSource: 'google' },
-  'progress-grid':       { type: 'kpi-strip',    defaultSource: 'ga4' },
-  'list-keywords':       { type: 'table',        defaultSource: 'google' },
-  'list-pages':          { type: 'table',        defaultSource: 'ga4' },
-  'list-countries':      { type: 'table',        defaultSource: 'google' },
-  'list-devices':        { type: 'table',        defaultSource: 'google' },
-  'carousel-highlights': { type: 'kpi-strip',    defaultSource: 'google' },
+  // narrative — design-only, no data source
+  'narrative-hero':      { type: 'narrative-hero',    defaultSource: null },
+  'narrative-note':      { type: 'narrative-note',    defaultSource: null },
+  'narrative-callout':   { type: 'narrative-callout', defaultSource: null },
+  'narrative-quote':     { type: 'narrative-quote',   defaultSource: null },
+  // kpi — data-connected (universal) or design-only
+  'kpi-single':          { type: 'single-stat',       defaultSource: 'google' },
+  'kpi-strip':           { type: 'kpi-strip',         defaultSource: 'google' },
+  'kpi-compare':         { type: 'kpi-compare',       defaultSource: 'google' },
+  'kpi-stacked':         { type: 'kpi-stacked',       defaultSource: 'google' },
+  // charts — data-connected
+  'chart-area':          { type: 'chart-area',        defaultSource: 'google' },
+  'chart-area-axes':     { type: 'chart-area',        defaultSource: 'google' },
+  'chart-line':          { type: 'chart-area',        defaultSource: 'google' },
+  'chart-bar':           { type: 'chart-bar',         defaultSource: 'google' },
+  'chart-donut':         { type: 'chart-donut',       defaultSource: 'google' },
+  'chart-heatmap':       { type: 'chart-heatmap',     defaultSource: 'ga4' },
+  'chart-sparks':        { type: 'chart-sparks',      defaultSource: 'google' },
+  // tables — data-connected
+  'table-channels':      { type: 'table',             defaultSource: 'google' },
+  'table-campaigns':     { type: 'table',             defaultSource: 'google' },
+  'table-rankings':      { type: 'table',             defaultSource: 'google' },
+  // progress — design-only (data baked into components)
+  'progress-psi':        { type: 'progress-psi',      defaultSource: 'ga4' },
+  'progress-score':      { type: 'progress-score',    defaultSource: 'ga4' },
+  'progress-goals':      { type: 'progress-goals',    defaultSource: 'google' },
+  'progress-pacing':     { type: 'progress-pacing',   defaultSource: 'google' },
+  'progress-grid':       { type: 'progress-grid',     defaultSource: 'ga4' },
+  // lists — design-only
+  'list-keywords':       { type: 'list-keywords',     defaultSource: 'google' },
+  'list-pages':          { type: 'list-pages',        defaultSource: 'ga4' },
+  'list-countries':      { type: 'list-countries',    defaultSource: 'google' },
+  'list-devices':        { type: 'list-devices',      defaultSource: 'google' },
+  // carousel — design-only
+  'carousel-highlights': { type: 'carousel-highlights', defaultSource: null },
 };
 
 const BrowseTab = ({ onSelect, connectedSources }) => {
