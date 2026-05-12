@@ -1102,7 +1102,7 @@ const PagesTab = ({ state, setState }) => {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={EP.muted} strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
               <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 12.5, color: EP.fg }}>{p.label}</span>
               {p.current
-                ? <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: EP.teal, padding: '2px 7px', background: 'rgba(0,194,184,.1)', borderRadius: 4, letterSpacing: '0.08em' }}>HALUS</span>
+                ? <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: EP.teal, padding: '2px 7px', background: 'rgba(0,194,184,.1)', borderRadius: 4, letterSpacing: '0.08em' }}>AKTIF</span>
                 : <button onClick={() => remove(p.id)} style={{ padding: '3px 7px', background: 'rgba(220,38,38,.12)', border: '1px solid rgba(220,38,38,.3)', borderRadius: 5, color: EP.red, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10 }}>×</button>
               }
             </div>
