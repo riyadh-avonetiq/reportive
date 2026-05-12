@@ -1677,6 +1677,24 @@ function RowDropZone({ insertAt, active, onDragOver, onDragEnter, onDrop }) {
   );
 }
 
+function buildUniversalMap(p, widgetConfigs, layouts, editState) {
+  const map = {};
+  (layouts?.rows || []).forEach(row => {
+    row.forEach(entry => {
+      if (!entry.type) return; // skip non-universal entries (handled inline)
+      map[entry.id] = (
+        <UniversalWidget
+          instance={entry}
+          p={p}
+          widgetConfig={widgetConfigs?.[entry.id] || {}}
+          editState={editState}
+        />
+      );
+    });
+  });
+  return map;
+}
+
 // ─── Drag canvas ───────────────────────────────────────────────────
 function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutChange }) {
   const [dragId,           setDragId]           = React.useState(null);
@@ -1739,7 +1757,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
   }, []);
 
   // Build widget map from live data, then augment with Browse overrides / browse-* IDs
-  const widgetMap = buildWidgetMap(p, connected, widgetConfigs, _es);
+  const widgetMap = buildUniversalMap(p, widgetConfigs, layouts, _es);
   const _cards = window.CARDS || [];
   layouts.rows.forEach(row => row.forEach(entry => {
     if (entry.cardTypeOverride) {
