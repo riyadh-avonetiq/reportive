@@ -78,6 +78,7 @@ const RFlare = ({ intensity = 0.5 }) => (
 
 const RCard = ({ children, accent, padding = 16, style = {} }) => (
   <div style={{
+    flex: 1,
     background: 'var(--navy-surface)', border: '1px solid var(--navy-edge)', borderRadius: 12, padding,
     borderTop: accent ? `2px solid ${accent}` : '1px solid var(--navy-edge)',
     boxShadow: '0 4px 12px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.04)',

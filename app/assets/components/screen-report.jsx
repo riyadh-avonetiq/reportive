@@ -653,6 +653,7 @@ function SelectableWidget({ id, cardId, editState, children }) {
       onClick={e => { e.stopPropagation(); editState.onSelect(id, cardId); }}
       style={{
         position: 'relative',
+        flex: 1, display: 'flex', flexDirection: 'column',
         outline: `2px solid ${isSelected ? teal : 'rgba(0,194,184,.12)'}`,
         outlineOffset: 3,
         borderRadius: 12,
@@ -1395,6 +1396,7 @@ function RowDropZone({ insertAt, active, onDragOver, onDragEnter, onDrop }) {
 // ─── Drag canvas ───────────────────────────────────────────────────
 function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutChange }) {
   const [dragId,           setDragId]           = React.useState(null);
+  const [hintDismissed,    setHintDismissed]    = React.useState(false);
   const [dropTarget,       setDropTarget]        = React.useState(null);
   const [ghostPos,         setGhostPos]          = React.useState({ x: 0, y: 0 });
   const [browseDragActive, setBrowseDragActive]  = React.useState(false);
@@ -1570,6 +1572,31 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
     });
   };
 
+  // ── Widget toolbar actions ────────────────────────────────────────
+  const swapInRow = (rowIdx, idA, idB) => {
+    onLayoutChange(prev => {
+      const rows = prev.rows.map((row, ri) => {
+        if (ri !== rowIdx) return row;
+        const newRow = [...row];
+        const ia = newRow.findIndex(e => e.id === idA);
+        const ib = newRow.findIndex(e => e.id === idB);
+        if (ia < 0 || ib < 0) return row;
+        [newRow[ia], newRow[ib]] = [newRow[ib], newRow[ia]];
+        return newRow;
+      });
+      return { ...prev, rows };
+    });
+  };
+
+  const swapRows = (riA, riB) => {
+    if (riA < 0 || riB < 0 || riA >= layouts.rows.length || riB >= layouts.rows.length) return;
+    onLayoutChange(prev => {
+      const rows = [...prev.rows];
+      [rows[riA], rows[riB]] = [rows[riB], rows[riA]];
+      return { ...prev, rows };
+    });
+  };
+
   // Drop on between-row zone → insert new row
   const handleNewRowDrop = (insertAt, e) => {
     const cardId = e.dataTransfer?.getData('browseCardId');
@@ -1588,7 +1615,26 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
       onPointerMove={editState ? handlePointerMove : undefined}
       onPointerUp={editState ? handlePointerUp : undefined}
       onDragOver={e => { if (isBrowseDrag(e)) e.preventDefault(); }}
+      onClick={e => { if (e.target === e.currentTarget && editState?.onDeselect) editState.onDeselect(); }}
     >
+      {/* Edit mode hint strip — shown once per editor session */}
+      {editState && !hintDismissed && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px',
+          borderRadius: 8, marginBottom: 16,
+          background: 'rgba(0,194,184,.05)', border: '1px solid rgba(0,194,184,.14)',
+        }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span style={{ fontFamily: T.mono, fontSize: 9, color: teal, letterSpacing: '0.05em', flex: 1 }}>
+            Edit Mode · Klik widget untuk pilih · Drag untuk pindahkan · Gunakan toolbar di atas widget yang dipilih · Ctrl+Z untuk undo
+          </span>
+          <button
+            onPointerDown={e => e.stopPropagation()}
+            onClick={e => { e.stopPropagation(); setHintDismissed(true); }}
+            style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', padding: '0 2px', fontSize: 14, lineHeight: 1, flexShrink: 0 }}
+          >×</button>
+        </div>
+      )}
       {/* 12-column grid overlay during pointer drag */}
       {dragId && (
         <div style={{
@@ -1655,6 +1701,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
                   <div key={id}
                     style={{
                       gridColumn: `span ${autoSpan}`, position: 'relative',
+                      display: 'flex', flexDirection: 'column',
                       opacity: isDragging ? 0.3 : 1,
                       cursor: editState && !browseDragActive ? (isDragging ? 'grabbing' : 'grab') : 'default',
                       userSelect: 'none',
@@ -1678,19 +1725,62 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
                       }}/>
                     )}
 
-                    {/* Delete button — visible when this widget is selected */}
+                    {/* Floating action toolbar — visible when this widget is selected */}
                     {editState && editState.selected === id && !dragId && !browseDragActive && (
-                      <button
+                      <div
                         onPointerDown={e => e.stopPropagation()}
-                        onClick={e => { e.stopPropagation(); editState.onDelete(id); }}
                         style={{
-                          position: 'absolute', top: -10, right: -10, zIndex: 30,
-                          width: 24, height: 24, borderRadius: '50%', padding: 0,
-                          background: '#E3170A', border: '2px solid #0C182C',
-                          color: '#fff', fontSize: 14, lineHeight: '20px', textAlign: 'center',
-                          cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,.45)',
+                          position: 'absolute', top: -44, left: '50%', transform: 'translateX(-50%)',
+                          zIndex: 40, display: 'flex', alignItems: 'center', gap: 2,
+                          background: 'rgba(8,16,34,.96)', border: '1px solid rgba(0,194,184,.3)',
+                          borderRadius: 9, padding: '4px 6px',
+                          boxShadow: '0 4px 20px rgba(0,0,0,.55)',
+                          backdropFilter: 'blur(10px)', whiteSpace: 'nowrap',
                         }}
-                      >×</button>
+                      >
+                        {/* Move left within row */}
+                        {[
+                          { title: 'Move left', disabled: colIdx === 0, onClick: () => swapInRow(rowIdx, id, visible[colIdx - 1].id), icon: <path d="M15 18l-6-6 6-6"/> },
+                          { title: 'Move right', disabled: colIdx === visible.length - 1, onClick: () => swapInRow(rowIdx, id, visible[colIdx + 1].id), icon: <path d="M9 18l6-6-6-6"/> },
+                        ].map(({ title, disabled, onClick, icon }) => (
+                          <button key={title} title={title} disabled={disabled}
+                            onClick={e => { e.stopPropagation(); if (!disabled) onClick(); }}
+                            style={{ width: 26, height: 26, padding: 0, border: 'none', borderRadius: 6, cursor: disabled ? 'default' : 'pointer', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: disabled ? 'rgba(255,255,255,.18)' : teal, transition: 'background .1s' }}
+                            onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = 'rgba(0,194,184,.1)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">{icon}</svg>
+                          </button>
+                        ))}
+
+                        <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,.1)', margin: '0 2px' }}/>
+
+                        {/* Move row up / down */}
+                        {[
+                          { title: 'Move row up', disabled: rowIdx === 0, onClick: () => swapRows(rowIdx, rowIdx - 1), icon: <><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></> },
+                          { title: 'Move row down', disabled: rowIdx === layouts.rows.length - 1, onClick: () => swapRows(rowIdx, rowIdx + 1), icon: <><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></> },
+                        ].map(({ title, disabled, onClick, icon }) => (
+                          <button key={title} title={title} disabled={disabled}
+                            onClick={e => { e.stopPropagation(); if (!disabled) onClick(); }}
+                            style={{ width: 26, height: 26, padding: 0, border: 'none', borderRadius: 6, cursor: disabled ? 'default' : 'pointer', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: disabled ? 'rgba(255,255,255,.18)' : teal, transition: 'background .1s' }}
+                            onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = 'rgba(0,194,184,.1)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">{icon}</svg>
+                          </button>
+                        ))}
+
+                        <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,.1)', margin: '0 2px' }}/>
+
+                        {/* Delete */}
+                        <button title="Delete widget (Del)" onClick={e => { e.stopPropagation(); editState.onDelete(id); }}
+                          style={{ width: 26, height: 26, padding: 0, border: 'none', borderRadius: 6, cursor: 'pointer', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E3170A', transition: 'background .1s' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(227,23,10,.12)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                        </button>
+                      </div>
                     )}
 
                     {/* Pointer swap highlight */}
@@ -3174,7 +3264,8 @@ function ScreenReport({ clientId, onBack }) {
   const [selectedWidget, setSelectedWidget] = useState(null);
   const [widgetConfigs, setWidgetConfigs] = useState({});
   const [widgetLayouts, setWidgetLayouts] = useState(null);
-  const undoHistory = React.useRef([]);
+  const undoHistory       = React.useRef([]);
+  const layoutUndoHistory = React.useRef([]);
   const [historyLen, setHistoryLen] = useState(0);
 
   const updateWidgetConfig = useCallback((id, changes) => {
@@ -3198,9 +3289,17 @@ function ScreenReport({ clientId, onBack }) {
       const allClients = [...(window._avo_clients || []), ...(window.HOME_CLIENTS || [])];
       const _client = allClients.find(c => c.id === clientId);
       const current = prev || getDefaultLayout(_client?.connected);
+      layoutUndoHistory.current = [...layoutUndoHistory.current.slice(-19), current];
       return typeof updater === 'function' ? updater(current) : updater;
     });
   }, [clientId]);
+
+  const undoLayout = useCallback(() => {
+    if (layoutUndoHistory.current.length === 0) return;
+    const prev = layoutUndoHistory.current[layoutUndoHistory.current.length - 1];
+    layoutUndoHistory.current = layoutUndoHistory.current.slice(0, -1);
+    setWidgetLayouts(prev);
+  }, []);
 
   // Load persisted configs + layouts when switching clients
   useEffect(() => {
@@ -3228,16 +3327,18 @@ function ScreenReport({ clientId, onBack }) {
     catch {}
   }, [widgetLayouts, clientId]);
 
-  // Ctrl+Z / Cmd+Z undo when editor is open
+  // Ctrl+Z / Cmd+Z undo when editor is open (widget config first, then layout)
   useEffect(() => {
     const handler = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && showEditor) {
-        e.preventDefault(); undoWidgetConfig();
+        e.preventDefault();
+        if (historyLen > 0) undoWidgetConfig();
+        else undoLayout();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [undoWidgetConfig, showEditor]);
+  }, [undoWidgetConfig, undoLayout, showEditor, historyLen]);
 
   const handleSelectWidget = useCallback((id, cardId) => {
     setSelectedWidget(id);
@@ -3275,7 +3376,12 @@ function ScreenReport({ clientId, onBack }) {
     const cardTypeKey = WIDGET_CARD_TYPES[widgetId] || widgetId;
     updateWidgetConfig(cardTypeKey, changes);
   }, [updateWidgetConfig]);
-  const editState = showEditor && !_IS_VIEWER ? { selected: selectedWidget, onSelect: handleSelectWidget, onDelete: handleDeleteWidget } : null;
+  const editState = showEditor && !_IS_VIEWER ? {
+    selected: selectedWidget,
+    onSelect: handleSelectWidget,
+    onDelete: handleDeleteWidget,
+    onDeselect: () => setSelectedWidget(null),
+  } : null;
   // Retry counter — increments every 300ms until client is found (max 10 tries)
   const [retry, setRetry] = useState(0);
   useEffect(() => {
