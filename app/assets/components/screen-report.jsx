@@ -1753,7 +1753,9 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
                       <div
                         onPointerDown={e => e.stopPropagation()}
                         style={{
-                          position: 'absolute', top: -44, left: '50%', transform: 'translateX(-50%)',
+                          position: 'absolute',
+                          ...(rowIdx === 0 ? { bottom: -44 } : { top: -44 }),
+                          left: '50%', transform: 'translateX(-50%)',
                           zIndex: 40, display: 'flex', alignItems: 'center', gap: 2,
                           background: 'rgba(8,16,34,.96)', border: '1px solid rgba(0,194,184,.3)',
                           borderRadius: 9, padding: '4px 6px',
