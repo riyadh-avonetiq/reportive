@@ -704,6 +704,29 @@ const WIDGET_CARD_TYPES = {
   'search-pages':     'table-rankings',
 };
 
+const WIDGET_DISPLAY_NAMES = {
+  'google-kpi':       'Google Ads KPI',
+  'meta-kpi':         'Meta Ads KPI',
+  'ga4-kpi':          'GA4 KPI',
+  'search-kpi':       'Search Console KPI',
+  'google-spend':     'Spend Trend',
+  'google-clicks':    'Clicks Chart',
+  'google-budget':    'Budget Donut',
+  'google-campaigns': 'Campaigns Table',
+  'google-adgroups':  'Ad Groups Table',
+  'google-keywords':  'Keywords Table',
+  'meta-trend':       'Meta Trend',
+  'meta-donut':       'Meta Donut',
+  'ga4-sessions':     'Sessions Trend',
+  'ga4-heatmap':      'Traffic Heatmap',
+  'ga4-conversion':   'Conversion Chart',
+  'search-position':  'Position Donut',
+  'search-ctr':       'CTR Trend',
+  'search-clicks':    'Search Clicks',
+  'search-queries':   'Top Queries',
+  'search-pages':     'Top Pages',
+};
+
 // ─── Default drag layout ──────────────────────────────────────────
 const DEFAULT_DRAG_LAYOUT = {
   rows: [
@@ -1875,7 +1898,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
             <rect y="0" width="12" height="2" rx="1"/><rect y="3" width="12" height="2" rx="1"/><rect y="6" width="12" height="2" rx="1"/>
           </svg>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: teal, letterSpacing: '0.06em' }}>
-            {WIDGET_CARD_TYPES[dragId] || dragId}
+            {WIDGET_DISPLAY_NAMES[dragId] || dragId}
           </span>
         </div>
       )}
