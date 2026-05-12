@@ -350,16 +350,12 @@ const DataSourceSection = ({ state, setState }) => {
         ))}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <ESelect value={state.account || 'all'} onChange={v => setState({ ...state, account: v })}
-          options={[{value:'all',label:'All Accounts'},{value:'kopi-senja',label:'PT Kopi Senja Nusantara'},{value:'baru',label:'Brand Baru Co.'}]}/>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted, padding: '6px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6 }}>
+          Semua akun terhubung
+        </div>
         {(src === 'google' || src === 'meta') && (
-          <>
-            <ESelect value={state.campaignType || 'all'} onChange={v => setState({ ...state, campaignType: v })}
-              options={[{value:'all',label:'All Types'},{value:'search',label:'Search'},{value:'display',label:'Display'},{value:'video',label:'Video'}]}/>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: EP.muted }}>
-              ● {src === 'google' ? '8 active campaigns · 50.469 rows' : '5 active ad sets · 24.100 rows'}
-            </div>
-          </>
+          <ESelect value={state.campaignType || 'all'} onChange={v => setState({ ...state, campaignType: v })}
+            options={[{value:'all',label:'All Types'},{value:'search',label:'Search'},{value:'display',label:'Display'},{value:'video',label:'Video'}]}/>
         )}
       </div>
     </ESection>
