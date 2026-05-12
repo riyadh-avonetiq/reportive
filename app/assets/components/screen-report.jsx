@@ -828,13 +828,19 @@ const META_TABLE_DIMS = [
   { key: 'name', label: 'Campaign' },
 ];
 const META_TABLE_METRICS = [
-  { key: 'spend',       label: 'Spend',       fmt: 'rupiah' },
-  { key: 'impressions', label: 'Impressions', fmt: 'num' },
-  { key: 'clicks',      label: 'Link Clicks', fmt: 'num' },
-  { key: 'conversions', label: 'Conversions', fmt: 'num' },
-  { key: 'ctr',         label: 'CTR',         fmt: 'pct' },
-  { key: 'cpc',         label: 'Avg CPC',     fmt: 'rupiah' },
-  { key: 'cpa',         label: 'CPA',         fmt: 'rupiah' },
+  { key: 'spend',              label: 'Spend',              fmt: 'rupiah' },
+  { key: 'impressions',        label: 'Impressions',        fmt: 'num' },
+  { key: 'reach',              label: 'Reach',              fmt: 'num' },
+  { key: 'clicks',             label: 'Link Clicks',        fmt: 'num' },
+  { key: 'landing_page_views', label: 'Landing Page Views', fmt: 'num' },
+  { key: 'conversions',        label: 'Conversions',        fmt: 'num' },
+  { key: 'purchases',          label: 'Purchases',          fmt: 'num' },
+  { key: 'purchase_value',     label: 'Purchase Value',     fmt: 'rupiah' },
+  { key: 'add_to_carts',       label: 'Add to Carts',       fmt: 'num' },
+  { key: 'ctr',                label: 'CTR',                fmt: 'pct' },
+  { key: 'cpc',                label: 'Avg CPC',            fmt: 'rupiah' },
+  { key: 'cpa',                label: 'CPA',                fmt: 'rupiah' },
+  { key: 'roas',               label: 'ROAS',               fmt: 'roas' },
 ];
 const SEARCH_TABLE_DIMS = [
   { key: 'query', label: 'Query' },

@@ -106,27 +106,31 @@ function aggregateAds(rows) {
 // ── Aggregate: Meta Ads ─────────────────────────────────────────────
 // Meta table uses: link_clicks (not clicks), date (not day), purchases/leads (not conversions)
 function aggregateMeta(rows) {
-  const t = { spend: 0, impressions: 0, clicks: 0, conversions: 0, purchaseValue: 0 };
+  const t = { spend: 0, impressions: 0, reach: 0, clicks: 0, landing_page_views: 0, conversions: 0, purchases: 0, purchase_value: 0, add_to_carts: 0 };
   rows.forEach(r => {
-    t.spend         += +r.spend                   || 0;
-    t.impressions   += +r.impressions             || 0;
-    t.clicks        += +r.link_clicks             || 0;
-    t.conversions   += (+r.leads                  || 0)
-                     + (+r.contacts               || 0)
-                     + (+r.messaging_conv_started  || 0)
-                     + (+r.complete_registrations  || 0);
-    t.purchaseValue += +r.purchase_value          || 0;
+    t.spend               += +r.spend                   || 0;
+    t.impressions         += +r.impressions             || 0;
+    t.reach               += +r.reach                   || 0;
+    t.clicks              += +r.link_clicks             || 0;
+    t.landing_page_views  += +r.landing_page_views      || 0;
+    t.conversions         += (+r.leads                  || 0)
+                           + (+r.contacts               || 0)
+                           + (+r.messaging_conv_started  || 0)
+                           + (+r.complete_registrations  || 0);
+    t.purchases           += +r.purchases               || 0;
+    t.purchase_value      += +r.purchase_value          || 0;
+    t.add_to_carts        += +r.add_to_carts            || 0;
   });
   t.ctr  = t.impressions > 0 ? (t.clicks / t.impressions) * 100 : 0;
   t.cpc  = t.clicks > 0 ? t.spend / t.clicks : 0;
   t.cpa  = t.conversions > 0 ? t.spend / t.conversions : 0;
-  t.roas = t.spend > 0 && t.purchaseValue > 0 ? t.purchaseValue / t.spend : 0;
+  t.roas = t.spend > 0 && t.purchase_value > 0 ? t.purchase_value / t.spend : 0;
   return t;
 }
 
 // ── Aggregate: GA4 ──────────────────────────────────────────────────
 function aggregateGa4(rows) {
-  const t = { sessions: 0, users: 0, new_users: 0, pageviews: 0, engaged: 0, bounceWeighted: 0, durationWeighted: 0 };
+  const t = { sessions: 0, users: 0, new_users: 0, pageviews: 0, engaged: 0, bounceWeighted: 0, durationWeighted: 0, engagementWeighted: 0 };
   rows.forEach(r => {
     const sess  = +r.sessions || 0;
     t.sessions  += sess;
@@ -138,10 +142,13 @@ function aggregateGa4(rows) {
       t.bounceWeighted += +r.bounce_rate * sess;
     if (r.avg_session_duration != null && sess > 0)
       t.durationWeighted += +r.avg_session_duration * sess;
+    if (r.engagement_rate != null && sess > 0)
+      t.engagementWeighted += +r.engagement_rate * sess;
   });
   // bounce_rate stored as decimal (0–1) from GA4 API; multiply by 100 for display
   t.bounce_rate          = t.sessions > 0 ? (t.bounceWeighted / t.sessions) * 100 : 0;
   t.avg_session_duration = t.sessions > 0 ? t.durationWeighted / t.sessions : 0;
+  t.engagement_rate      = t.sessions > 0 ? (t.engagementWeighted / t.sessions) * 100 : 0;
   return t;
 }
 
@@ -370,11 +377,16 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
   const metaByType = {};
   metaRows.forEach(r => {
     const k = r.campaign_name || 'Other';
-    if (!metaByType[k]) metaByType[k] = { spend: 0, clicks: 0, impressions: 0, conversions: 0 };
-    metaByType[k].spend       += +r.spend       || 0;
-    metaByType[k].clicks      += +r.link_clicks || 0;
-    metaByType[k].impressions += +r.impressions || 0;
-    metaByType[k].conversions += +r.purchases   || +r.leads || 0;
+    if (!metaByType[k]) metaByType[k] = { spend: 0, clicks: 0, impressions: 0, reach: 0, landing_page_views: 0, conversions: 0, purchases: 0, purchase_value: 0, add_to_carts: 0 };
+    metaByType[k].spend               += +r.spend       || 0;
+    metaByType[k].clicks              += +r.link_clicks || 0;
+    metaByType[k].impressions         += +r.impressions || 0;
+    metaByType[k].reach               += +r.reach       || 0;
+    metaByType[k].landing_page_views  += +r.landing_page_views || 0;
+    metaByType[k].conversions         += (+r.leads || 0) + (+r.contacts || 0) + (+r.messaging_conv_started || 0) + (+r.complete_registrations || 0);
+    metaByType[k].purchases           += +r.purchases   || 0;
+    metaByType[k].purchase_value      += +r.purchase_value || 0;
+    metaByType[k].add_to_carts        += +r.add_to_carts || 0;
   });
   const metaChannels = Object.entries(metaByType)
     .sort((a, b) => b[1].spend - a[1].spend)
@@ -382,6 +394,7 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
       ctr:  t.impressions > 0  ? (t.clicks / t.impressions) * 100 : 0,
       cpc:  t.clicks > 0       ? t.spend / t.clicks : 0,
       cpa:  t.conversions > 0  ? t.spend / t.conversions : 0,
+      roas: t.spend > 0 && t.purchase_value > 0 ? t.purchase_value / t.spend : 0,
     }));
 
   // Ad Groups (campaign × ad_group level)
