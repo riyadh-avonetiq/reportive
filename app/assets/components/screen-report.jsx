@@ -750,6 +750,45 @@ const DEFAULT_DRAG_LAYOUT = {
   ]
 };
 
+const LEGACY_ID_MAP = {
+  'google-kpi':      { type: 'kpi-strip',     source: 'google' },
+  'google-spend':    { type: 'chart-area',    source: 'google' },
+  'google-clicks':   { type: 'chart-bar',     source: 'google' },
+  'google-budget':   { type: 'chart-donut',   source: 'google' },
+  'google-campaigns':{ type: 'table',         source: 'google' },
+  'google-adgroups': { type: 'table',         source: 'google' },
+  'google-keywords': { type: 'table',         source: 'google' },
+  'meta-kpi':        { type: 'kpi-strip',     source: 'meta'   },
+  'meta-trend':      { type: 'chart-area',    source: 'meta'   },
+  'meta-donut':      { type: 'chart-donut',   source: 'meta'   },
+  'ga4-kpi':         { type: 'kpi-strip',     source: 'ga4'    },
+  'ga4-sessions':    { type: 'chart-area',    source: 'ga4'    },
+  'ga4-heatmap':     { type: 'chart-heatmap', source: 'ga4'    },
+  'ga4-conversion':  { type: 'chart-bar',     source: 'ga4'    },
+  'search-kpi':      { type: 'kpi-strip',     source: 'search' },
+  'search-position': { type: 'chart-donut',   source: 'search' },
+  'search-ctr':      { type: 'chart-area',    source: 'search' },
+  'search-clicks':   { type: 'chart-bar',     source: 'search' },
+  'search-queries':  { type: 'table',         source: 'search' },
+  'search-pages':    { type: 'table',         source: 'search' },
+};
+
+function migrateLegacyLayout(layout) {
+  if (!layout?.rows) return layout;
+  const isLegacy = layout.rows.flat().some(w => !w.type);
+  if (!isLegacy) return layout;
+  return {
+    rows: layout.rows.map(row =>
+      row.map(w => {
+        if (w.type) return w;
+        const mapped = LEGACY_ID_MAP[w.id];
+        if (!mapped) return null;
+        return { id: 'w_' + w.id, ...mapped, span: w.span };
+      }).filter(Boolean)
+    ).filter(row => row.length > 0)
+  };
+}
+
 function shortUrlFmt(url) {
   if (!url) return '—';
   try {
@@ -3349,7 +3388,8 @@ function ScreenReport({ clientId, onBack }) {
     } catch { setWidgetConfigs({}); }
     try {
       const savedLayouts = localStorage.getItem('widgetLayouts_' + clientId);
-      setWidgetLayouts(savedLayouts ? JSON.parse(savedLayouts) : null);
+      const parsed = savedLayouts ? JSON.parse(savedLayouts) : null;
+      setWidgetLayouts(parsed ? migrateLegacyLayout(parsed) : null);
     } catch { setWidgetLayouts(null); }
   }, [clientId]);
 
