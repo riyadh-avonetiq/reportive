@@ -741,7 +741,7 @@ const DEFAULT_DRAG_LAYOUT = {
     [{ id: 'ga4-sessions', span: 7 }, { id: 'ga4-heatmap', span: 5 }],
     [{ id: 'ga4-conversion', span: 12 }],
     [{ id: 'search-kpi', span: 12 }],
-    [{ id: 'search-ctr', span: 4 }, { id: 'search-clicks', span: 4 }],
+    [{ id: 'search-position', span: 4 }, { id: 'search-ctr', span: 4 }, { id: 'search-clicks', span: 4 }],
     [{ id: 'search-queries', span: 12 }],
     [{ id: 'search-pages', span: 12 }],
   ]
