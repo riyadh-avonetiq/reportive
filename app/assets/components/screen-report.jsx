@@ -3410,8 +3410,9 @@ function ScreenReport({ clientId, onBack }) {
 
   // Count how many widgets in the current layout share the same card type as the selected widget
   const _layouts = widgetLayouts || getDefaultLayout(client?.connected);
-  const sharedWidgetCount = (selectedWidget && _layouts)
-    ? _layouts.rows.flat().filter(w => WIDGET_CARD_TYPES[w.id] === editorCardId).length
+  const _selectedCardType = selectedWidget ? WIDGET_CARD_TYPES[selectedWidget] : null;
+  const sharedWidgetCount = _selectedCardType
+    ? _layouts.rows.flat().filter(w => WIDGET_CARD_TYPES[w.id] === _selectedCardType).length
     : 0;
 
   // Retry counter — increments every 300ms until client is found (max 10 tries)
