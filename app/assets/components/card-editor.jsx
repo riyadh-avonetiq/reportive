@@ -808,26 +808,39 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     </div>
   ) : null;
 
-  const srcKey  = instanceSource || (widgetId || '').split('-')[0];
-  const limits  = WIDGET_LIMITS[cardId] || { maxMetrics: 5, maxDims: 3 };
-  const showDims = limits.maxDims > 0 && (cardId || '').startsWith('table-') || limits.maxDims > 0;
-  const showMetrics = limits.maxMetrics > 0;
-  const isTable = (cardId || '').startsWith('table-');
-  const availM  = SOURCE_METRICS[srcKey] || [];
-  const availD  = SOURCE_DIMS[srcKey] || [];
+  // ── Data derivation ─────────────────────────────────────────────
+  const widgetType = cardId;
+  const srcKey     = instanceSource || (widgetId || '').split('-')[0];
 
+  // Prefer DATA_REGISTRY (universal) over legacy SOURCE_METRICS
+  const regSrc  = window.DATA_REGISTRY?.[srcKey] || {};
+  const regKeys = Object.keys(regSrc);
+  const availM  = regKeys.length > 0
+    ? regKeys.map(key => ({ key, label: regSrc[key].label }))
+    : (SOURCE_METRICS[srcKey] || []);
+  const availD  = (window.DIM_REGISTRY?.[srcKey]) || (SOURCE_DIMS[srcKey] || []);
+
+  // Widget type flags
+  const isText     = widgetType === 'text';
+  const isTable    = widgetType === 'table' || (widgetType || '').startsWith('table-');
+  const isKpiStrip = widgetType === 'kpi-strip';
+  const isSingleM  = ['single-stat', 'chart-area', 'chart-bar'].includes(widgetType);
+  const isDonut    = widgetType === 'chart-donut';
+  const isHeatmap  = widgetType === 'chart-heatmap';
+
+  // Merged config — WIDGET_DEFAULTS → saved config
+  const typeDefaults = (window.WIDGET_DEFAULTS?.[widgetType]?.[srcKey]) || {};
+  const legacyLimits = WIDGET_LIMITS[cardId] || { maxMetrics: 6, maxDims: 5 };
   const cfg = {
-    name: '',
-    metrics: availM.slice(0, Math.min(4, limits.maxMetrics)).map(m => m.key),
-    metricLabels: {},
-    dimensions: availD.slice(0, Math.min(1, limits.maxDims)).map(d => d.key),
-    filters: [],
-    fontSize: 'M',
-    pageSize: 10,
-    ...(widgetConfig || {}),
+    name: '', metrics: availM.slice(0, 4).map(m => m.key), metric: availM[0]?.key || '',
+    metricLabels: {}, dimension: availD[0]?.key || '',
+    dimensions: availD.slice(0, 1).map(d => d.key),
+    filters: [], fontSize: 'M', pageSize: 10, title: '', body: '',
+    ...typeDefaults, ...(widgetConfig || {}),
   };
 
   const up = changes => onConfigChange && onConfigChange(widgetId, changes);
+  const connectedList = ['google','meta','ga4','search'].filter(s => connectedSources?.[s]);
 
   const reorderMetrics = (from, to) => {
     const nx = [...cfg.metrics]; const [m] = nx.splice(from, 1); nx.splice(to, 0, m); up({ metrics: nx });
@@ -836,53 +849,149 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     const nx = [...cfg.dimensions]; const [m] = nx.splice(from, 1); nx.splice(to, 0, m); up({ dimensions: nx });
   };
 
-  const connectedList = ['google','meta','ga4','search'].filter(s => connectedSources?.[s]);
+  // Reusable source selector block
+  const SourceSection = (
+    <ESection label="Data source">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        {connectedList.map(s => {
+          const label = getSrcAccountLabel(s, connectedSources);
+          const isCurrent = s === srcKey;
+          const canSwitch = !!onSourceChange;
+          return (
+            <div key={s}
+              onClick={canSwitch && !isCurrent ? () => onSourceChange(widgetId, s) : undefined}
+              style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px', border: `1px solid ${isCurrent ? SRC_COLORS[s] : SRC_COLORS[s]+'44'}`, borderRadius: 7, background: isCurrent ? SRC_COLORS[s] + '18' : 'transparent', cursor: canSwitch && !isCurrent ? 'pointer' : 'default', transition: 'background .12s' }}>
+              <ChannelLogo channel={s} size={13}/>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 700, color: isCurrent ? SRC_COLORS[s] : EP.sec, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
+                {isCurrent && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, color: EP.muted, marginTop: 1 }}>Sumber aktif widget ini</div>}
+                {!isCurrent && canSwitch && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, color: EP.muted, marginTop: 1 }}>klik untuk ganti</div>}
+              </div>
+              {isCurrent && <div style={{ width: 7, height: 7, borderRadius: '50%', background: SRC_COLORS[s], flexShrink: 0 }}/>}
+            </div>
+          );
+        })}
+        {connectedList.length === 0 && (
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted, lineHeight: 1.6 }}>
+            Belum ada sumber data. Hubungkan di Configure.
+          </span>
+        )}
+      </div>
+    </ESection>
+  );
+
+  // ── TEXT WIDGET ──────────────────────────────────────────────────
+  if (isText) {
+    return (
+      <>
+        {sharedBanner}
+        <ESection label="Title">
+          <EInput value={cfg.title || ''} onChange={v => up({ title: v })} placeholder="Judul widget..."/>
+        </ESection>
+        <EDivider/>
+        <ESection label="Body">
+          <textarea
+            value={cfg.body || ''}
+            onChange={e => up({ body: e.target.value })}
+            placeholder="Tulis narasi atau penjelasan di sini..."
+            rows={7}
+            style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}
+          />
+        </ESection>
+      </>
+    );
+  }
+
+  // ── HEATMAP WIDGET ───────────────────────────────────────────────
+  if (isHeatmap) {
+    return (
+      <>
+        {sharedBanner}
+        <ESection label="Widget name">
+          <EInput value={cfg.name} onChange={v => up({ name: v })} placeholder="Traffic Intensity"/>
+        </ESection>
+        <EDivider/>
+        {SourceSection}
+      </>
+    );
+  }
+
+  // ── SINGLE-METRIC WIDGETS (single-stat, chart-area, chart-bar) ───
+  if (isSingleM) {
+    return (
+      <>
+        {sharedBanner}
+        <ESection label="Widget name">
+          <EInput value={cfg.name} onChange={v => up({ name: v })} placeholder={getDefaultWidgetName(cardId, srcKey)}/>
+        </ESection>
+        <EDivider/>
+        {SourceSection}
+        {availM.length > 0 && (
+          <>
+            <EDivider/>
+            <ESection label="Metric">
+              <ESelect value={cfg.metric || availM[0]?.key} onChange={v => up({ metric: v })}
+                options={availM.map(m => ({ value: m.key, label: m.label }))}/>
+            </ESection>
+          </>
+        )}
+        <EDivider/>
+        <ESizeButtons label="Font size" value={cfg.fontSize || 'M'} onChange={v => up({ fontSize: v })}/>
+      </>
+    );
+  }
+
+  // ── DONUT CHART ──────────────────────────────────────────────────
+  if (isDonut) {
+    return (
+      <>
+        {sharedBanner}
+        <ESection label="Widget name">
+          <EInput value={cfg.name} onChange={v => up({ name: v })} placeholder={getDefaultWidgetName(cardId, srcKey)}/>
+        </ESection>
+        <EDivider/>
+        {SourceSection}
+        {availM.length > 0 && (
+          <>
+            <EDivider/>
+            <ESection label="Metric">
+              <ESelect value={cfg.metric || availM[0]?.key} onChange={v => up({ metric: v })}
+                options={availM.map(m => ({ value: m.key, label: m.label }))}/>
+            </ESection>
+          </>
+        )}
+        {availD.length > 0 && (
+          <>
+            <EDivider/>
+            <ESection label="Group by">
+              <ESelect value={cfg.dimension || availD[0]?.key} onChange={v => up({ dimension: v })}
+                options={availD.map(d => ({ value: d.key, label: d.label }))}/>
+            </ESection>
+          </>
+        )}
+      </>
+    );
+  }
+
+  // ── KPI STRIP + TABLE (multi-metric / multi-dim) ─────────────────
+  const maxMetrics = isKpiStrip ? 6 : legacyLimits.maxMetrics;
+  const maxDims    = legacyLimits.maxDims;
 
   return (
     <>
       {sharedBanner}
-      {/* Name */}
       <ESection label="Widget name">
         <EInput value={cfg.name} onChange={v => up({ name: v })} placeholder={getDefaultWidgetName(cardId, srcKey)}/>
       </ESection>
       <EDivider/>
+      {SourceSection}
 
-      {/* Data source */}
-      <ESection label="Data source">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-          {connectedList.map(s => {
-            const label = getSrcAccountLabel(s, connectedSources);
-            const isCurrent = s === srcKey;
-            const canSwitch = !!onSourceChange;
-            return (
-              <div key={s}
-                onClick={canSwitch && !isCurrent ? () => onSourceChange(widgetId, s) : undefined}
-                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px', border: `1px solid ${isCurrent ? SRC_COLORS[s] : SRC_COLORS[s]+'44'}`, borderRadius: 7, background: isCurrent ? SRC_COLORS[s] + '18' : 'transparent', cursor: canSwitch && !isCurrent ? 'pointer' : 'default', transition: 'background .12s' }}>
-                <ChannelLogo channel={s} size={13}/>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 700, color: isCurrent ? SRC_COLORS[s] : EP.sec, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
-                  {isCurrent && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, color: EP.muted, marginTop: 1 }}>Sumber aktif widget ini</div>}
-                  {!isCurrent && canSwitch && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, color: EP.muted, marginTop: 1 }}>klik untuk ganti</div>}
-                </div>
-                {isCurrent && <div style={{ width: 7, height: 7, borderRadius: '50%', background: SRC_COLORS[s], flexShrink: 0 }}/>}
-              </div>
-            );
-          })}
-          {connectedList.length === 0 && (
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted, lineHeight: 1.6 }}>
-              Belum ada sumber data. Hubungkan di Configure.
-            </span>
-          )}
-        </div>
-      </ESection>
-
-      {/* Metrics */}
-      {showMetrics && availM.length > 0 && (
+      {availM.length > 0 && (
         <>
           <EDivider/>
-          <ESection label={`Metrics (${cfg.metrics.length}/${limits.maxMetrics})`}>
+          <ESection label={`Metrics (${(cfg.metrics || []).length}/${maxMetrics})`}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 6 }}>
-              {cfg.metrics.map((key, i) => {
+              {(cfg.metrics || []).map((key, i) => {
                 const meta = availM.find(m => m.key === key) || { key, label: key };
                 return (
                   <div key={i}
@@ -912,7 +1021,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
                 );
               })}
             </div>
-            {cfg.metrics.length < limits.maxMetrics && (
+            {(cfg.metrics || []).length < maxMetrics && (
               <button onClick={() => { const f = availM.find(m => !cfg.metrics.includes(m.key)); if (f) up({ metrics: [...cfg.metrics, f.key] }); }}
                 style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px dashed ${EP.teal}66`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 1v8M1 5h8"/></svg>
@@ -923,8 +1032,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
         </>
       )}
 
-      {/* Dimensions — tables and donut only */}
-      {showDims && availD.length > 0 && (
+      {isTable && availD.length > 0 && (
         <>
           <EDivider/>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0 10px' }}>
@@ -932,9 +1040,9 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, color: EP.muted, textTransform: 'uppercase', letterSpacing: '0.12em', whiteSpace: 'nowrap' }}>Dimensions</span>
             <div style={{ flex: 1, height: 1, background: EP.edge }}/>
           </div>
-          <ESection label={`Dimensions (${cfg.dimensions.length}/${limits.maxDims})`}>
+          <ESection label={`Dimensions (${(cfg.dimensions || []).length}/${maxDims})`}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 6 }}>
-              {cfg.dimensions.map((key, i) => (
+              {(cfg.dimensions || []).map((key, i) => (
                 <div key={i}
                   draggable
                   onDragStart={() => setDragDimIdx(i)}
@@ -956,7 +1064,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
                 </div>
               ))}
             </div>
-            {cfg.dimensions.length < limits.maxDims && availD.some(d => !cfg.dimensions.includes(d.key)) && (
+            {cfg.dimensions.length < maxDims && availD.some(d => !cfg.dimensions.includes(d.key)) && (
               <button onClick={() => { const f = availD.find(d => !cfg.dimensions.includes(d.key)); if (f) up({ dimensions: [...cfg.dimensions, f.key] }); }}
                 style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px dashed ${EP.teal}66`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 1v8M1 5h8"/></svg>
@@ -964,49 +1072,43 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
               </button>
             )}
           </ESection>
-
-          {/* Filters */}
-          {isTable && (
-            <>
-              <EDivider/>
-              <ESection label="Filters">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 6 }}>
-                  {(cfg.filters || []).map((f, fi) => (
-                    <div key={fi} style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                      <div style={{ width: 82 }}>
-                        <ESelect value={f.dim || cfg.dimensions[0]} onChange={v => { const nf = [...cfg.filters]; nf[fi] = { ...f, dim: v }; up({ filters: nf }); }}
-                          options={cfg.dimensions.map(k => { const d = availD.find(x => x.key === k)||{key:k,label:k}; return { value:k, label:d.label }; })}/>
-                      </div>
-                      <div style={{ width: 42 }}>
-                        <ESelect value={f.op || 'contains'} onChange={v => { const nf = [...cfg.filters]; nf[fi] = { ...f, op: v }; up({ filters: nf }); }}
-                          options={[{value:'contains',label:'~'},{value:'is',label:'='},{value:'not',label:'≠'},{value:'starts',label:'^'}]}/>
-                      </div>
-                      <input value={f.val || ''} onChange={e => { const nf = [...cfg.filters]; nf[fi] = { ...f, val: e.target.value }; up({ filters: nf }); }}
-                        placeholder="value"
-                        style={{ flex: 1, minWidth: 0, padding: '6px 7px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}/>
-                      <button onClick={() => up({ filters: cfg.filters.filter((_, j) => j !== fi) })}
-                        style={{ width: 22, height: 22, border: `1px solid ${EP.edge}`, borderRadius: 4, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13, lineHeight: 1 }}>×</button>
-                    </div>
-                  ))}
+          <EDivider/>
+          <ESection label="Filters">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 6 }}>
+              {(cfg.filters || []).map((f, fi) => (
+                <div key={fi} style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                  <div style={{ width: 82 }}>
+                    <ESelect value={f.dim || cfg.dimensions[0]} onChange={v => { const nf = [...cfg.filters]; nf[fi] = { ...f, dim: v }; up({ filters: nf }); }}
+                      options={(cfg.dimensions || []).map(k => { const d = availD.find(x => x.key === k)||{key:k,label:k}; return { value:k, label:d.label }; })}/>
+                  </div>
+                  <div style={{ width: 42 }}>
+                    <ESelect value={f.op || 'contains'} onChange={v => { const nf = [...cfg.filters]; nf[fi] = { ...f, op: v }; up({ filters: nf }); }}
+                      options={[{value:'contains',label:'~'},{value:'is',label:'='},{value:'not',label:'≠'},{value:'starts',label:'^'}]}/>
+                  </div>
+                  <input value={f.val || ''} onChange={e => { const nf = [...cfg.filters]; nf[fi] = { ...f, val: e.target.value }; up({ filters: nf }); }}
+                    placeholder="value"
+                    style={{ flex: 1, minWidth: 0, padding: '6px 7px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}/>
+                  <button onClick={() => up({ filters: cfg.filters.filter((_, j) => j !== fi) })}
+                    style={{ width: 22, height: 22, border: `1px solid ${EP.edge}`, borderRadius: 4, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13, lineHeight: 1 }}>×</button>
                 </div>
-                <button onClick={() => up({ filters: [...(cfg.filters||[]), { dim: cfg.dimensions[0] || 'campaign', op: 'contains', val: '' }] })}
-                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 5, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 600 }}>
-                  <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4.5 1v7M1 4.5h7"/></svg>
-                  Add filter
-                </button>
-              </ESection>
-              <EDivider/>
-              <ESection label="Rows per page">
-                <div style={{ display: 'flex', gap: 5 }}>
-                  {[5, 10, 20, 50].map(n => (
-                    <button key={n} onClick={() => up({ pageSize: n })}
-                      style={{ flex: 1, padding: '6px 0', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, borderRadius: 6, cursor: 'pointer', border: `1px solid ${(cfg.pageSize || 10) === n ? EP.teal : EP.edge}`, background: (cfg.pageSize || 10) === n ? EP.teal + '22' : 'transparent', color: (cfg.pageSize || 10) === n ? EP.teal : EP.muted }}
-                    >{n}</button>
-                  ))}
-                </div>
-              </ESection>
-            </>
-          )}
+              ))}
+            </div>
+            <button onClick={() => up({ filters: [...(cfg.filters||[]), { dim: cfg.dimensions[0] || 'campaign', op: 'contains', val: '' }] })}
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 5, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 600 }}>
+              <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4.5 1v7M1 4.5h7"/></svg>
+              Add filter
+            </button>
+          </ESection>
+          <EDivider/>
+          <ESection label="Rows per page">
+            <div style={{ display: 'flex', gap: 5 }}>
+              {[5, 10, 20, 50].map(n => (
+                <button key={n} onClick={() => up({ pageSize: n })}
+                  style={{ flex: 1, padding: '6px 0', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, borderRadius: 6, cursor: 'pointer', border: `1px solid ${(cfg.pageSize || 10) === n ? EP.teal : EP.edge}`, background: (cfg.pageSize || 10) === n ? EP.teal + '22' : 'transparent', color: (cfg.pageSize || 10) === n ? EP.teal : EP.muted }}
+                >{n}</button>
+              ))}
+            </div>
+          </ESection>
         </>
       )}
 
