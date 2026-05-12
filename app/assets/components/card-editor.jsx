@@ -633,7 +633,12 @@ const SetupPageSpeed = ({ state, setState }) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[['LCP', 'lcp'],['FID', 'fid'],['CLS', 'cls']].map(([label, key]) => (
             <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <input type="checkbox" defaultChecked style={{ width: 16, height: 16, cursor: 'pointer' }}/>
+              <input
+                type="checkbox"
+                checked={state['cwv_' + key] !== false}
+                onChange={e => setState({ ...state, ['cwv_' + key]: e.target.checked })}
+                style={{ width: 16, height: 16, cursor: 'pointer' }}
+              />
               <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: EP.fg }}>{label}</span>
             </label>
           ))}
