@@ -652,7 +652,6 @@ function SelectableWidget({ id, cardId, editState, children }) {
     <div
       onClick={e => {
         e.stopPropagation();
-        if (editState.justDropped?.current) { editState.justDropped.current = false; return; }
         editState.onSelect(id, cardId);
       }}
       style={{
@@ -1434,6 +1433,15 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
   const justDropped  = React.useRef(false);
   dragIdRef.current  = dragId;               // keep in sync every render
 
+  // Wrap onSelect so a click fired immediately after a drop is suppressed
+  const _es = editState ? {
+    ...editState,
+    onSelect: (id, cardId) => {
+      if (justDropped.current) { justDropped.current = false; return; }
+      editState.onSelect(id, cardId);
+    },
+  } : null;
+
   // ── Document-level Browse drag detection ─────────────────────────
   // Uses dragstart/dragend (fire once per drag) instead of dragenter/dragleave
   // counting (which fires on every child element and causes flicker).
@@ -1473,15 +1481,15 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
   }, []);
 
   // Build widget map from live data, then augment with Browse overrides / browse-* IDs
-  const widgetMap = buildWidgetMap(p, connected, widgetConfigs, editState);
+  const widgetMap = buildWidgetMap(p, connected, widgetConfigs, _es);
   const _cards = window.CARDS || [];
   layouts.rows.forEach(row => row.forEach(entry => {
     if (entry.cardTypeOverride) {
       const c = _cards.find(c => c.id === entry.cardTypeOverride);
       if (c) {
         const content = React.createElement(c.render);
-        widgetMap[entry.id] = editState
-          ? React.createElement(SelectableWidget, { id: entry.id, cardId: entry.cardTypeOverride, editState }, content)
+        widgetMap[entry.id] = _es
+          ? React.createElement(SelectableWidget, { id: entry.id, cardId: entry.cardTypeOverride, editState: _es }, content)
           : content;
       }
     }
@@ -1492,8 +1500,8 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
       const c     = _cards.find(c => c.id === cid);
       if (c && !widgetMap[entry.id]) {
         const content = React.createElement(c.render);
-        widgetMap[entry.id] = editState
-          ? React.createElement(SelectableWidget, { id: entry.id, cardId: cid, editState }, content)
+        widgetMap[entry.id] = _es
+          ? React.createElement(SelectableWidget, { id: entry.id, cardId: cid, editState: _es }, content)
           : content;
       }
     }
@@ -3419,7 +3427,6 @@ function ScreenReport({ clientId, onBack }) {
     onSelect: handleSelectWidget,
     onDelete: handleDeleteWidget,
     onDeselect: () => setSelectedWidget(null),
-    justDropped,
   } : null;
 
   // Count how many widgets in the current layout share the same card type as the selected widget
