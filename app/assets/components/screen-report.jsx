@@ -3407,6 +3407,13 @@ function ScreenReport({ clientId, onBack }) {
     onDelete: handleDeleteWidget,
     onDeselect: () => setSelectedWidget(null),
   } : null;
+
+  // Count how many widgets in the current layout share the same card type as the selected widget
+  const _layouts = widgetLayouts || getDefaultLayout(client?.connected);
+  const sharedWidgetCount = (selectedWidget && _layouts)
+    ? _layouts.rows.flat().filter(w => WIDGET_CARD_TYPES[w.id] === editorCardId).length
+    : 0;
+
   // Retry counter — increments every 300ms until client is found (max 10 tries)
   const [retry, setRetry] = useState(0);
   useEffect(() => {
@@ -3654,6 +3661,7 @@ function ScreenReport({ clientId, onBack }) {
             onUndo={historyLen > 0 ? undoWidgetConfig : null}
             connectedSources={client?.connected || {}}
             onClose={() => setShowEditor(false)}
+            sharedWidgetCount={sharedWidgetCount}
             style={{ flexShrink: 0 }}
           />
         )}

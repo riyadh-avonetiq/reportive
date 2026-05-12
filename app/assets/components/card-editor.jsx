@@ -778,7 +778,7 @@ const DragDots = () => (
 );
 
 // ─── TAB: Setup (simplified) ─────────────────────────────────────────
-const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connectedSources }) => {
+const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connectedSources, sharedWidgetCount = 0 }) => {
   const [dragMetIdx,  setDragMetIdx]  = React.useState(null);
   const [dragMetOver, setDragMetOver] = React.useState(null);
   const [dragDimIdx,  setDragDimIdx]  = React.useState(null);
@@ -791,6 +791,22 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
       </div>
     );
   }
+
+  const sharedBanner = sharedWidgetCount > 1 ? (
+    <div style={{
+      display: 'flex', alignItems: 'flex-start', gap: 8,
+      padding: '8px 10px', marginBottom: 14,
+      background: 'rgba(248,180,0,.07)', border: '1px solid rgba(248,180,0,.25)',
+      borderRadius: 7, lineHeight: 1.5,
+    }}>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F8B400" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}>
+        <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+      </svg>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: '#F8B400', letterSpacing: '0.04em' }}>
+        Perubahan ini memengaruhi {sharedWidgetCount} widget bertipe sama
+      </span>
+    </div>
+  ) : null;
 
   const srcKey  = (widgetId || '').split('-')[0];
   const limits  = WIDGET_LIMITS[cardId] || { maxMetrics: 5, maxDims: 3 };
@@ -824,6 +840,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
 
   return (
     <>
+      {sharedBanner}
       {/* Name */}
       <ESection label="Widget name">
         <EInput value={cfg.name} onChange={v => up({ name: v })} placeholder={getDefaultWidgetName(cardId, srcKey)}/>
@@ -1657,6 +1674,7 @@ const CardEditorPanel = ({
   connectedSources = {},
   onClose,
   defaultTab = 'browse',
+  sharedWidgetCount = 0,
   style = {},
 }) => {
   const [tab, setTab] = React.useState(defaultTab);
@@ -1729,6 +1747,7 @@ const CardEditorPanel = ({
             widgetConfig={widgetConfig}
             onConfigChange={onConfigChange}
             connectedSources={connectedSources}
+            sharedWidgetCount={sharedWidgetCount}
           />
         )}
         {tab === 'style' && <StyleTab state={styleState} setState={setStyleState}/>}
