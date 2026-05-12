@@ -2038,9 +2038,10 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 20, marginBottom: 20, position: 'relative' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 20, marginBottom: 20, position: 'relative', alignItems: 'stretch' }}>
               {visible.map((entry, colIdx) => {
                 const { id } = entry;
+                const entrySpan = entry.span || autoSpan;
                 const actualIdx  = row.indexOf(entry);
                 const isDragging = dragId === id;
                 const isSwap     = !browseDragActive && dropTarget?.type === 'swap' && dropTarget.targetId === id;
@@ -2051,7 +2052,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
                 return (
                   <div key={id}
                     style={{
-                      gridColumn: `span ${autoSpan}`, position: 'relative',
+                      gridColumn: `span ${entrySpan}`, position: 'relative',
                       display: 'flex', flexDirection: 'column',
                       opacity: isDragging ? 0.3 : 1,
                       cursor: editState && !browseDragActive ? (isDragging ? 'grabbing' : 'grab') : 'default',
@@ -3941,69 +3942,17 @@ function ScreenReport({ clientId, onBack }) {
 
               {!hasAnySource && <FirstTimeEmptyState client={client} onBack={onBack}/>}
 
-              {hasAnySource && showEditor ? (
-                /* Drag canvas mode when editor is open */
+              {hasAnySource ? (
+                /* Universal canvas — same rendering in view mode and edit mode */
                 <>
                   <DragCanvas
                     p={p}
                     connected={connected}
                     widgetConfigs={widgetConfigs}
                     editState={editState}
-                    layouts={widgetLayouts || getSmartDefaultLayout(connected)}
+                    layouts={_layouts}
                     onLayoutChange={updateWidgetLayouts}
                   />
-                  {connected && connected.pagespeed && (
-                    <PageSpeedSection psi={p && p.psi} psiUrl={psiUrl}/>
-                  )}
-                </>
-              ) : hasAnySource ? (
-                /* Normal section-based rendering */
-                <>
-                  {connected && connected.google && (
-                    <>
-                      <GoogleAdsSection p={p} editState={editState} widgetConfigs={widgetConfigs}/>
-                      <SectionDivider/>
-                    </>
-                  )}
-
-                  {connected && connected.meta && (
-                    <>
-                      <MetaAdsSection p={p} editState={editState} widgetConfigs={widgetConfigs}/>
-                      <SectionDivider/>
-                    </>
-                  )}
-
-                  {connected && connected.ga4 && (
-                    <>
-                      {p.ga4 && p.ga4.sessions > 0
-                        ? <GA4Section p={p} editState={editState} widgetConfigs={widgetConfigs}/>
-                        : (
-                          <Section>
-                            <SectionHead channel="ga4" title="Google Analytics 4" subtitle="Organic, Referral & Direct traffic"/>
-                            <RCard padding={20}>
-                              <div style={{ fontFamily: T.mono, fontSize: 10, color: muted, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                                Belum ada data — sinkronisasi GA4 sedang disiapkan
-                              </div>
-                              <div style={{ fontFamily: T.body, fontSize: 12, color: sec, marginTop: 6 }}>
-                                {typeof connected.ga4 === 'object' && connected.ga4.name
-                                  ? `Property: ${connected.ga4.name}`
-                                  : 'Hubungkan property GA4 di Configure untuk memulai.'}
-                              </div>
-                            </RCard>
-                          </Section>
-                        )
-                      }
-                      <SectionDivider/>
-                    </>
-                  )}
-
-                  {connected && connected.search && (
-                    <>
-                      <SearchSection p={p} editState={editState} widgetConfigs={widgetConfigs}/>
-                      <SectionDivider/>
-                    </>
-                  )}
-
                   {connected && connected.pagespeed && (
                     <PageSpeedSection psi={p && p.psi} psiUrl={psiUrl}/>
                   )}

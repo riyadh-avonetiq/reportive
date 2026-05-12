@@ -1592,6 +1592,40 @@ const CardThumbnail = ({ cardId }) => {
         <rect x="36" y="53" width="22" height="2.5" rx="1.25" fill="rgba(255,255,255,.15)"/>
       </svg>);
 
+    /* ── Universal type aliases ───────────────────────────────── */
+    case 'single-stat': return (
+      <svg {...sp}>{bg}
+        <text x="10" y="16" fontFamily="monospace" fontSize="5.5" fill="rgba(255,255,255,.3)" letterSpacing=".5">TOTAL SPEND</text>
+        <text x="10" y="36" fontFamily="monospace" fontSize="18" fontWeight="700" fill={T}>1.4K</text>
+        <text x="10" y="47" fontFamily="monospace" fontSize="7" fill={Gr}>▲ 8.1%</text>
+        <polyline points="60,54 70,48 78,42 86,45 94,34 102,26 110,18" stroke={T} strokeWidth="1.5" opacity=".7"/>
+        <path d="M60,54 70,48 78,42 86,45 94,34 102,26 110,18 110,62 60,62Z" fill={Ts} opacity=".5"/>
+      </svg>);
+
+    case 'table': return (
+      <svg {...sp}>{bg}
+        <rect x="6"  y="5"  width="98" height="7" rx="2" fill="rgba(255,255,255,.06)"/>
+        {[0,1,2,3,4].map(i=>(
+          <g key={i} transform={`translate(6,${i*10+15})`}>
+            <rect width="98" height="8" rx="1.5" fill={i%2===0?'rgba(255,255,255,.03)':'transparent'}/>
+            <rect x="3"  y="2.5" width={[38,30,44,26,34][i]} height="3" rx="1.5" fill="rgba(255,255,255,.2)"/>
+            <rect x="55" y="2.5" width="18" height="3" rx="1.5" fill={Td} opacity=".8"/>
+            <rect x="78" y="2.5" width="22" height="3" rx="1.5" fill="rgba(255,255,255,.12)"/>
+          </g>))}
+      </svg>);
+
+    case 'text': return (
+      <svg {...sp}>{bg}
+        <rect x="9" y="8"  width="70" height="6" rx="2" fill="rgba(255,255,255,.5)"/>
+        <rect x="9" y="18" width="90" height="2.5" rx="1.25" fill="rgba(255,255,255,.18)"/>
+        <rect x="9" y="23" width="84" height="2.5" rx="1.25" fill="rgba(255,255,255,.14)"/>
+        <rect x="9" y="28" width="88" height="2.5" rx="1.25" fill="rgba(255,255,255,.16)"/>
+        <rect x="9" y="33" width="60" height="2.5" rx="1.25" fill="rgba(255,255,255,.11)"/>
+        <rect x="9" y="42" width="90" height="2.5" rx="1.25" fill="rgba(255,255,255,.14)"/>
+        <rect x="9" y="47" width="74" height="2.5" rx="1.25" fill="rgba(255,255,255,.11)"/>
+        <rect x="9" y="52" width="50" height="2.5" rx="1.25" fill="rgba(255,255,255,.08)"/>
+      </svg>);
+
     default: return (
       <svg {...sp}>{bg}
         <text x="55" y="34" textAnchor="middle" fontFamily="monospace" fontSize="8" fill="rgba(255,255,255,.2)">{cardId}</text>
@@ -1618,18 +1652,53 @@ const UNIVERSAL_WIDGET_TYPES = [
   { id: 'text',          cat: 'text',   title: 'Text / Narasi',desc: 'Judul dan paragraf bebas',     defaultSource: null },
 ];
 
+// Maps old window.CARDS card IDs → universal widget type + default source
+const CARD_TO_UNIVERSAL = {
+  'narrative-hero':      { type: 'text',         defaultSource: null },
+  'narrative-note':      { type: 'text',         defaultSource: null },
+  'narrative-callout':   { type: 'text',         defaultSource: null },
+  'narrative-quote':     { type: 'text',         defaultSource: null },
+  'kpi-single':          { type: 'single-stat',  defaultSource: 'google' },
+  'kpi-strip':           { type: 'kpi-strip',    defaultSource: 'google' },
+  'kpi-compare':         { type: 'single-stat',  defaultSource: 'google' },
+  'kpi-stacked':         { type: 'kpi-strip',    defaultSource: 'google' },
+  'chart-area':          { type: 'chart-area',   defaultSource: 'google' },
+  'chart-area-axes':     { type: 'chart-area',   defaultSource: 'google' },
+  'chart-line':          { type: 'chart-area',   defaultSource: 'google' },
+  'chart-bar':           { type: 'chart-bar',    defaultSource: 'google' },
+  'chart-donut':         { type: 'chart-donut',  defaultSource: 'google' },
+  'chart-heatmap':       { type: 'chart-heatmap',defaultSource: 'ga4' },
+  'chart-sparks':        { type: 'kpi-strip',    defaultSource: 'google' },
+  'table-channels':      { type: 'table',        defaultSource: 'google' },
+  'table-campaigns':     { type: 'table',        defaultSource: 'google' },
+  'table-rankings':      { type: 'table',        defaultSource: 'google' },
+  'progress-psi':        { type: 'chart-heatmap',defaultSource: 'ga4' },
+  'progress-score':      { type: 'single-stat',  defaultSource: 'ga4' },
+  'progress-goals':      { type: 'single-stat',  defaultSource: 'google' },
+  'progress-pacing':     { type: 'single-stat',  defaultSource: 'google' },
+  'progress-grid':       { type: 'kpi-strip',    defaultSource: 'ga4' },
+  'list-keywords':       { type: 'table',        defaultSource: 'google' },
+  'list-pages':          { type: 'table',        defaultSource: 'ga4' },
+  'list-countries':      { type: 'table',        defaultSource: 'google' },
+  'list-devices':        { type: 'table',        defaultSource: 'google' },
+  'carousel-highlights': { type: 'kpi-strip',    defaultSource: 'google' },
+};
+
 const BrowseTab = ({ onSelect, connectedSources }) => {
-  const [activeCat, setActiveCat] = React.useState('kpi');
+  const cats     = window.CATS  || UNIVERSAL_CATS;
+  const allCards = window.CARDS || UNIVERSAL_WIDGET_TYPES;
+
+  const [activeCat, setActiveCat] = React.useState(cats[0]?.id || 'kpi');
   const [hoveredId, setHoveredId] = React.useState(null);
 
-  const filtered = UNIVERSAL_WIDGET_TYPES.filter(w => w.cat === activeCat);
-  const catMeta   = UNIVERSAL_CATS.find(c => c.id === activeCat);
+  const filtered = allCards.filter(w => w.cat === activeCat);
+  const catMeta   = cats.find(c => c.id === activeCat);
 
   return (
     <>
       {/* Category chips */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
-        {UNIVERSAL_CATS.map(c => {
+        {cats.map(c => {
           const active = c.id === activeCat;
           return (
             <button key={c.id} onClick={() => setActiveCat(c.id)} style={{
@@ -1667,15 +1736,18 @@ const BrowseTab = ({ onSelect, connectedSources }) => {
       {/* Widget type grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         {filtered.map(w => {
-          const firstSrc = w.defaultSource
-            ? (['google','meta','ga4','search'].find(s => connectedSources?.[s]) || w.defaultSource)
+          const mapping = CARD_TO_UNIVERSAL[w.id];
+          const uniType = mapping ? mapping.type : (w.id);
+          const rawSrc  = mapping ? mapping.defaultSource : (w.defaultSource || null);
+          const firstSrc = rawSrc
+            ? (['google','meta','ga4','search'].find(s => connectedSources?.[s]) || rawSrc)
             : null;
           return (
             <div
               key={w.id}
               draggable
               onDragStart={e => {
-                const def = { type: w.id, source: firstSrc };
+                const def = { type: uniType, source: firstSrc };
                 e.dataTransfer.setData('browseCardId', w.id);
                 e.dataTransfer.setData('browseWidgetDef', JSON.stringify(def));
                 e.dataTransfer.effectAllowed = 'copy';
@@ -1714,7 +1786,7 @@ const BrowseTab = ({ onSelect, connectedSources }) => {
               {/* Title + desc */}
               <div style={{ padding: '7px 9px 9px' }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700, lineHeight: 1.3, color: EP.fg }}>{w.title}</div>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 9.5, color: EP.muted, marginTop: 2, lineHeight: 1.4 }}>{w.desc}</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 9.5, color: EP.muted, marginTop: 2, lineHeight: 1.4 }}>{w.desc || ''}</div>
               </div>
             </div>
           );
