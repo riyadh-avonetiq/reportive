@@ -397,18 +397,19 @@ const FilterSection = ({ filters, setFilters }) => {
 
 // ─── Category-specific Setup fields ──────────────────────────────
 
-const MetricsSelect = () => (
+const MetricsSelect = ({ state, setState }) => (
   <ESection label="Primary metric">
-    <ESelect value="spend" options={[
-      {value:'spend',label:'Total Spend'},
-      {value:'impressions',label:'Impressions'},
-      {value:'clicks',label:'Clicks'},
-      {value:'ctr',label:'CTR'},
-      {value:'conversions',label:'Conversions'},
-      {value:'roas',label:'ROAS'},
-      {value:'sessions',label:'Organic Sessions'},
-      {value:'revenue',label:'Revenue'},
-    ]}/>
+    <ESelect value={state.primaryMetric || 'spend'} onChange={v => setState({ ...state, primaryMetric: v })}
+      options={[
+        {value:'spend',label:'Total Spend'},
+        {value:'impressions',label:'Impressions'},
+        {value:'clicks',label:'Clicks'},
+        {value:'ctr',label:'CTR'},
+        {value:'conversions',label:'Conversions'},
+        {value:'roas',label:'ROAS'},
+        {value:'sessions',label:'Organic Sessions'},
+        {value:'revenue',label:'Revenue'},
+      ]}/>
   </ESection>
 );
 
@@ -449,7 +450,7 @@ const SetupKPI = ({ state, setState }) => (
     <EDivider/>
     <DataSourceSection state={state} setState={setState}/>
     <EDivider/>
-    <MetricsSelect/>
+    <MetricsSelect state={state} setState={setState}/>
     <ComparisonSection state={state} setState={setState}/>
     <EDivider/>
     <FilterSection filters={state.filters || []} setFilters={f => setState({ ...state, filters: f })}/>
@@ -464,7 +465,7 @@ const SetupChart = ({ state, setState }) => (
     <EDivider/>
     <DataSourceSection state={state} setState={setState}/>
     <EDivider/>
-    <MetricsSelect/>
+    <MetricsSelect state={state} setState={setState}/>
     <ESection label="Secondary metric">
       <ESelect value={state.secMetric || 'conversions'} onChange={v => setState({ ...state, secMetric: v })}
         options={[{value:'none',label:'None'},{value:'conversions',label:'Conversions'},{value:'clicks',label:'Clicks'},{value:'impressions',label:'Impressions'}]}/>
