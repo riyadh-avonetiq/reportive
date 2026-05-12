@@ -3289,6 +3289,7 @@ function ScreenReport({ clientId, onBack }) {
   const [selectedWidget, setSelectedWidget] = useState(null);
   const [widgetConfigs, setWidgetConfigs] = useState({});
   const [widgetLayouts, setWidgetLayouts] = useState(null);
+  const [savedFlash, setSavedFlash] = useState(false);
   const undoHistory       = React.useRef([]);
   const layoutUndoHistory = React.useRef([]);
   const [historyLen, setHistoryLen] = useState(0);
@@ -3341,15 +3342,21 @@ function ScreenReport({ clientId, onBack }) {
   // Persist configs on every change
   useEffect(() => {
     if (!clientId || Object.keys(widgetConfigs).length === 0) return;
-    try { localStorage.setItem('widgetConfigs_' + clientId, JSON.stringify(widgetConfigs)); }
-    catch {}
+    try {
+      localStorage.setItem('widgetConfigs_' + clientId, JSON.stringify(widgetConfigs));
+      setSavedFlash(true);
+      setTimeout(() => setSavedFlash(false), 1800);
+    } catch {}
   }, [widgetConfigs, clientId]);
 
   // Persist layouts on every change
   useEffect(() => {
     if (!clientId || !widgetLayouts) return;
-    try { localStorage.setItem('widgetLayouts_' + clientId, JSON.stringify(widgetLayouts)); }
-    catch {}
+    try {
+      localStorage.setItem('widgetLayouts_' + clientId, JSON.stringify(widgetLayouts));
+      setSavedFlash(true);
+      setTimeout(() => setSavedFlash(false), 1800);
+    } catch {}
   }, [widgetLayouts, clientId]);
 
   // Ctrl+Z / Cmd+Z undo when editor is open (widget config first, then layout)
@@ -3691,6 +3698,24 @@ function ScreenReport({ clientId, onBack }) {
           isMock={_isMock}
           onExit={() => setShowPresent(false)}
         />
+      )}
+
+      {savedFlash && (
+        <div style={{
+          position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '7px 13px',
+          background: 'rgba(0,194,184,.12)',
+          border: '1px solid rgba(0,194,184,.3)',
+          borderRadius: 8,
+          fontFamily: 'var(--font-mono)', fontSize: 11,
+          color: '#00C2B8',
+          pointerEvents: 'none',
+          animation: 'fadeIn .15s ease',
+        }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Tersimpan
+        </div>
       )}
     </div>
   );
