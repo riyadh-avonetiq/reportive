@@ -821,12 +821,21 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
   const availD  = (window.DIM_REGISTRY?.[srcKey]) || (SOURCE_DIMS[srcKey] || []);
 
   // Widget type flags
-  const isText     = widgetType === 'text';
-  const isTable    = widgetType === 'table' || (widgetType || '').startsWith('table-');
-  const isKpiStrip = widgetType === 'kpi-strip';
-  const isSingleM  = ['single-stat', 'chart-area', 'chart-bar'].includes(widgetType);
-  const isDonut    = widgetType === 'chart-donut';
-  const isHeatmap  = widgetType === 'chart-heatmap';
+  const isText      = widgetType === 'text';
+  const isTable     = widgetType === 'table' || (widgetType || '').startsWith('table-');
+  const isKpiStrip  = widgetType === 'kpi-strip';
+  const isSingleM   = ['single-stat', 'chart-area', 'chart-bar'].includes(widgetType);
+  const isDonut     = widgetType === 'chart-donut';
+  const isHeatmap   = widgetType === 'chart-heatmap';
+  const isNarrHero  = widgetType === 'narrative-hero';
+  const isNarrNote  = widgetType === 'narrative-note';
+  const isNarrCall  = widgetType === 'narrative-callout';
+  const isNarrQuote = widgetType === 'narrative-quote';
+  const isNarrative = isNarrHero || isNarrNote || isNarrCall || isNarrQuote;
+  const DESIGN_ONLY_TYPES = ['carousel-highlights','kpi-compare','kpi-stacked','chart-sparks',
+    'progress-psi','progress-score','progress-goals','progress-pacing','progress-grid',
+    'list-keywords','list-pages','list-countries','list-devices'];
+  const isDesignOnly = DESIGN_ONLY_TYPES.includes(widgetType);
 
   // Merged config — WIDGET_DEFAULTS → saved config
   const typeDefaults = (window.WIDGET_DEFAULTS?.[widgetType]?.[srcKey]) || {};
@@ -898,6 +907,120 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
             style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}
           />
         </ESection>
+      </>
+    );
+  }
+
+  // ── NARRATIVE HERO ───────────────────────────────────────────────
+  if (isNarrHero) {
+    return (
+      <>
+        {sharedBanner}
+        <ESection label="Headline">
+          <EInput value={cfg.title || ''} onChange={v => up({ title: v })} placeholder="Performa marketing naik 19,7%"/>
+        </ESection>
+        <EDivider/>
+        <ESection label="Body text">
+          <textarea value={cfg.body || ''} onChange={e => up({ body: e.target.value })}
+            placeholder="Narasi ringkasan performa..."
+            rows={4} style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}/>
+        </ESection>
+        <EDivider/>
+        <ESection label="Status badge">
+          <EInput value={cfg.badge || ''} onChange={v => up({ badge: v })} placeholder="4 sources live"/>
+        </ESection>
+      </>
+    );
+  }
+
+  // ── NARRATIVE NOTE (analyst note, 3 beats) ───────────────────────
+  if (isNarrNote) {
+    const beatLabel = (n, field) => `Beat ${n} ${field}`;
+    return (
+      <>
+        {sharedBanner}
+        <ESection label="Eyebrow label">
+          <EInput value={cfg.name || ''} onChange={v => up({ name: v })} placeholder="Analyst note · March 2025"/>
+        </ESection>
+        <EDivider/>
+        {[1,2,3].map(n => (
+          <React.Fragment key={n}>
+            <ELabel>{`Beat ${n}`}</ELabel>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 14 }}>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <EInput value={cfg[`beat${n}_emoji`] || ''} onChange={v => up({ [`beat${n}_emoji`]: v })} placeholder={['📊','💡','🎯'][n-1]}/>
+                <div style={{ flex: 1 }}>
+                  <EInput value={cfg[`beat${n}_title`] || ''} onChange={v => up({ [`beat${n}_title`]: v })} placeholder={['What happened','Why it matters','Next action'][n-1]}/>
+                </div>
+              </div>
+              <textarea value={cfg[`beat${n}_body`] || ''} onChange={e => up({ [`beat${n}_body`]: e.target.value })}
+                placeholder={['Total spend naik 12,4% MoM...','Google Ads tetap kontributor ROAS terbesar...','Geser 15% budget retargeting...'][n-1]}
+                rows={2} style={{ width: '100%', boxSizing: 'border-box', padding: '7px 9px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11.5, lineHeight: 1.5, resize: 'vertical', outline: 'none' }}/>
+            </div>
+          </React.Fragment>
+        ))}
+      </>
+    );
+  }
+
+  // ── NARRATIVE CALLOUT ────────────────────────────────────────────
+  if (isNarrCall) {
+    return (
+      <>
+        {sharedBanner}
+        <ESection label="Title">
+          <EInput value={cfg.title || ''} onChange={v => up({ title: v })} placeholder="3 halaman berpotensi naik ke top-3"/>
+        </ESection>
+        <EDivider/>
+        <ESection label="Body text">
+          <textarea value={cfg.body || ''} onChange={e => up({ body: e.target.value })}
+            placeholder="Penjelasan detail tentang opportunity ini..."
+            rows={4} style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}/>
+        </ESection>
+        <EDivider/>
+        <ESection label="CTA button">
+          <EInput value={cfg.cta || ''} onChange={v => up({ cta: v })} placeholder="Create action plan →"/>
+        </ESection>
+      </>
+    );
+  }
+
+  // ── NARRATIVE QUOTE ──────────────────────────────────────────────
+  if (isNarrQuote) {
+    return (
+      <>
+        {sharedBanner}
+        <ESection label="Quote text">
+          <textarea value={cfg.quote || ''} onChange={e => up({ quote: e.target.value })}
+            placeholder='"Laporan bulanan jadi jauh lebih cepat disiapkan..."'
+            rows={4} style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}/>
+        </ESection>
+        <EDivider/>
+        <ESection label="Author">
+          <EInput value={cfg.author || ''} onChange={v => up({ author: v })} placeholder="Dimas Pratama"/>
+        </ESection>
+        <ESection label="Role / company">
+          <EInput value={cfg.role || ''} onChange={v => up({ role: v })} placeholder="Client · PT Kopi Senja Nusantara"/>
+        </ESection>
+      </>
+    );
+  }
+
+  // ── DESIGN-ONLY WIDGETS (carousel, kpi-compare, progress-*, list-*) ─
+  if (isDesignOnly) {
+    return (
+      <>
+        {sharedBanner}
+        <ESection label="Widget name">
+          <EInput value={cfg.name || ''} onChange={v => up({ name: v })} placeholder="Widget name..."/>
+        </ESection>
+        <EDivider/>
+        <div style={{ display: 'flex', gap: 8, padding: '10px 12px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 8 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={EP.muted} strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: EP.muted, lineHeight: 1.5 }}>
+            Widget ini adalah <strong style={{ color: EP.sec }}>template desain</strong> dengan konten bawaan. Pengaturan konten lebih lanjut belum tersedia.
+          </div>
+        </div>
       </>
     );
   }

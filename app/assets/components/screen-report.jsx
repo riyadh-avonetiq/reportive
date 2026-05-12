@@ -1257,6 +1257,98 @@ function TextWidget({ cfg }) {
   );
 }
 
+// ─── Editable narrative widget renderers ──────────────────────────
+function NarrativeHeroWidget({ cfg }) {
+  const title = cfg.title || 'Performa marketing naik 19,7%';
+  const body  = cfg.body  || 'Konversi meningkat seiring shift anggaran ke Google Ads. SEO organik tumbuh 8,1% tanpa tambahan budget.';
+  const badge = cfg.badge || '4 sources live';
+  return (
+    <RCard padding={20} style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg,rgba(0,194,184,.06),rgba(248,180,0,.04))' }}>
+      <div style={{ position: 'absolute', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle,rgba(248,180,0,.18),transparent 70%)', filter: 'blur(60px)', top: -120, right: -60 }}/>
+      <div style={{ position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <RStatus type="connected" label={badge}/>
+        </div>
+        <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: fg, lineHeight: 1.2 }}>{title}</div>
+        {body && <p style={{ fontFamily: T.body, fontSize: 12.5, color: sec, margin: '8px 0 12px', maxWidth: 560, lineHeight: 1.5 }}>{body}</p>}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button style={{ padding: '7px 12px', background: 'transparent', color: sec, border: '1px solid var(--navy-edge)', borderRadius: 8, fontFamily: T.display, fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>Share with client</button>
+          <button style={{ padding: '7px 12px', background: 'var(--navy-elevated)', color: fg, border: '1px solid var(--navy-edge)', borderRadius: 8, fontFamily: T.display, fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>View details →</button>
+        </div>
+      </div>
+    </RCard>
+  );
+}
+
+function NarrativeNoteWidget({ cfg }) {
+  const eyebrow = cfg.name || 'Analyst note';
+  const beats = [
+    { emoji: cfg.beat1_emoji || '📊', title: cfg.beat1_title || 'What happened',  body: cfg.beat1_body || 'Total spend naik 12,4% MoM, diimbangi kenaikan konversi 19,7%.' },
+    { emoji: cfg.beat2_emoji || '💡', title: cfg.beat2_title || 'Why it matters', body: cfg.beat2_body || 'Google Ads tetap kontributor ROAS terbesar (4,1x). SEO tumbuh tanpa budget.' },
+    { emoji: cfg.beat3_emoji || '🎯', title: cfg.beat3_title || 'Next action',    body: cfg.beat3_body || 'Geser 15% budget retargeting ke brand awareness Google Ads untuk Q2.' },
+  ];
+  return (
+    <RCard padding={16} style={{ background: 'linear-gradient(135deg,rgba(0,194,184,.04),rgba(248,180,0,.02))' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <div style={{ width: 22, height: 22, background: 'rgba(0,194,184,.14)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="12" height="12" fill="none" stroke={teal} strokeWidth="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        <Eyebrow color={teal}>{eyebrow}</Eyebrow>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+        {beats.map((beat, i) => (
+          <div key={i} style={{ display: 'flex', gap: 10 }}>
+            <span style={{ fontSize: 14 }}>{beat.emoji}</span>
+            <div>
+              <div style={{ fontFamily: T.display, fontSize: 12, fontWeight: 700, color: fg }}>{beat.title}</div>
+              <div style={{ fontFamily: T.body, fontSize: 11.5, color: sec, lineHeight: 1.5, marginTop: 2 }}>{beat.body}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </RCard>
+  );
+}
+
+function NarrativeCalloutWidget({ cfg }) {
+  const title = cfg.title || '3 halaman berpotensi naik ke top-3';
+  const body  = cfg.body  || 'Halaman dengan posisi #4–#7 dapat diangkat dengan internal linking dan backlink.';
+  const cta   = cfg.cta   || 'Create action plan →';
+  return (
+    <RCard padding={16} style={{ borderLeft: `3px solid ${gold}` }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <div style={{ width: 22, height: 22, background: 'rgba(248,180,0,.14)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="12" height="12" fill="none" stroke={gold} strokeWidth="2" viewBox="0 0 24 24"><path d="M12 2l2.35 7.24h7.61l-6.16 4.47 2.35 7.24L12 16.48l-6.16 4.47 2.35-7.24L2.04 9.24h7.61z"/></svg>
+        </div>
+        <Eyebrow color={gold}>Opportunity</Eyebrow>
+      </div>
+      <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: fg, lineHeight: 1.3 }}>{title}</div>
+      {body && <p style={{ fontFamily: T.body, fontSize: 11.5, color: sec, margin: '6px 0 0', lineHeight: 1.5 }}>{body}</p>}
+      <button style={{ marginTop: 10, padding: '7px 12px', background: `linear-gradient(135deg,${gold},#FFCA3A)`, color: '#0C182C', border: 'none', borderRadius: 8, fontFamily: T.display, fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}>{cta}</button>
+    </RCard>
+  );
+}
+
+function NarrativeQuoteWidget({ cfg }) {
+  const quote  = cfg.quote  || '"Laporan bulanan jadi jauh lebih cepat disiapkan. Tim klien langsung dapat insight."';
+  const author = cfg.author || 'Dimas Pratama';
+  const role   = cfg.role   || 'Client · PT Kopi Senja Nusantara';
+  const initials = (author || '').split(' ').slice(0,2).map(w => w[0] || '').join('').toUpperCase() || 'DP';
+  return (
+    <RCard padding={18}>
+      <svg width="22" height="16" viewBox="0 0 22 16" fill={teal} style={{ opacity: 0.5 }}><path d="M0 16V8c0-4.4 3.6-8 8-8v3c-2.8 0-5 2.2-5 5h5v8H0zm12 0V8c0-4.4 3.6-8 8-8v3c-2.8 0-5 2.2-5 5h5v8h-8z"/></svg>
+      <p style={{ fontFamily: T.body, fontSize: 13, color: fg, margin: '10px 0 12px', lineHeight: 1.55, fontWeight: 500 }}>{quote}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#00C2B8,#7000FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: T.display, fontWeight: 700, fontSize: 12, color: '#0C182C' }}>{initials}</div>
+        <div>
+          <div style={{ fontFamily: T.display, fontSize: 12, fontWeight: 700, color: fg }}>{author}</div>
+          <div style={{ fontFamily: T.mono, fontSize: 10, color: muted }}>{role}</div>
+        </div>
+      </div>
+    </RCard>
+  );
+}
+
 function UniversalWidget({ instance, p, widgetConfig, editState }) {
   const src  = instance.source;
   const type = instance.type;
@@ -1270,8 +1362,12 @@ function UniversalWidget({ instance, p, widgetConfig, editState }) {
       case 'chart-bar':    return <ChartBarWidget    instance={instance} p={p} cfg={cfg}/>;
       case 'chart-donut':  return <ChartDonutWidget  instance={instance} p={p} cfg={cfg}/>;
       case 'chart-heatmap':return <ChartHeatmapWidget instance={instance} p={p} cfg={cfg}/>;
-      case 'table':        return <UniversalTableWidget instance={instance} p={p} cfg={cfg}/>;
-      case 'text':         return <TextWidget        cfg={cfg}/>;
+      case 'table':             return <UniversalTableWidget  instance={instance} p={p} cfg={cfg}/>;
+      case 'text':              return <TextWidget            cfg={cfg}/>;
+      case 'narrative-hero':    return <NarrativeHeroWidget   cfg={cfg}/>;
+      case 'narrative-note':    return <NarrativeNoteWidget   cfg={cfg}/>;
+      case 'narrative-callout': return <NarrativeCalloutWidget cfg={cfg}/>;
+      case 'narrative-quote':   return <NarrativeQuoteWidget  cfg={cfg}/>;
       default: {
         const cardDef = (window.CARDS || []).find(c => c.id === type);
         if (cardDef?.render) return React.createElement(cardDef.render, {});
