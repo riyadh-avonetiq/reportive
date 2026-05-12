@@ -3555,19 +3555,38 @@ function PresentMode({ client, p, isMock, onExit }) {
 }
 
 // ─── Default layout filter ─────────────────────────────────────────
-function getDefaultLayout(connected) {
+function getSmartDefaultLayout(connected) {
   if (!connected) return { rows: [] };
-  const WIDGET_SOURCES = {
-    'google-': 'google', 'meta-': 'meta', 'ga4-': 'ga4', 'search-': 'search'
-  };
-  return {
-    rows: DEFAULT_DRAG_LAYOUT.rows.filter(row =>
-      row.some(({ id }) => {
-        const src = Object.entries(WIDGET_SOURCES).find(([prefix]) => id.startsWith(prefix));
-        return src ? !!connected[src[1]] : false;
-      })
-    )
-  };
+  const uid = window.genWidgetId || (() => 'w_' + Date.now() + '_' + Math.random().toString(36).slice(2,6));
+  const rows = [];
+  if (connected.google) {
+    rows.push(
+      [{ id: uid(), type: 'kpi-strip',   source: 'google', span: 12 }],
+      [{ id: uid(), type: 'chart-area',  source: 'google', span: 7  }, { id: uid(), type: 'chart-donut', source: 'google', span: 5 }],
+      [{ id: uid(), type: 'chart-bar',   source: 'google', span: 12 }],
+      [{ id: uid(), type: 'table',       source: 'google', span: 12 }],
+    );
+  }
+  if (connected.meta) {
+    rows.push(
+      [{ id: uid(), type: 'kpi-strip',   source: 'meta', span: 12 }],
+      [{ id: uid(), type: 'chart-area',  source: 'meta', span: 7  }, { id: uid(), type: 'chart-donut', source: 'meta', span: 5 }],
+    );
+  }
+  if (connected.ga4) {
+    rows.push(
+      [{ id: uid(), type: 'kpi-strip',    source: 'ga4', span: 12 }],
+      [{ id: uid(), type: 'chart-area',   source: 'ga4', span: 7  }, { id: uid(), type: 'chart-heatmap', source: 'ga4', span: 5 }],
+    );
+  }
+  if (connected.search) {
+    rows.push(
+      [{ id: uid(), type: 'kpi-strip',   source: 'search', span: 12 }],
+      [{ id: uid(), type: 'chart-donut', source: 'search', span: 5  }, { id: uid(), type: 'chart-area', source: 'search', span: 7 }],
+      [{ id: uid(), type: 'table',       source: 'search', span: 12 }],
+    );
+  }
+  return { rows };
 }
 
 // ─── Main ScreenReport ─────────────────────────────────────────────
@@ -3604,7 +3623,7 @@ function ScreenReport({ clientId, onBack }) {
     setWidgetLayouts(prev => {
       const allClients = [...(window._avo_clients || []), ...(window.HOME_CLIENTS || [])];
       const _client = allClients.find(c => c.id === clientId);
-      const current = prev || getDefaultLayout(_client?.connected);
+      const current = prev || getSmartDefaultLayout(_client?.connected);
       layoutUndoHistory.current = [...layoutUndoHistory.current.slice(-19), current];
       return typeof updater === 'function' ? updater(current) : updater;
     });
@@ -3703,7 +3722,7 @@ function ScreenReport({ clientId, onBack }) {
   } : null;
 
   // Count how many widgets in the current layout share the same widget type as the selected widget
-  const _layouts = widgetLayouts || getDefaultLayout(client?.connected);
+  const _layouts = widgetLayouts || getSmartDefaultLayout(client?.connected);
   const sharedWidgetCount = (selectedWidget && editorCardId && _layouts)
     ? _layouts.rows.flat().filter(w => w.type === editorCardId || WIDGET_CARD_TYPES[w.id] === editorCardId).length
     : 0;
@@ -3881,7 +3900,7 @@ function ScreenReport({ clientId, onBack }) {
                     connected={connected}
                     widgetConfigs={widgetConfigs}
                     editState={editState}
-                    layouts={widgetLayouts || getDefaultLayout(connected)}
+                    layouts={widgetLayouts || getSmartDefaultLayout(connected)}
                     onLayoutChange={updateWidgetLayouts}
                   />
                   {connected && connected.pagespeed && (
