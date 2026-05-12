@@ -650,7 +650,11 @@ function SelectableWidget({ id, cardId, editState, children }) {
   const isSelected = editState.selected === id;
   return (
     <div
-      onClick={e => { e.stopPropagation(); editState.onSelect(id, cardId); }}
+      onClick={e => {
+        e.stopPropagation();
+        if (editState.justDropped?.current) { editState.justDropped.current = false; return; }
+        editState.onSelect(id, cardId);
+      }}
       style={{
         position: 'relative',
         flex: 1, display: 'flex', flexDirection: 'column',
@@ -1427,6 +1431,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
   const pendingDrag  = React.useRef(null);
   const dragIdRef    = React.useRef(null);   // mirrors dragId for doc-level handlers
   const containerRef = React.useRef(null);   // ref to the outer canvas div
+  const justDropped  = React.useRef(false);
   dragIdRef.current  = dragId;               // keep in sync every render
 
   // ── Document-level Browse drag detection ─────────────────────────
@@ -1566,6 +1571,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
     applyDrop(dragId, dropTarget);
     setDragId(null);
     setDropTarget(null);
+    justDropped.current = true;
   };
 
   // ── Browse → Canvas drag helpers ─────────────────────────────────
@@ -3413,6 +3419,7 @@ function ScreenReport({ clientId, onBack }) {
     onSelect: handleSelectWidget,
     onDelete: handleDeleteWidget,
     onDeselect: () => setSelectedWidget(null),
+    justDropped,
   } : null;
 
   // Count how many widgets in the current layout share the same card type as the selected widget
