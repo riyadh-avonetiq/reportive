@@ -809,11 +809,10 @@ function fmtMetricVal(val, fmt_) {
 
 const GOOGLE_TABLE_DIMS = [
   { key: 'name',       label: 'Campaign' },
+  { key: 'type',       label: 'Campaign Type' },
   { key: 'ad_group',   label: 'Ad Group' },
   { key: 'keyword',    label: 'Keyword' },
   { key: 'match_type', label: 'Match Type' },
-  { key: 'type',       label: 'Campaign Type' },
-  { key: 'device',     label: 'Device' },
 ];
 const GOOGLE_TABLE_METRICS = [
   { key: 'spend',       label: 'Spend',       fmt: 'rupiah' },
@@ -821,20 +820,30 @@ const GOOGLE_TABLE_METRICS = [
   { key: 'impressions', label: 'Impressions', fmt: 'num' },
   { key: 'conversions', label: 'Conversions', fmt: 'num' },
   { key: 'ctr',         label: 'CTR',         fmt: 'pct' },
-  { key: 'cvr',         label: 'CVR',         fmt: 'pct' },
+  { key: 'cpc',         label: 'Avg CPC',     fmt: 'rupiah' },
+  { key: 'cvr',         label: 'Conv. Rate',  fmt: 'pct' },
   { key: 'cpa',         label: 'CPA',         fmt: 'rupiah' },
-  { key: 'roas',        label: 'ROAS',        fmt: 'roas' },
+];
+const META_TABLE_DIMS = [
+  { key: 'name', label: 'Campaign' },
+];
+const META_TABLE_METRICS = [
+  { key: 'spend',       label: 'Spend',       fmt: 'rupiah' },
+  { key: 'impressions', label: 'Impressions', fmt: 'num' },
+  { key: 'clicks',      label: 'Link Clicks', fmt: 'num' },
+  { key: 'conversions', label: 'Conversions', fmt: 'num' },
+  { key: 'ctr',         label: 'CTR',         fmt: 'pct' },
+  { key: 'cpc',         label: 'Avg CPC',     fmt: 'rupiah' },
+  { key: 'cpa',         label: 'CPA',         fmt: 'rupiah' },
 ];
 const SEARCH_TABLE_DIMS = [
-  { key: 'query',   label: 'Query' },
-  { key: 'page',    label: 'Page',    fmtCell: 'url' },
-  { key: 'country', label: 'Country' },
-  { key: 'device',  label: 'Device' },
+  { key: 'query', label: 'Query' },
+  { key: 'page',  label: 'Page URL', fmtCell: 'url' },
 ];
 const SEARCH_TABLE_METRICS = [
-  { key: 'impressions', label: 'Impressions', fmt: 'num' },
-  { key: 'clicks',      label: 'Clicks',      fmt: 'num' },
-  { key: 'ctr',         label: 'CTR',         fmt: 'pct' },
+  { key: 'impressions', label: 'Impressions',  fmt: 'num' },
+  { key: 'clicks',      label: 'Clicks',       fmt: 'num' },
+  { key: 'ctr',         label: 'CTR',          fmt: 'pct' },
   { key: 'position',    label: 'Avg Position', fmt: 'num' },
 ];
 
@@ -853,12 +862,12 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
     ...(widgetConfig || {}),
   };
 
-  const [search,  setSearch]  = useState('');
-  const [sortKey, setSortKey] = useState(cfg.sortMetric);
-  const [sortDir, setSortDir] = useState(cfg.sortDir);
-  const [pageNum, setPageNum] = useState(1);
+  const [searches, setSearches] = useState({});
+  const [sortKey,  setSortKey]  = useState(cfg.sortMetric);
+  const [sortDir,  setSortDir]  = useState(cfg.sortDir);
+  const [pageNum,  setPageNum]  = useState(1);
 
-  useEffect(() => { setPageNum(1); }, [search]);
+  useEffect(() => { setPageNum(1); }, [searches]);
   useEffect(() => { setPageNum(1); }, [cfg.pageSize]);
   useEffect(() => { setSortKey(cfg.sortMetric || ''); }, [cfg.sortMetric]);
 
@@ -886,20 +895,50 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
         return rv.includes(v);
       });
     });
-    if (search) {
-      const s = search.toLowerCase();
-      r = r.filter(row => dims.some(d => String(row[d.key] || '').toLowerCase().includes(s)));
-    }
+    dims.forEach(d => {
+      const s = (searches[d.key] || '').toLowerCase();
+      if (s) r = r.filter(row => String(row[d.key] || '').toLowerCase().includes(s));
+    });
     return r;
-  }, [rows, cfg.filters, search, dims]);
+  }, [rows, cfg.filters, searches, dims]);
+
+  // Group rows with identical dimension values; sum additive metrics, avg rate metrics
+  const grouped = useMemo(() => {
+    if (dims.length === 0) return filtered;
+    const map = new Map();
+    filtered.forEach(row => {
+      const key = dims.map(d => String(row[d.key] ?? '')).join('\x00');
+      if (!map.has(key)) {
+        const entry = {};
+        dims.forEach(d => { entry[d.key] = row[d.key]; });
+        metrics.forEach(m => { entry[m.key] = 0; entry['__n_' + m.key] = 0; });
+        map.set(key, entry);
+      }
+      const entry = map.get(key);
+      metrics.forEach(m => {
+        const v = parseFloat(row[m.key]);
+        if (!isNaN(v)) { entry[m.key] += v; entry['__n_' + m.key]++; }
+      });
+    });
+    // Average rate/ratio metrics instead of summing
+    const result = Array.from(map.values());
+    result.forEach(entry => {
+      metrics.forEach(m => {
+        if ((m.fmt === 'pct' || m.fmt === 'roas') && entry['__n_' + m.key] > 0) {
+          entry[m.key] = entry[m.key] / entry['__n_' + m.key];
+        }
+      });
+    });
+    return result;
+  }, [filtered, dims, metrics]);
 
   const sorted = useMemo(() => {
-    if (!sortKey) return filtered;
-    return [...filtered].sort((a, b) => {
+    if (!sortKey) return grouped;
+    return [...grouped].sort((a, b) => {
       const mul = sortDir === 'desc' ? -1 : 1;
       return mul * ((+(a[sortKey]) || 0) - (+(b[sortKey]) || 0));
     });
-  }, [filtered, sortKey, sortDir]);
+  }, [grouped, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pgSize));
   const curPage    = Math.min(pageNum, totalPages);
@@ -908,16 +947,25 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
 
   return (
     <RCard padding={0} style={{ overflow: 'hidden' }}>
-      <div style={{ padding: `${fs(10)}px ${fs(16)}px`, borderBottom: '1px solid var(--navy-edge)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <div>
-          <div style={{ fontFamily: T.display, fontSize: fs(13), fontWeight: 700, color: fg }}>{displayName}</div>
-          <div style={{ fontFamily: T.body, fontSize: fs(10), color: muted, marginTop: 2 }}>{sorted.length} baris</div>
+      <div style={{ padding: `${fs(10)}px ${fs(16)}px ${fs(8)}px`, borderBottom: '1px solid var(--navy-edge)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: fs(7) }}>
+          <div>
+            <div style={{ fontFamily: T.display, fontSize: fs(13), fontWeight: 700, color: fg }}>{displayName}</div>
+            <div style={{ fontFamily: T.body, fontSize: fs(10), color: muted, marginTop: 2 }}>{sorted.length} baris</div>
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: `${fs(5)}px ${fs(9)}px`, background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, minWidth: 160 }}>
-          <svg width="10" height="10" fill="none" stroke={muted} strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…"
-            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: fg, fontFamily: T.body, fontSize: fs(11) }}/>
-          {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', padding: 0, fontSize: 13, lineHeight: 1 }}>×</button>}
+        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+          {dims.map(d => {
+            const val = searches[d.key] || '';
+            return (
+              <div key={d.key} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: `${fs(4)}px ${fs(8)}px`, background: 'var(--navy-elevated)', border: `1px solid ${val ? teal + '60' : 'var(--navy-edge)'}`, borderRadius: 6, width: 160 }}>
+                <svg width="9" height="9" fill="none" stroke={muted} strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input value={val} onChange={e => setSearches(prev => ({ ...prev, [d.key]: e.target.value }))} placeholder={`${d.label}…`}
+                  style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: fg, fontFamily: T.body, fontSize: fs(10.5) }}/>
+                {val && <button onClick={() => setSearches(prev => ({ ...prev, [d.key]: '' }))} style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', padding: 0, fontSize: 12, lineHeight: 1 }}>×</button>}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -946,7 +994,7 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
                   const disp = d.fmtCell === 'url' ? shortUrlFmt(raw) : (raw || '—');
                   return (
                     <td key={d.key} title={d.fmtCell === 'url' ? (raw || '') : undefined}
-                      style={{ padding: `${fs(8)}px ${fs(12)}px`, fontFamily: di === 0 ? T.display : T.body, fontWeight: di === 0 ? 600 : 400, color: di === 0 ? fg : muted, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: fs(di === 0 ? 12 : 11) }}>
+                      style={{ padding: `${fs(8)}px ${fs(12)}px`, fontFamily: T.display, fontWeight: di === 0 ? 600 : 400, color: fg, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: fs(12) }}>
                       {disp}
                     </td>
                   );
@@ -1215,12 +1263,31 @@ function ChartHeatmapWidget({ instance, p, cfg }) {
 }
 
 function UniversalTableWidget({ instance, p, cfg }) {
-  const reg  = window.DATA_REGISTRY?.[instance.source] || {};
-  const dims = window.DIM_REGISTRY?.[instance.source]  || [];
-  const rows = (window.TABLE_DATA_REGISTRY?.[instance.source] || (() => []))(p) || [];
-  const availMetrics = Object.entries(reg).map(([key, def]) => ({
-    key, label: def.label, fmt: def.format,
-  }));
+  const src = instance.source;
+  const dims = window.DIM_REGISTRY?.[src] || [];
+  const selectedDims = cfg.dimensions || dims.slice(0,1).map(d => d.key);
+
+  // Source-specific metric + row definitions
+  let availMetrics, rows;
+  if (src === 'google') {
+    availMetrics = GOOGLE_TABLE_METRICS;
+    if (selectedDims.includes('keyword'))       rows = p?.keywords  || [];
+    else if (selectedDims.includes('ad_group')) rows = p?.adGroups  || [];
+    else                                         rows = p?.campaigns || [];
+  } else if (src === 'meta') {
+    availMetrics = META_TABLE_METRICS;
+    rows = p?.metaChannels || [];
+  } else if (src === 'search') {
+    availMetrics = SEARCH_TABLE_METRICS;
+    // Route to queries or pages based on selected dim
+    if (selectedDims.includes('page'))  rows = p?.gsc?.pages   || [];
+    else                                 rows = p?.gsc?.queries || [];
+  } else {
+    const reg = window.DATA_REGISTRY?.[src] || {};
+    availMetrics = Object.entries(reg).map(([key, def]) => ({ key, label: def.label, fmt: def.format }));
+    rows = (window.TABLE_DATA_REGISTRY?.[src] || (() => []))(p) || [];
+  }
+
   return (
     <DataTable
       widgetId={instance.id}
@@ -1228,8 +1295,8 @@ function UniversalTableWidget({ instance, p, cfg }) {
       rows={rows}
       availDims={dims}
       availMetrics={availMetrics}
-      defaultDims={cfg.dimensions || dims.slice(0,1).map(d => d.key)}
-      defaultMetrics={cfg.metrics  || availMetrics.slice(0,4).map(m => m.key)}
+      defaultDims={selectedDims}
+      defaultMetrics={cfg.metrics || availMetrics.slice(0,5).map(m => m.key)}
       defaultName={cfg.name || 'Data Table'}
     />
   );
@@ -1914,37 +1981,54 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
     onLayoutChange(prev => {
       let rows = prev.rows.map(r => [...r]);
 
+      const redistributeRow = (row) => {
+        if (!row || row.length === 0) return row;
+        const count = row.length;
+        const base = Math.floor(12 / count);
+        const rem = 12 - base * count;
+        return row.map((w, i) => ({ ...w, span: base + (i < rem ? 1 : 0) }));
+      };
+
       if (target.type === 'swap') {
-        // Move-before-target: remove drag entry, insert at target position.
-        // Works same-row (horizontal) and cross-row (vertical).
         let dragEntry = null;
+        let srcRowIdxBefore = rows.findIndex(row => row.some(w => w.id === id));
         rows = rows.map(row => {
           const idx = row.findIndex(w => w.id === id);
           if (idx !== -1) { dragEntry = row[idx]; return row.filter((_, i) => i !== idx); }
           return row;
-        }).filter(row => row.length > 0);
+        });
+        // Redistribute source row spans before removing it
+        if (srcRowIdxBefore >= 0 && rows[srcRowIdxBefore]?.length > 0) {
+          rows[srcRowIdxBefore] = redistributeRow(rows[srcRowIdxBefore]);
+        }
+        rows = rows.filter(row => row.length > 0);
         if (dragEntry) {
           let targetRowIdx = -1, targetPosIdx = -1;
           rows.forEach((row, ri) => row.forEach((w, pi) => {
             if (w.id === target.targetId) { targetRowIdx = ri; targetPosIdx = pi; }
           }));
-          if (targetRowIdx >= 0) rows[targetRowIdx].splice(targetPosIdx, 0, dragEntry);
+          if (targetRowIdx >= 0) {
+            rows[targetRowIdx].splice(targetPosIdx, 0, dragEntry);
+            rows[targetRowIdx] = redistributeRow(rows[targetRowIdx]);
+          }
         }
 
       } else if (target.type === 'new-row') {
         let dragEntry = null;
-        // Track source row index BEFORE removal to correct insertAt if that row is deleted
         const srcRowIdx = rows.findIndex(row => row.some(w => w.id === id));
         const srcWillBeEmpty = srcRowIdx >= 0 && rows[srcRowIdx].length === 1;
         rows = rows.map(row => {
           const idx = row.findIndex(w => w.id === id);
           if (idx !== -1) { dragEntry = row[idx]; return row.filter((_, i) => i !== idx); }
           return row;
-        }).filter(row => row.length > 0);
-        // If the source row was removed and was before the target, indices shifted by -1
+        });
+        if (!srcWillBeEmpty && srcRowIdx >= 0 && rows[srcRowIdx]?.length > 0) {
+          rows[srcRowIdx] = redistributeRow(rows[srcRowIdx]);
+        }
+        rows = rows.filter(row => row.length > 0);
         let insertAt = target.insertAt;
         if (srcWillBeEmpty && srcRowIdx < insertAt) insertAt = Math.max(0, insertAt - 1);
-        if (dragEntry) rows.splice(insertAt, 0, [dragEntry]);
+        if (dragEntry) rows.splice(insertAt, 0, [{ ...dragEntry, span: 12 }]);
       }
 
       return { ...prev, rows };
@@ -1990,6 +2074,12 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
 
   // Drop on left/right edge of widget → insert before/after in the row
   const handleBetweenDrop = (rowIdx, insertPos, e) => {
+    const _redist = row => {
+      const count = row.length;
+      const base = Math.floor(12 / count);
+      const rem = 12 - base * count;
+      return row.map((w, i) => ({ ...w, span: base + (i < rem ? 1 : 0) }));
+    };
     const def = _parseBrowseDef(e);
     if (def) {
       e.preventDefault(); e.stopPropagation();
@@ -1997,6 +2087,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
       onLayoutChange(prev => {
         const rows = prev.rows.map(r => [...r]);
         rows[rowIdx].splice(insertPos, 0, { id: newId, type: def.type, source: def.source, span: 4, ...(def._cardId ? { _cardId: def._cardId } : {}) });
+        rows[rowIdx] = _redist(rows[rowIdx]);
         return { ...prev, rows };
       });
       return;
@@ -2008,6 +2099,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
     onLayoutChange(prev => {
       const rows = prev.rows.map(r => [...r]);
       rows[rowIdx].splice(insertPos, 0, { id: newId, span: 4 });
+      rows[rowIdx] = _redist(rows[rowIdx]);
       return { ...prev, rows };
     });
   };
@@ -2119,24 +2211,6 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
               onDragEnter={i => setBrowseDropTarget({ type: 'row', insertAt: i })}
               onDrop={(i, e) => handleNewRowDrop(i, e)}
             />}
-
-            {/* Pointer-drag new-row zone */}
-            {dragId && !browseDragActive && (
-              <div
-                onPointerEnter={() => setDropTarget({ type: 'new-row', insertAt: rowIdx })}
-                style={{
-                  height: dropTarget?.type === 'new-row' && dropTarget.insertAt === rowIdx ? 40 : 20,
-                  borderRadius: 6, transition: 'height .12s, background .12s',
-                  border: `1px dashed ${dropTarget?.type === 'new-row' && dropTarget.insertAt === rowIdx ? teal : 'transparent'}`,
-                  background: dropTarget?.type === 'new-row' && dropTarget.insertAt === rowIdx ? 'rgba(0,194,184,.1)' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                {dropTarget?.type === 'new-row' && dropTarget.insertAt === rowIdx && (
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: teal }}>Drop here → new row</span>
-                )}
-              </div>
-            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 20, marginBottom: 20, position: 'relative', alignItems: 'stretch' }}>
               {visible.map((entry, colIdx) => {

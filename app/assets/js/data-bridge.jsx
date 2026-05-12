@@ -126,18 +126,22 @@ function aggregateMeta(rows) {
 
 // ── Aggregate: GA4 ──────────────────────────────────────────────────
 function aggregateGa4(rows) {
-  const t = { sessions: 0, users: 0, pageviews: 0, engaged: 0, bounceWeighted: 0 };
+  const t = { sessions: 0, users: 0, new_users: 0, pageviews: 0, engaged: 0, bounceWeighted: 0, durationWeighted: 0 };
   rows.forEach(r => {
     const sess  = +r.sessions || 0;
     t.sessions  += sess;
-    t.users     += +r.total_users      || 0;
-    t.pageviews += +r.event_count      || 0;
-    t.engaged   += +r.engaged_sessions || 0;
+    t.users     += +r.total_users         || 0;
+    t.new_users += +r.new_users           || 0;
+    t.pageviews += +r.event_count         || 0;
+    t.engaged   += +r.engaged_sessions    || 0;
     if (r.bounce_rate != null && sess > 0)
       t.bounceWeighted += +r.bounce_rate * sess;
+    if (r.avg_session_duration != null && sess > 0)
+      t.durationWeighted += +r.avg_session_duration * sess;
   });
   // bounce_rate stored as decimal (0–1) from GA4 API; multiply by 100 for display
-  t.bounce_rate = t.sessions > 0 ? (t.bounceWeighted / t.sessions) * 100 : 0;
+  t.bounce_rate          = t.sessions > 0 ? (t.bounceWeighted / t.sessions) * 100 : 0;
+  t.avg_session_duration = t.sessions > 0 ? t.durationWeighted / t.sessions : 0;
   return t;
 }
 
@@ -375,8 +379,9 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
   const metaChannels = Object.entries(metaByType)
     .sort((a, b) => b[1].spend - a[1].spend)
     .map(([name, t]) => ({ name, ...t,
-      ctr: t.impressions > 0 ? (t.clicks / t.impressions) * 100 : 0,
-      cpc: t.clicks > 0 ? t.spend / t.clicks : 0,
+      ctr:  t.impressions > 0  ? (t.clicks / t.impressions) * 100 : 0,
+      cpc:  t.clicks > 0       ? t.spend / t.clicks : 0,
+      cpa:  t.conversions > 0  ? t.spend / t.conversions : 0,
     }));
 
   // Ad Groups (campaign × ad_group level)

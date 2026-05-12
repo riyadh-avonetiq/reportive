@@ -659,36 +659,39 @@ const SetupCarousel = ({ state, setState }) => (
 
 const SOURCE_METRICS = {
   google: [
-    { key: 'spend',       label: 'Spend',         fmt: 'rupiah' },
+    { key: 'spend',       label: 'Total Spend',   fmt: 'rupiah' },
     { key: 'clicks',      label: 'Clicks',         fmt: 'num' },
     { key: 'impressions', label: 'Impressions',    fmt: 'num' },
     { key: 'conversions', label: 'Conversions',    fmt: 'num' },
     { key: 'ctr',         label: 'CTR',            fmt: 'pct' },
     { key: 'cpc',         label: 'Avg CPC',        fmt: 'rupiah' },
+    { key: 'cvr',         label: 'Conv. Rate',     fmt: 'pct' },
     { key: 'cpa',         label: 'CPA',            fmt: 'rupiah' },
     { key: 'roas',        label: 'ROAS',           fmt: 'roas' },
-    { key: 'cvr',         label: 'CVR',            fmt: 'pct' },
   ],
   meta: [
-    { key: 'spend',       label: 'Spend',             fmt: 'rupiah' },
-    { key: 'impressions', label: 'Impressions (Reach)', fmt: 'num' },
-    { key: 'clicks',      label: 'Link Clicks',        fmt: 'num' },
-    { key: 'conversions', label: 'Conversions',        fmt: 'num' },
-    { key: 'cpm',         label: 'CPM',                fmt: 'rupiah' },
-    { key: 'ctr',         label: 'CTR',                fmt: 'pct' },
-    { key: 'cpa',         label: 'CPA',                fmt: 'rupiah' },
+    { key: 'spend',       label: 'Total Spend',    fmt: 'rupiah' },
+    { key: 'impressions', label: 'Impressions',    fmt: 'num' },
+    { key: 'clicks',      label: 'Link Clicks',    fmt: 'num' },
+    { key: 'conversions', label: 'Conversions',    fmt: 'num' },
+    { key: 'ctr',         label: 'CTR',            fmt: 'pct' },
+    { key: 'cpc',         label: 'Avg CPC',        fmt: 'rupiah' },
+    { key: 'cpa',         label: 'CPA',            fmt: 'rupiah' },
+    { key: 'roas',        label: 'ROAS',           fmt: 'roas' },
   ],
   ga4: [
-    { key: 'sessions',    label: 'Sessions',          fmt: 'num' },
-    { key: 'users',       label: 'Users',             fmt: 'num' },
-    { key: 'pageviews',   label: 'Pageviews',         fmt: 'num' },
-    { key: 'engaged',     label: 'Engaged Sessions',  fmt: 'num' },
-    { key: 'bounce_rate', label: 'Bounce Rate',       fmt: 'pct' },
+    { key: 'sessions',             label: 'Sessions',        fmt: 'num' },
+    { key: 'users',                label: 'Total Users',     fmt: 'num' },
+    { key: 'new_users',            label: 'New Users',       fmt: 'num' },
+    { key: 'pageviews',            label: 'Events',          fmt: 'num' },
+    { key: 'engaged',              label: 'Engaged Sessions',fmt: 'num' },
+    { key: 'bounce_rate',          label: 'Bounce Rate',     fmt: 'pct' },
+    { key: 'avg_session_duration', label: 'Avg Duration (s)',fmt: 'num' },
   ],
   search: [
-    { key: 'impressions', label: 'Impressions', fmt: 'num' },
-    { key: 'clicks',      label: 'Clicks',      fmt: 'num' },
-    { key: 'ctr',         label: 'CTR',         fmt: 'pct' },
+    { key: 'impressions', label: 'Impressions',  fmt: 'num' },
+    { key: 'clicks',      label: 'Organic Clicks', fmt: 'num' },
+    { key: 'ctr',         label: 'CTR',          fmt: 'pct' },
     { key: 'position',    label: 'Avg Position', fmt: 'num' },
   ],
 };
@@ -753,8 +756,8 @@ const WIDGET_LIMITS = {
   'chart-bar':      { maxMetrics: 2, maxDims: 0 },
   'chart-donut':    { maxMetrics: 1, maxDims: 1 },
   'chart-heatmap':  { maxMetrics: 0, maxDims: 0 },
-  'table-rankings': { maxMetrics: 8, maxDims: 4 },
-  'table-campaigns':{ maxMetrics: 8, maxDims: 4 },
+  'table-rankings': { maxMetrics: 8, maxDims: 3 },
+  'table-campaigns':{ maxMetrics: 8, maxDims: 3 },
 };
 
 // Extract human-readable account name from a connected source value
@@ -1098,7 +1101,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
 
   // ── KPI STRIP + TABLE (multi-metric / multi-dim) ─────────────────
   const maxMetrics = isKpiStrip ? 6 : legacyLimits.maxMetrics;
-  const maxDims    = legacyLimits.maxDims;
+  const maxDims    = isTable ? Math.min(3, legacyLimits.maxDims || 3) : legacyLimits.maxDims;
 
   return (
     <>
@@ -1109,60 +1112,9 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
       <EDivider/>
       {SourceSection}
 
-      {availM.length > 0 && (
-        <>
-          <EDivider/>
-          <ESection label={`Metrics (${(cfg.metrics || []).length}/${maxMetrics})`}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 6 }}>
-              {(cfg.metrics || []).map((key, i) => {
-                const meta = availM.find(m => m.key === key) || { key, label: key };
-                return (
-                  <div key={i}
-                    draggable
-                    onDragStart={() => setDragMetIdx(i)}
-                    onDragEnter={() => setDragMetOver(i)}
-                    onDragOver={e => e.preventDefault()}
-                    onDragEnd={() => { if (dragMetIdx !== null && dragMetOver !== null && dragMetIdx !== dragMetOver) reorderMetrics(dragMetIdx, dragMetOver); setDragMetIdx(null); setDragMetOver(null); }}
-                    style={{ display: 'flex', gap: 4, alignItems: 'center', opacity: dragMetIdx === i ? 0.4 : 1, borderTop: dragMetOver === i && dragMetIdx !== i ? `2px solid ${EP.teal}` : '2px solid transparent' }}
-                  >
-                    <div title="Drag to reorder" style={{ cursor: 'grab', color: EP.muted, display: 'flex', alignItems: 'center', flexShrink: 0 }}><DragDots/></div>
-                    <div style={{ flex: 1 }}>
-                      <ESelect value={key} onChange={v => { const nx = [...cfg.metrics]; nx[i] = v; up({ metrics: nx }); }}
-                        options={availM.map(m => ({ value: m.key, label: m.label, disabled: m.key !== key && cfg.metrics.includes(m.key) }))}/>
-                    </div>
-                    <input value={cfg.metricLabels?.[key] ?? meta.label}
-                      onChange={e => up({ metricLabels: { ...(cfg.metricLabels || {}), [key]: e.target.value } })}
-                      placeholder={meta.label}
-                      style={{ width: 72, padding: '6px 7px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}
-                    />
-                    <button onClick={() => up({ metrics: cfg.metrics.filter((_, j) => j !== i) })}
-                      disabled={cfg.metrics.length <= 1}
-                      style={{ width: 24, height: 24, border: `1px solid rgba(220,38,38,.3)`, borderRadius: 5, background: 'rgba(220,38,38,.08)', color: EP.red, cursor: cfg.metrics.length <= 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: cfg.metrics.length <= 1 ? 0.3 : 1 }}>
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-            {(cfg.metrics || []).length < maxMetrics && (
-              <button onClick={() => { const f = availM.find(m => !cfg.metrics.includes(m.key)); if (f) up({ metrics: [...cfg.metrics, f.key] }); }}
-                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px dashed ${EP.teal}66`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 1v8M1 5h8"/></svg>
-                Add metric
-              </button>
-            )}
-          </ESection>
-        </>
-      )}
-
       {isTable && availD.length > 0 && (
         <>
           <EDivider/>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0 10px' }}>
-            <div style={{ flex: 1, height: 1, background: EP.edge }}/>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, color: EP.muted, textTransform: 'uppercase', letterSpacing: '0.12em', whiteSpace: 'nowrap' }}>Dimensions</span>
-            <div style={{ flex: 1, height: 1, background: EP.edge }}/>
-          </div>
           <ESection label={`Dimensions (${(cfg.dimensions || []).length}/${maxDims})`}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 6 }}>
               {(cfg.dimensions || []).map((key, i) => (
@@ -1231,6 +1183,52 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
                 >{n}</button>
               ))}
             </div>
+          </ESection>
+        </>
+      )}
+
+      {availM.length > 0 && (
+        <>
+          <EDivider/>
+          <ESection label={`Metrics (${(cfg.metrics || []).length}/${maxMetrics})`}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 6 }}>
+              {(cfg.metrics || []).map((key, i) => {
+                const meta = availM.find(m => m.key === key) || { key, label: key };
+                return (
+                  <div key={i}
+                    draggable
+                    onDragStart={() => setDragMetIdx(i)}
+                    onDragEnter={() => setDragMetOver(i)}
+                    onDragOver={e => e.preventDefault()}
+                    onDragEnd={() => { if (dragMetIdx !== null && dragMetOver !== null && dragMetIdx !== dragMetOver) reorderMetrics(dragMetIdx, dragMetOver); setDragMetIdx(null); setDragMetOver(null); }}
+                    style={{ display: 'flex', gap: 4, alignItems: 'center', opacity: dragMetIdx === i ? 0.4 : 1, borderTop: dragMetOver === i && dragMetIdx !== i ? `2px solid ${EP.teal}` : '2px solid transparent' }}
+                  >
+                    <div title="Drag to reorder" style={{ cursor: 'grab', color: EP.muted, display: 'flex', alignItems: 'center', flexShrink: 0 }}><DragDots/></div>
+                    <div style={{ flex: 1 }}>
+                      <ESelect value={key} onChange={v => { const nx = [...cfg.metrics]; nx[i] = v; up({ metrics: nx }); }}
+                        options={availM.map(m => ({ value: m.key, label: m.label, disabled: m.key !== key && cfg.metrics.includes(m.key) }))}/>
+                    </div>
+                    <input value={cfg.metricLabels?.[key] ?? meta.label}
+                      onChange={e => up({ metricLabels: { ...(cfg.metricLabels || {}), [key]: e.target.value } })}
+                      placeholder={meta.label}
+                      style={{ width: 72, padding: '6px 7px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}
+                    />
+                    <button onClick={() => up({ metrics: cfg.metrics.filter((_, j) => j !== i) })}
+                      disabled={cfg.metrics.length <= 1}
+                      style={{ width: 24, height: 24, border: `1px solid rgba(220,38,38,.3)`, borderRadius: 5, background: 'rgba(220,38,38,.08)', color: EP.red, cursor: cfg.metrics.length <= 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: cfg.metrics.length <= 1 ? 0.3 : 1 }}>
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            {(cfg.metrics || []).length < maxMetrics && (
+              <button onClick={() => { const f = availM.find(m => !cfg.metrics.includes(m.key)); if (f) up({ metrics: [...cfg.metrics, f.key] }); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px dashed ${EP.teal}66`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 1v8M1 5h8"/></svg>
+                Add metric
+              </button>
+            )}
           </ESection>
         </>
       )}
