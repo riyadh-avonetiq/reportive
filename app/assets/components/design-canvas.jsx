@@ -384,64 +384,121 @@ function DCArtboardFrame({ sectionId, artboard, label, order, onRename, onReorde
   const id = rawId ?? rawLabel;
   const ref = React.useRef(null);
 
-  // Live drag-reorder: dragged card sticks to cursor; siblings slide into
-  // their would-be slots in real time via transforms. DOM order only
-  // changes on drop.
   const onGripDown = (e) => {
-    e.preventDefault();e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     const me = ref.current;
-    // translateX is applied in local (pre-scale) space but pointer deltas and
-    // getBoundingClientRect().left are screen-space — divide by the viewport's
-    // current scale so the dragged card tracks the cursor at any zoom level.
-    const scale = me.getBoundingClientRect().width / me.offsetWidth || 1;
-    const peers = Array.from(document.querySelectorAll(`[data-dc-section="${sectionId}"] [data-dc-slot]`));
-    const homes = peers.map((el) => ({ el, id: el.dataset.dcSlot, x: el.getBoundingClientRect().left }));
-    const slotXs = homes.map((h) => h.x);
-    const startIdx = order.indexOf(id);
-    const startX = e.clientX;
-    let liveOrder = order.slice();
-    me.classList.add('dc-dragging');
+    const meRect = me.getBoundingClientRect();
+    const grabX = e.clientX - meRect.left;
+    const grabY = e.clientY - meRect.top;
 
-    const layout = () => {
-      for (const h of homes) {
-        if (h.id === id) continue;
-        const slot = liveOrder.indexOf(h.id);
-        h.el.style.transform = `translateX(${(slotXs[slot] - h.x) / scale}px)`;
+    // Ghost: cloned slot follows the cursor
+    const ghost = me.cloneNode(true);
+    ghost.className = 'dc-ghost';
+    ghost.style.width = meRect.width + 'px';
+    ghost.style.height = meRect.height + 'px';
+    ghost.style.left = (e.clientX - grabX) + 'px';
+    ghost.style.top = (e.clientY - grabY) + 'px';
+    document.body.appendChild(ghost);
+
+    // Fade the source slot in place
+    me.classList.add('dc-source-slot');
+
+    // All sibling slots in this section (not the dragged one)
+    const siblings = Array.from(
+      document.querySelectorAll(`[data-dc-section="${sectionId}"] [data-dc-slot]`)
+    ).filter((el) => el.dataset.dcSlot !== id);
+
+    // Inject 5 zone divs into each sibling card
+    const zoneDivs = new Map(); // slotId -> { left, right, top, bottom, center }
+    for (const sib of siblings) {
+      const zones = {};
+      for (const z of ['left', 'right', 'top', 'bottom', 'center']) {
+        const d = document.createElement('div');
+        d.className = `dc-zone ${z}`;
+        sib.appendChild(d);
+        zones[z] = d;
+      }
+      zoneDivs.set(sib.dataset.dcSlot, zones);
+    }
+
+    let hoverSlotId = null;
+    let activeZone = null;
+
+    const clearZones = () => {
+      for (const zones of zoneDivs.values()) {
+        for (const d of Object.values(zones)) d.classList.remove('active');
       }
     };
 
     const move = (ev) => {
-      const dx = ev.clientX - startX;
-      me.style.transform = `translateX(${dx / scale}px)`;
-      const cur = homes[startIdx].x + dx;
-      let nearest = 0,best = Infinity;
-      for (let i = 0; i < slotXs.length; i++) {
-        const d = Math.abs(slotXs[i] - cur);
-        if (d < best) {best = d;nearest = i;}
+      // Move ghost
+      ghost.style.left = (ev.clientX - grabX) + 'px';
+      ghost.style.top = (ev.clientY - grabY) + 'px';
+
+      // Find which sibling the cursor is over
+      let found = null;
+      for (const sib of siblings) {
+        const r = sib.getBoundingClientRect();
+        if (ev.clientX >= r.left && ev.clientX <= r.right &&
+            ev.clientY >= r.top  && ev.clientY <= r.bottom) {
+          found = sib;
+          break;
+        }
       }
-      if (liveOrder.indexOf(id) !== nearest) {
-        liveOrder = order.filter((k) => k !== id);
-        liveOrder.splice(nearest, 0, id);
-        layout();
-      }
+
+      clearZones();
+      if (!found) { hoverSlotId = null; activeZone = null; return; }
+
+      hoverSlotId = found.dataset.dcSlot;
+      const r = found.getBoundingClientRect();
+      const relX = (ev.clientX - r.left) / r.width;
+      const relY = (ev.clientY - r.top) / r.height;
+
+      // Left/right take priority over top/bottom in corners
+      if      (relX < 0.20) activeZone = 'left';
+      else if (relX > 0.80) activeZone = 'right';
+      else if (relY < 0.20) activeZone = 'top';
+      else if (relY > 0.80) activeZone = 'bottom';
+      else                  activeZone = 'center';
+
+      zoneDivs.get(hoverSlotId)[activeZone].classList.add('active');
     };
 
     const up = () => {
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', up);
-      const finalSlot = liveOrder.indexOf(id);
-      me.classList.remove('dc-dragging');
-      me.style.transform = `translateX(${(slotXs[finalSlot] - homes[startIdx].x) / scale}px)`;
-      // After the settle transition, kill transitions + clear transforms +
-      // commit the reorder in the same frame so there's no visual snap-back.
-      setTimeout(() => {
-        for (const h of homes) {h.el.style.transition = 'none';h.el.style.transform = '';}
-        if (liveOrder.join('|') !== order.join('|')) onReorder(liveOrder);
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          for (const h of homes) h.el.style.transition = '';
-        }));
-      }, 180);
+
+      // Clean up ghost and overlays
+      ghost.remove();
+      me.classList.remove('dc-source-slot');
+      for (const zones of zoneDivs.values()) {
+        for (const d of Object.values(zones)) d.remove();
+      }
+
+      // Compute new order from active zone
+      if (hoverSlotId && activeZone) {
+        let newOrder;
+        if (activeZone === 'center') {
+          // Swap dragged slot and target slot
+          newOrder = order.slice();
+          const srcIdx = newOrder.indexOf(id);
+          const tgtIdx = newOrder.indexOf(hoverSlotId);
+          newOrder[srcIdx] = hoverSlotId;
+          newOrder[tgtIdx] = id;
+        } else {
+          // Insert before or after target
+          newOrder = order.filter((k) => k !== id);
+          const tgtIdx = newOrder.indexOf(hoverSlotId);
+          if (activeZone === 'left' || activeZone === 'top') {
+            newOrder.splice(tgtIdx, 0, id);
+          } else {
+            newOrder.splice(tgtIdx + 1, 0, id);
+          }
+        }
+        if (newOrder.join('|') !== order.join('|')) onReorder(newOrder);
+      }
     };
+
     document.addEventListener('pointermove', move);
     document.addEventListener('pointerup', up);
   };
