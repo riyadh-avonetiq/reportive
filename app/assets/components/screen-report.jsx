@@ -936,20 +936,23 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
     return r;
   }, [rows, cfg.filters, searches, dims]);
 
-  // Group rows with identical dimension values; sum additive metrics, avg rate metrics
+  // Group rows with identical dimension values; sum additive metrics, avg rate metrics.
+  // We accumulate ALL availMetrics (not just selected ones) so custom metric formulas
+  // can reference any metric variable even if it isn't a visible column.
   const grouped = useMemo(() => {
     if (dims.length === 0) return filtered;
+    const allM = availMetrics; // full list for formula evaluation
     const map = new Map();
     filtered.forEach(row => {
       const key = dims.map(d => String(row[d.key] ?? '')).join('\x00');
       if (!map.has(key)) {
         const entry = {};
         dims.forEach(d => { entry[d.key] = row[d.key]; });
-        metrics.forEach(m => { entry[m.key] = 0; entry['__n_' + m.key] = 0; });
+        allM.forEach(m => { entry[m.key] = 0; entry['__n_' + m.key] = 0; });
         map.set(key, entry);
       }
       const entry = map.get(key);
-      metrics.forEach(m => {
+      allM.forEach(m => {
         const v = parseFloat(row[m.key]);
         if (!isNaN(v)) { entry[m.key] += v; entry['__n_' + m.key]++; }
       });
@@ -957,14 +960,14 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
     // Average rate/ratio metrics instead of summing
     const result = Array.from(map.values());
     result.forEach(entry => {
-      metrics.forEach(m => {
+      allM.forEach(m => {
         if ((m.fmt === 'pct' || m.fmt === 'roas') && entry['__n_' + m.key] > 0) {
           entry[m.key] = entry[m.key] / entry['__n_' + m.key];
         }
       });
     });
     return result;
-  }, [filtered, dims, metrics]);
+  }, [filtered, dims, metrics, availMetrics]);
 
   const sorted = useMemo(() => {
     if (!sortKey) return grouped;
@@ -1018,7 +1021,6 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
               {customMetrics.map(cm => (
                 <th key={cm.id} style={{ padding: `${fs(7)}px ${fs(12)}px`, textAlign: 'right', fontFamily: T.mono, fontSize: fs(9), fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: teal, whiteSpace: 'nowrap' }}>
                   {cm.name}
-                  <span style={{ marginLeft: 3, opacity: 0.55 }}>{cm.format === 'rupiah' ? 'Rp' : cm.format === 'pct' ? '%' : '#'}</span>
                 </th>
               ))}
             </tr>
