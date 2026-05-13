@@ -109,10 +109,6 @@ window.TABLE_METRICS_REGISTRY = {
     { key: 'purchase_value',         label: 'Purchase Value',          fmt: 'rupiah' },
     { key: 'add_to_carts',           label: 'Add to Carts',            fmt: 'num' },
     { key: 'add_to_cart_value',      label: 'Add to Cart Value',       fmt: 'rupiah' },
-    { key: 'ctr',                    label: 'CTR',                     fmt: 'pct' },
-    { key: 'cpc',                    label: 'Avg CPC',                 fmt: 'rupiah' },
-    { key: 'cpa',                    label: 'CPA',                     fmt: 'rupiah' },
-    { key: 'roas',                   label: 'ROAS',                    fmt: 'roas' },
   ],
   ga4: [
     { key: 'sessions',                 label: 'Sessions',             fmt: 'num' },
@@ -261,7 +257,7 @@ window.WIDGET_DEFAULTS = {
   },
   'table': {
     google: { dimensions: ['name'],    metrics: ['spend','impressions','clicks','conversions'],      pageSize: 10, fontSize: 'M' },
-    meta:   { dimensions: ['name'],    metrics: ['spend','impressions','clicks','ctr','cpa'],        pageSize: 10, fontSize: 'M' },
+    meta:   { dimensions: ['name'],    metrics: ['spend','impressions','clicks','leads','purchases'], pageSize: 10, fontSize: 'M' },
     ga4:    { dimensions: ['date'], metrics: ['sessions','total_users','new_users','engaged_sessions'], pageSize: 10, fontSize: 'M' },
     search: { dimensions: ['query'],   metrics: ['impressions','clicks','ctr','position'],           pageSize: 10, fontSize: 'M' },
   },
