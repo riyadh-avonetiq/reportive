@@ -807,6 +807,33 @@ function fmtMetricVal(val, fmt_) {
   }
 }
 
+// Evaluate a custom metric formula against a values object (aggregated totals or a table row).
+// Variables are metric keys; only numbers and basic math operators are allowed.
+function evalFormula(formula, values) {
+  if (!formula) return null;
+  let expr = formula.trim();
+  // Replace metric keys with their numeric values (longest keys first to avoid partial matches)
+  Object.keys(values).sort((a, b) => b.length - a.length).forEach(k => {
+    if (/^[a-z_][a-z0-9_]*$/.test(k))
+      expr = expr.replace(new RegExp('\\b' + k + '\\b', 'g'), String(Number(values[k] ?? 0) || 0));
+  });
+  // Only allow digits, math operators, whitespace, parentheses, decimals
+  if (!/^[\d\s+\-*/().,eE]+$/.test(expr)) return null;
+  try {
+    // eslint-disable-next-line no-new-func
+    const result = Function('"use strict"; return (' + expr + ')')();
+    return Number.isFinite(result) ? result : null;
+  } catch { return null; }
+}
+
+// Build a flat values object from DATA_REGISTRY for aggregated (p) data
+function getAggValues(source, p) {
+  const reg = window.DATA_REGISTRY?.[source] || {};
+  const out = {};
+  Object.entries(reg).forEach(([k, def]) => { out[k] = def.value ? (def.value(p) ?? 0) : 0; });
+  return out;
+}
+
 const GOOGLE_TABLE_DIMS = [
   { key: 'name',       label: 'Campaign' },
   { key: 'type',       label: 'Campaign Type' },
@@ -854,7 +881,7 @@ const SEARCH_TABLE_METRICS = [
 ];
 
 // ─── Universal configurable data table ────────────────────────────
-function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defaultDims, defaultMetrics, defaultName }) {
+function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defaultDims, defaultMetrics, defaultName, customMetrics: customMetricsProp }) {
   const cfg = {
     name: '',
     dimensions: defaultDims || availDims.slice(0, 1).map(d => d.key),
@@ -881,6 +908,7 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
   const fs      = n => Math.round(n * fScale);
   const dims    = cfg.dimensions.map(k => availDims.find(d => d.key === k)).filter(Boolean);
   const metrics = cfg.metrics.map(k => availMetrics.find(m => m.key === k)).filter(Boolean);
+  const customMetrics = customMetricsProp || cfg.customMetrics || [];
   const pgSize  = Math.max(1, cfg.pageSize || 10);
 
   const toggleSort = key => {
@@ -987,11 +1015,17 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
               {metrics.map(m => (
                 <SortTh key={m.key} label={cfg.metricLabels?.[m.key] || m.label} sortKey={m.key} active={sortKey === m.key} dir={sortDir} onSort={toggleSort}/>
               ))}
+              {customMetrics.map(cm => (
+                <th key={cm.id} style={{ padding: `${fs(7)}px ${fs(12)}px`, textAlign: 'right', fontFamily: T.mono, fontSize: fs(9), fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: teal, whiteSpace: 'nowrap' }}>
+                  {cm.name}
+                  <span style={{ marginLeft: 3, opacity: 0.55 }}>{cm.format === 'rupiah' ? 'Rp' : cm.format === 'pct' ? '%' : '#'}</span>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {pageRows.length === 0 && (
-              <tr><td colSpan={dims.length + metrics.length} style={{ padding: fs(20), textAlign: 'center', fontFamily: T.mono, fontSize: fs(10), color: muted }}>No results</td></tr>
+              <tr><td colSpan={dims.length + metrics.length + customMetrics.length} style={{ padding: fs(20), textAlign: 'center', fontFamily: T.mono, fontSize: fs(10), color: muted }}>No results</td></tr>
             )}
             {pageRows.map((r, i) => (
               <tr key={i} style={{ borderTop: '1px solid rgba(51,71,102,.5)' }}>
@@ -1008,6 +1042,11 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
                 {metrics.map(m => (
                   <td key={m.key} style={{ padding: `${fs(8)}px ${fs(12)}px`, textAlign: 'right', fontFamily: T.mono, color: sec, fontSize: fs(11), whiteSpace: 'nowrap' }}>
                     {fmtMetricVal(r[m.key], m.fmt)}
+                  </td>
+                ))}
+                {customMetrics.map(cm => (
+                  <td key={cm.id} style={{ padding: `${fs(8)}px ${fs(12)}px`, textAlign: 'right', fontFamily: T.mono, color: teal, fontSize: fs(11), whiteSpace: 'nowrap', opacity: 0.9 }}>
+                    {fmtMetricVal(evalFormula(cm.formula, r), cm.format)}
                   </td>
                 ))}
               </tr>
@@ -1124,7 +1163,9 @@ function KpiStripWidget({ instance, p, cfg }) {
   const reg = window.DATA_REGISTRY?.[instance.source] || {};
   const scale = FONT_SCALES[cfg.fontSize] || 1;
   const metrics = cfg.metrics || [];
+  const customMetrics = cfg.customMetrics || [];
   const ACCENT_COLORS = [teal, blue, gold, '#A78BFA', '#F87171'];
+  const aggVals = customMetrics.length > 0 ? getAggValues(instance.source, p) : {};
   return (
     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
       {metrics.map((key, i) => {
@@ -1141,6 +1182,18 @@ function KpiStripWidget({ instance, p, cfg }) {
             delta={prev != null && val != null ? d(val, prev) : null}
             accent={ACCENT_COLORS[i % ACCENT_COLORS.length]}
             spark={i === 0 && spark?.length >= 2 ? spark.slice(-7) : null}
+            scale={scale}
+          />
+        );
+      })}
+      {customMetrics.map((cm, i) => {
+        const val = evalFormula(cm.formula, aggVals);
+        return (
+          <Kpi key={cm.id}
+            label={cm.name}
+            value={fmtMetricVal(val, cm.format)}
+            delta={null}
+            accent={ACCENT_COLORS[(metrics.length + i) % ACCENT_COLORS.length]}
             scale={scale}
           />
         );
@@ -1304,6 +1357,7 @@ function UniversalTableWidget({ instance, p, cfg }) {
       defaultDims={selectedDims}
       defaultMetrics={cfg.metrics || availMetrics.slice(0,5).map(m => m.key)}
       defaultName={cfg.name || 'Data Table'}
+      customMetrics={cfg.customMetrics || []}
     />
   );
 }

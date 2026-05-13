@@ -1222,9 +1222,173 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
         </>
       )}
 
+      {(isKpiStrip || isTable) && (
+        <>
+          <EDivider/>
+          <CustomMetricsSection
+            customMetrics={cfg.customMetrics || []}
+            onChange={v => up({ customMetrics: v })}
+            availMetrics={availM}
+          />
+        </>
+      )}
+
       <EDivider/>
       <ESizeButtons label="Font size" value={cfg.fontSize || 'M'} onChange={v => up({ fontSize: v })}/>
     </>
+  );
+};
+
+// ─── Custom Metrics builder ───────────────────────────────────────
+
+const CustomMetricsSection = ({ customMetrics, onChange, availMetrics }) => {
+  const [editing, setEditing] = React.useState(null);
+  const [draft,   setDraft]   = React.useState({ name: '', formula: '', format: 'num' });
+  const formulaRef = React.useRef(null);
+
+  const insertAtCursor = text => {
+    const el = formulaRef.current;
+    if (!el) { setDraft(d => ({ ...d, formula: d.formula + text })); return; }
+    const s = el.selectionStart, e = el.selectionEnd;
+    const next = draft.formula.slice(0, s) + text + draft.formula.slice(e);
+    setDraft(d => ({ ...d, formula: next }));
+    setTimeout(() => { el.focus(); el.setSelectionRange(s + text.length, s + text.length); }, 0);
+  };
+
+  const save = () => {
+    if (!draft.name.trim() || !draft.formula.trim()) return;
+    if (editing === 'new') {
+      const id = 'cm_' + Math.random().toString(36).slice(2, 8);
+      onChange([...customMetrics, { id, name: draft.name.trim(), formula: draft.formula.trim(), format: draft.format }]);
+    } else {
+      onChange(customMetrics.map(m => m.id === editing ? { ...m, name: draft.name.trim(), formula: draft.formula.trim(), format: draft.format } : m));
+    }
+    setEditing(null);
+  };
+
+  const remove  = id => onChange(customMetrics.filter(m => m.id !== id));
+  const startEdit = m => { setDraft({ name: m.name, formula: m.formula, format: m.format }); setEditing(m.id); };
+  const startNew  = () => { setDraft({ name: '', formula: '', format: 'num' }); setEditing('new'); };
+
+  const FORMAT_OPTS = [
+    { value: 'num',    label: '#  Number' },
+    { value: 'pct',    label: '%  Percent' },
+    { value: 'rupiah', label: 'Rp Currency' },
+  ];
+  const OPERATORS = ['+', '-', '×', '÷', '(', ')'];
+  const OP_MAP    = { '×': ' * ', '÷': ' / ', '+': ' + ', '-': ' - ', '(': '(', ')': ')' };
+
+  const fmtBadge = f => f === 'rupiah' ? 'Rp' : f === 'pct' ? '%' : '#';
+
+  return (
+    <ESection label="Custom Metrics">
+      {customMetrics.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
+          {customMetrics.map(m => (
+            <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 8px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10.5, color: EP.teal }}>{m.name}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: EP.muted, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.formula}</div>
+              </div>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, padding: '2px 5px', background: 'rgba(255,255,255,.05)', borderRadius: 3, flexShrink: 0 }}>{fmtBadge(m.format)}</span>
+              <button onClick={() => startEdit(m)} title="Edit" style={{ width: 22, height: 22, border: `1px solid ${EP.edge}`, borderRadius: 4, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button onClick={() => remove(m.id)} title="Delete" style={{ width: 22, height: 22, border: `1px solid rgba(220,38,38,.3)`, borderRadius: 4, background: 'rgba(220,38,38,.08)', color: EP.red, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {editing !== null ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px', background: EP.elevated, border: `1px solid ${EP.teal}40`, borderRadius: 7 }}>
+
+          {/* Name */}
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 4 }}>LABEL</div>
+            <input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
+              placeholder="e.g. CPM"
+              style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px', background: EP.bg, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}
+            />
+          </div>
+
+          {/* Formula */}
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 4 }}>FORMULA</div>
+            <textarea ref={formulaRef} value={draft.formula} onChange={e => setDraft(d => ({ ...d, formula: e.target.value }))}
+              placeholder="e.g. (spend / impressions) * 1000"
+              rows={2}
+              style={{ width: '100%', boxSizing: 'border-box', padding: '7px 8px', background: EP.bg, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.teal, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', resize: 'none', lineHeight: 1.5 }}
+            />
+          </div>
+
+          {/* Metric tokens */}
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 5 }}>VARIABLES</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {availMetrics.map(m => (
+                <button key={m.key} onClick={() => insertAtCursor(m.key)}
+                  style={{ padding: '3px 7px', background: 'rgba(0,194,184,.08)', border: `1px solid ${EP.teal}33`, borderRadius: 4, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 9.5, lineHeight: 1.5 }}>
+                  {m.key}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Operators */}
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 5 }}>OPERATORS</div>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {OPERATORS.map(op => (
+                <button key={op} onClick={() => insertAtCursor(OP_MAP[op])}
+                  style={{ width: 30, height: 26, background: EP.bg, border: `1px solid ${EP.edge}`, borderRadius: 4, color: EP.fg, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {op}
+                </button>
+              ))}
+              {[1000, 100].map(n => (
+                <button key={n} onClick={() => insertAtCursor(String(n))}
+                  style={{ padding: '0 8px', height: 26, background: EP.bg, border: `1px solid ${EP.edge}`, borderRadius: 4, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Format */}
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 5 }}>FORMAT</div>
+            <div style={{ display: 'flex', gap: 5 }}>
+              {FORMAT_OPTS.map(f => (
+                <button key={f.value} onClick={() => setDraft(d => ({ ...d, format: f.value }))}
+                  style={{ flex: 1, padding: '5px 4px', background: draft.format === f.value ? `${EP.teal}22` : 'transparent', border: `1px solid ${draft.format === f.value ? EP.teal : EP.edge}`, borderRadius: 5, color: draft.format === f.value ? EP.teal : EP.muted, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 9.5, fontWeight: draft.format === f.value ? 700 : 400, textAlign: 'center' }}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: 5, marginTop: 2 }}>
+            <button onClick={() => setEditing(null)}
+              style={{ flex: 1, padding: '6px 0', background: 'transparent', border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600 }}>
+              Cancel
+            </button>
+            <button onClick={save} disabled={!draft.name.trim() || !draft.formula.trim()}
+              style={{ flex: 2, padding: '6px 0', background: EP.teal, border: 'none', borderRadius: 5, color: '#0B1628', cursor: (!draft.name.trim() || !draft.formula.trim()) ? 'default' : 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 700, opacity: (!draft.name.trim() || !draft.formula.trim()) ? 0.4 : 1 }}>
+              {editing === 'new' ? 'Add Metric' : 'Save'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={startNew}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', background: 'transparent', border: `1px dashed ${EP.teal}55`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 1v8M1 5h8"/></svg>
+          Add custom metric
+        </button>
+      )}
+    </ESection>
   );
 };
 
