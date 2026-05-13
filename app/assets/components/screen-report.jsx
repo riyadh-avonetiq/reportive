@@ -2332,7 +2332,6 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
               insertAt={rowIdx}
               active={!browseDragActive && dropTarget?.type === 'new-row' && dropTarget.insertAt === rowIdx}
               onPointerEnter={() => setDropTarget({ type: 'new-row', insertAt: rowIdx })}
-              onPointerLeave={() => setDropTarget(null)}
               innerRef={el => el ? (pointerRowZoneRefs.current[rowIdx] = el) : delete pointerRowZoneRefs.current[rowIdx]}
             />}
 
@@ -2533,7 +2532,6 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
               else delete pointerRowZoneRefs.current[layouts.rows.length];
             }}
             onPointerEnter={() => setDropTarget({ type: 'new-row', insertAt: layouts.rows.length })}
-            onPointerLeave={() => setDropTarget(null)}
           />
         )
       }
