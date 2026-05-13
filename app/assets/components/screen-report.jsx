@@ -1911,6 +1911,29 @@ function RowDropZone({ insertAt, active, onDragOver, onDragEnter, onDrop }) {
   );
 }
 
+// Module-level — same reason as RowDropZone: prevents remount/flicker across re-renders
+function PointerRowZone({ insertAt, active, onPointerEnter, onPointerLeave, innerRef }) {
+  return (
+    <div
+      ref={innerRef}
+      style={{
+        height: active ? 56 : 20, borderRadius: 6, marginBottom: 4,
+        transition: 'height .15s ease, background .15s, border-color .15s',
+        border: `1.5px dashed ${active ? teal : 'rgba(0,194,184,.25)'}`,
+        background: active ? 'rgba(0,194,184,.08)' : 'rgba(0,194,184,.02)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+      onPointerEnter={onPointerEnter}
+      onPointerLeave={onPointerLeave}
+    >
+      {active
+        ? <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: teal }}>+ new row</span>
+        : <div style={{ width: 40, height: 2, borderRadius: 1, background: 'rgba(0,194,184,.25)' }}/>
+      }
+    </div>
+  );
+}
+
 function buildUniversalMap(p, widgetConfigs, layouts, editState) {
   const map = {};
   (layouts?.rows || []).forEach(row => {
@@ -1942,7 +1965,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
   const containerRef = React.useRef(null);   // ref to the outer canvas div
   const justDropped  = React.useRef(false);
   const widgetEls    = React.useRef({});     // id -> { el, rowIdx } for zone detection
-  const bottomZoneRef = React.useRef(null);  // ref to bottom drop zone, for flicker-free detection
+  const pointerRowZoneRefs = React.useRef({});  // insertAt -> DOM element, for flicker-free detection
   dragIdRef.current  = dragId;               // keep in sync every render
 
   // Wrap onSelect so a click fired immediately after a drop is suppressed
@@ -2063,10 +2086,9 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
         else                  type = 'swap';
         setDropTarget({ type, targetId: tid, rowIdx });
       } else {
-        // Don't clear a new-row dropTarget while cursor is still within the bottom zone
-        const bz = bottomZoneRef.current;
-        if (bz) {
-          const r = bz.getBoundingClientRect();
+        // Don't clear drop target while cursor is still within a between-row zone
+        for (const el of Object.values(pointerRowZoneRefs.current)) {
+          const r = el.getBoundingClientRect();
           if (e.clientX >= r.left && e.clientX <= r.right &&
               e.clientY >= r.top  && e.clientY <= r.bottom) return;
         }
@@ -2516,21 +2538,16 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
             onDrop={(i, e) => handleNewRowDrop(i, e)}
           />
         : dragId && (
-          <div
-            ref={bottomZoneRef}
+          <PointerRowZone
+            insertAt={layouts.rows.length}
+            active={dropTarget?.type === 'new-row' && dropTarget.insertAt === layouts.rows.length}
+            innerRef={el => {
+              if (el) pointerRowZoneRefs.current[layouts.rows.length] = el;
+              else delete pointerRowZoneRefs.current[layouts.rows.length];
+            }}
             onPointerEnter={() => setDropTarget({ type: 'new-row', insertAt: layouts.rows.length })}
             onPointerLeave={() => setDropTarget(null)}
-            style={{
-              height: 40, borderRadius: 6,
-              border: `1px dashed ${dropTarget?.type === 'new-row' && dropTarget.insertAt === layouts.rows.length ? teal : 'rgba(255,255,255,.1)'}`,
-              background: dropTarget?.type === 'new-row' && dropTarget.insertAt === layouts.rows.length ? 'rgba(0,194,184,.1)' : 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: dropTarget?.type === 'new-row' && dropTarget.insertAt === layouts.rows.length ? teal : 'rgba(255,255,255,.2)' }}>
-              + Drop here → new row at bottom
-            </span>
-          </div>
+          />
         )
       }
 
