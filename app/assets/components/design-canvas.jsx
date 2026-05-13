@@ -1,7 +1,7 @@
 
 // DesignCanvas.jsx — Figma-ish design canvas wrapper
-// Warm gray grid bg + Sections + Artboards + PostIt notes.
-// Artboards are reorderable (grip-drag), labels/titles are inline-editable,
+// Warm gray bg + Sections + Artboards + PostIt notes.
+// Artboards are reorderable (ghost + zone-drop), labels/titles are inline-editable,
 // and any artboard can be opened in a fullscreen focus overlay (←/→/Esc).
 // State persists to a .design-canvas.state.json sidecar via the host
 // bridge. No assets, no deps.
@@ -16,7 +16,6 @@
 
 const DC = {
   bg: '#f0eee9',
-  grid: 'rgba(0,0,0,0.06)',
   label: 'rgba(60,50,40,0.7)',
   title: 'rgba(40,30,20,0.85)',
   subtitle: 'rgba(60,50,40,0.6)',
