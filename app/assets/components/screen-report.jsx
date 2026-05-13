@@ -2323,13 +2323,21 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
 
         return (
           <React.Fragment key={rowIdx}>
-            {/* Between-row zone: only during Browse drag */}
+            {/* Between-row zone: Browse drag */}
             {browseDragActive && <RowDropZone
               insertAt={rowIdx}
               active={browseDropTarget?.type === 'row' && browseDropTarget.insertAt === rowIdx}
               onDragOver={e => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'copy'; }}
               onDragEnter={i => setBrowseDropTarget({ type: 'row', insertAt: i })}
               onDrop={(i, e) => handleNewRowDrop(i, e)}
+            />}
+            {/* Between-row zone: pointer drag (existing widget reorder) */}
+            {dragId && <PointerRowZone
+              insertAt={rowIdx}
+              active={!browseDragActive && dropTarget?.type === 'new-row' && dropTarget.insertAt === rowIdx}
+              onPointerEnter={() => setDropTarget({ type: 'new-row', insertAt: rowIdx })}
+              onPointerLeave={() => setDropTarget(null)}
+              innerRef={el => el ? (pointerRowZoneRefs.current[rowIdx] = el) : delete pointerRowZoneRefs.current[rowIdx]}
             />}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 20, marginBottom: 20, position: 'relative', alignItems: 'stretch' }}>
