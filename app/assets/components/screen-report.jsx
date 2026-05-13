@@ -2037,7 +2037,34 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
         pendingDrag.current = null;
       }
     }
-    if (dragId) setGhostPos({ x: e.clientX, y: e.clientY });
+    if (dragId) {
+      setGhostPos({ x: e.clientX, y: e.clientY });
+      // Zone detection: find which sibling the cursor is over and which zone
+      let found = null;
+      for (const [wid, meta] of Object.entries(widgetEls.current)) {
+        if (wid === dragId) continue;
+        const r = meta.el.getBoundingClientRect();
+        if (e.clientX >= r.left && e.clientX <= r.right &&
+            e.clientY >= r.top  && e.clientY <= r.bottom) {
+          found = { id: wid, rowIdx: meta.rowIdx, r };
+          break;
+        }
+      }
+      if (found) {
+        const { id: tid, rowIdx, r } = found;
+        const relX = (e.clientX - r.left) / r.width;
+        const relY = (e.clientY - r.top)  / r.height;
+        let type;
+        if      (relX < 0.25) type = 'before';
+        else if (relX > 0.75) type = 'after';
+        else if (relY < 0.25) type = 'above';
+        else if (relY > 0.75) type = 'below';
+        else                  type = 'swap';
+        setDropTarget({ type, targetId: tid, rowIdx });
+      } else {
+        setDropTarget(null);
+      }
+    }
   };
 
   // Shared drop application — used by both onPointerUp (inside canvas) and
@@ -2291,7 +2318,6 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
                       userSelect: 'none',
                     }}
                     onPointerDown={editState && !browseDragActive ? e => handlePointerDown(id, e) : undefined}
-                    onPointerEnter={() => { if (dragId && dragId !== id) setDropTarget({ type: 'swap', targetId: id }); }}
                     onDragOver={e => {
                       if (!isBrowseDrag(e)) return;
                       e.preventDefault();
