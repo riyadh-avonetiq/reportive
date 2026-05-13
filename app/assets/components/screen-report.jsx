@@ -2082,31 +2082,34 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
         return row.map((w, i) => ({ ...w, span: base + (i < rem ? 1 : 0) }));
       };
 
-      if (target.type === 'swap') {
+      if (target.type === 'before' || target.type === 'after' || target.type === 'swap') {
+        // Remove dragged widget from its source row
         let dragEntry = null;
-        let srcRowIdxBefore = rows.findIndex(row => row.some(w => w.id === id));
+        const srcRowIdxBefore = rows.findIndex(row => row.some(w => w.id === id));
         rows = rows.map(row => {
           const idx = row.findIndex(w => w.id === id);
           if (idx !== -1) { dragEntry = row[idx]; return row.filter((_, i) => i !== idx); }
           return row;
         });
-        // Redistribute source row spans before removing it
         if (srcRowIdxBefore >= 0 && rows[srcRowIdxBefore]?.length > 0) {
           rows[srcRowIdxBefore] = redistributeRow(rows[srcRowIdxBefore]);
         }
         rows = rows.filter(row => row.length > 0);
         if (dragEntry) {
+          // Find target widget in updated rows
           let targetRowIdx = -1, targetPosIdx = -1;
           rows.forEach((row, ri) => row.forEach((w, pi) => {
             if (w.id === target.targetId) { targetRowIdx = ri; targetPosIdx = pi; }
           }));
           if (targetRowIdx >= 0) {
-            rows[targetRowIdx].splice(targetPosIdx, 0, dragEntry);
+            const insertIdx = target.type === 'after' ? targetPosIdx + 1 : targetPosIdx;
+            rows[targetRowIdx].splice(insertIdx, 0, dragEntry);
             rows[targetRowIdx] = redistributeRow(rows[targetRowIdx]);
           }
         }
 
-      } else if (target.type === 'new-row') {
+      } else if (target.type === 'above' || target.type === 'below' || target.type === 'new-row') {
+        // Remove dragged widget from its source row, insert as new full-width row
         let dragEntry = null;
         const srcRowIdx = rows.findIndex(row => row.some(w => w.id === id));
         const srcWillBeEmpty = srcRowIdx >= 0 && rows[srcRowIdx].length === 1;
@@ -2119,7 +2122,9 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
           rows[srcRowIdx] = redistributeRow(rows[srcRowIdx]);
         }
         rows = rows.filter(row => row.length > 0);
-        let insertAt = target.insertAt;
+        let insertAt = target.type === 'new-row' ? target.insertAt
+                     : target.type === 'above'   ? target.rowIdx
+                     :                              target.rowIdx + 1;  // 'below'
         if (srcWillBeEmpty && srcRowIdx < insertAt) insertAt = Math.max(0, insertAt - 1);
         if (dragEntry) rows.splice(insertAt, 0, [{ ...dragEntry, span: 12 }]);
       }
