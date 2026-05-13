@@ -635,6 +635,7 @@ function mockData() {
       { name: 'Prospecting - Interest',  spend: 10_800_000, clicks: 4230, impressions: 240000, conversions: 298, ctr: 1.76, cpc: 2554 },
       { name: 'Lookalike Audience',      spend:  7_400_000, clicks: 2690, impressions: 150000, conversions: 132, ctr: 1.79, cpc: 2750 },
     ],
+    ga4Rows: [],
   };
 }
 

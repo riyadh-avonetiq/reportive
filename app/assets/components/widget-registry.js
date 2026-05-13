@@ -211,9 +211,9 @@ window.WIDGET_DEFAULTS = {
   },
   'chart-donut': {
     google: { metric: 'spend',    groupBy: 'type' },
-    meta:   { metric: 'spend',    groupBy: 'placement' },
-    ga4:    { metric: 'sessions', groupBy: 'channel' },
-    search: { metric: 'clicks',   groupBy: 'device' },
+    meta:   { metric: 'spend',    groupBy: 'name' },
+    ga4:    { metric: 'sessions', groupBy: 'property_name' },
+    search: { metric: 'clicks',   groupBy: 'query' },
   },
   'chart-heatmap': {
     google: {}, meta: {}, ga4: {}, search: {},
