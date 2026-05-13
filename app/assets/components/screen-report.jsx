@@ -807,6 +807,16 @@ function fmtMetricVal(val, fmt_) {
   }
 }
 
+// Wrapper for custom metric display: if format is pct and the formula returned a raw
+// ratio (0–1), multiply by 100 so conversions/clicks → 37.5% not 0.38%.
+// Built-in metrics (ctr, bounce_rate) are already stored in pct scale (e.g. 3.78),
+// so they pass through unchanged.
+function fmtCustomMetricVal(val, fmt_) {
+  if (val == null) return '—';
+  const v = (fmt_ === 'pct' && val >= 0 && val <= 1) ? val * 100 : val;
+  return fmtMetricVal(v, fmt_);
+}
+
 // Evaluate a custom metric formula against a values object (aggregated totals or a table row).
 // Variables are metric keys; only numbers and basic math operators are allowed.
 function evalFormula(formula, values) {
@@ -834,51 +844,25 @@ function getAggValues(source, p) {
   return out;
 }
 
-const GOOGLE_TABLE_DIMS = [
-  { key: 'name',       label: 'Campaign' },
-  { key: 'type',       label: 'Campaign Type' },
-  { key: 'ad_group',   label: 'Ad Group' },
-  { key: 'keyword',    label: 'Keyword' },
-  { key: 'match_type', label: 'Match Type' },
-];
-const GOOGLE_TABLE_METRICS = [
-  { key: 'spend',       label: 'Spend',       fmt: 'rupiah' },
-  { key: 'clicks',      label: 'Clicks',      fmt: 'num' },
-  { key: 'impressions', label: 'Impressions', fmt: 'num' },
-  { key: 'conversions', label: 'Conversions', fmt: 'num' },
-  { key: 'ctr',         label: 'CTR',         fmt: 'pct' },
-  { key: 'cpc',         label: 'Avg CPC',     fmt: 'rupiah' },
-  { key: 'cvr',         label: 'Conv. Rate',  fmt: 'pct' },
-  { key: 'cpa',         label: 'CPA',         fmt: 'rupiah' },
-];
-const META_TABLE_DIMS = [
-  { key: 'name', label: 'Campaign' },
-];
-const META_TABLE_METRICS = [
-  { key: 'spend',              label: 'Spend',              fmt: 'rupiah' },
-  { key: 'impressions',        label: 'Impressions',        fmt: 'num' },
-  { key: 'reach',              label: 'Reach',              fmt: 'num' },
-  { key: 'clicks',             label: 'Link Clicks',        fmt: 'num' },
-  { key: 'landing_page_views', label: 'Landing Page Views', fmt: 'num' },
-  { key: 'conversions',        label: 'Conversions',        fmt: 'num' },
-  { key: 'purchases',          label: 'Purchases',          fmt: 'num' },
-  { key: 'purchase_value',     label: 'Purchase Value',     fmt: 'rupiah' },
-  { key: 'add_to_carts',       label: 'Add to Carts',       fmt: 'num' },
-  { key: 'ctr',                label: 'CTR',                fmt: 'pct' },
-  { key: 'cpc',                label: 'Avg CPC',            fmt: 'rupiah' },
-  { key: 'cpa',                label: 'CPA',                fmt: 'rupiah' },
-  { key: 'roas',               label: 'ROAS',               fmt: 'roas' },
-];
-const SEARCH_TABLE_DIMS = [
-  { key: 'query', label: 'Query' },
-  { key: 'page',  label: 'Page URL', fmtCell: 'url' },
-];
-const SEARCH_TABLE_METRICS = [
-  { key: 'impressions', label: 'Impressions',  fmt: 'num' },
-  { key: 'clicks',      label: 'Clicks',       fmt: 'num' },
-  { key: 'ctr',         label: 'CTR',          fmt: 'pct' },
-  { key: 'position',    label: 'Avg Position', fmt: 'num' },
-];
+function CustomMetricStrip({ instance, p, cfg, scale }) {
+  const customMetrics = cfg.customMetrics || [];
+  if (!customMetrics.length) return null;
+  const aggVals = getAggValues(instance.source, p);
+  const ACCENT_COLORS = [teal, blue, gold, '#A78BFA', '#F87171'];
+  return (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+      {customMetrics.map((cm, i) => (
+        <Kpi key={cm.id}
+          label={cm.name}
+          value={fmtCustomMetricVal(evalFormula(cm.formula, aggVals), cm.format)}
+          delta={null}
+          accent={ACCENT_COLORS[i % ACCENT_COLORS.length]}
+          scale={scale || 0.85}
+        />
+      ))}
+    </div>
+  );
+}
 
 // ─── Universal configurable data table ────────────────────────────
 function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defaultDims, defaultMetrics, defaultName, customMetrics: customMetricsProp }) {
@@ -969,13 +953,23 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
     return result;
   }, [filtered, dims, metrics, availMetrics]);
 
+  // Augment grouped rows with pre-computed custom metric values keyed by cm.id
+  const groupedWithCustom = useMemo(() => {
+    if (!customMetrics || customMetrics.length === 0) return grouped;
+    return grouped.map(r => {
+      const extra = {};
+      customMetrics.forEach(cm => { extra[cm.id] = evalFormula(cm.formula, r) ?? null; });
+      return { ...r, ...extra };
+    });
+  }, [grouped, customMetrics]);
+
   const sorted = useMemo(() => {
-    if (!sortKey) return grouped;
-    return [...grouped].sort((a, b) => {
+    if (!sortKey) return groupedWithCustom;
+    return [...groupedWithCustom].sort((a, b) => {
       const mul = sortDir === 'desc' ? -1 : 1;
       return mul * ((+(a[sortKey]) || 0) - (+(b[sortKey]) || 0));
     });
-  }, [grouped, sortKey, sortDir]);
+  }, [groupedWithCustom, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pgSize));
   const curPage    = Math.min(pageNum, totalPages);
@@ -990,19 +984,6 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
             <div style={{ fontFamily: T.display, fontSize: fs(13), fontWeight: 700, color: fg }}>{displayName}</div>
             <div style={{ fontFamily: T.body, fontSize: fs(10), color: muted, marginTop: 2 }}>{sorted.length} baris</div>
           </div>
-        </div>
-        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-          {dims.map(d => {
-            const val = searches[d.key] || '';
-            return (
-              <div key={d.key} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: `${fs(4)}px ${fs(8)}px`, background: 'var(--navy-elevated)', border: `1px solid ${val ? teal + '60' : 'var(--navy-edge)'}`, borderRadius: 6, width: 160 }}>
-                <svg width="9" height="9" fill="none" stroke={muted} strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                <input value={val} onChange={e => setSearches(prev => ({ ...prev, [d.key]: e.target.value }))} placeholder={`${d.label}…`}
-                  style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: fg, fontFamily: T.body, fontSize: fs(10.5) }}/>
-                {val && <button onClick={() => setSearches(prev => ({ ...prev, [d.key]: '' }))} style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', padding: 0, fontSize: 12, lineHeight: 1 }}>×</button>}
-              </div>
-            );
-          })}
         </div>
       </div>
 
@@ -1019,10 +1000,25 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
                 <SortTh key={m.key} label={cfg.metricLabels?.[m.key] || m.label} sortKey={m.key} active={sortKey === m.key} dir={sortDir} onSort={toggleSort}/>
               ))}
               {customMetrics.map(cm => (
-                <th key={cm.id} style={{ padding: `${fs(7)}px ${fs(12)}px`, textAlign: 'right', fontFamily: T.mono, fontSize: fs(9), fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: teal, whiteSpace: 'nowrap' }}>
-                  {cm.name}
-                </th>
+                <SortTh key={cm.id} label={cm.name} sortKey={cm.id} active={sortKey === cm.id} dir={sortDir} onSort={toggleSort}/>
               ))}
+            </tr>
+            <tr style={{ background: 'var(--navy-deep)', borderBottom: '1px solid var(--navy-edge)' }}>
+              {dims.map(d => {
+                const val = searches[d.key] || '';
+                return (
+                  <th key={d.key} style={{ padding: `${fs(4)}px ${fs(8)}px` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: `${fs(3)}px ${fs(6)}px`, background: 'var(--navy-elevated)', border: `1px solid ${val ? teal + '60' : 'var(--navy-edge)'}`, borderRadius: 5 }}>
+                      <svg width="9" height="9" fill="none" stroke={muted} strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                      <input value={val} onChange={e => setSearches(prev => ({ ...prev, [d.key]: e.target.value }))} placeholder={`${d.label}…`}
+                        style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: fg, fontFamily: T.body, fontSize: fs(10), width: '100%' }}/>
+                      {val && <button onClick={() => setSearches(prev => ({ ...prev, [d.key]: '' }))} style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', padding: 0, fontSize: 11, lineHeight: 1 }}>×</button>}
+                    </div>
+                  </th>
+                );
+              })}
+              {metrics.map(m => <th key={m.key}/>)}
+              {customMetrics.map(cm => <th key={cm.id}/>)}
             </tr>
           </thead>
           <tbody>
@@ -1047,8 +1043,8 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
                   </td>
                 ))}
                 {customMetrics.map(cm => (
-                  <td key={cm.id} style={{ padding: `${fs(8)}px ${fs(12)}px`, textAlign: 'right', fontFamily: T.mono, color: teal, fontSize: fs(11), whiteSpace: 'nowrap', opacity: 0.9 }}>
-                    {fmtMetricVal(evalFormula(cm.formula, r), cm.format)}
+                  <td key={cm.id} style={{ padding: `${fs(8)}px ${fs(12)}px`, textAlign: 'right', fontFamily: T.mono, color: sec, fontSize: fs(11), whiteSpace: 'nowrap' }}>
+                    {fmtCustomMetricVal(r[cm.id], cm.format)}
                   </td>
                 ))}
               </tr>
@@ -1193,7 +1189,7 @@ function KpiStripWidget({ instance, p, cfg }) {
         return (
           <Kpi key={cm.id}
             label={cm.name}
-            value={fmtMetricVal(val, cm.format)}
+            value={fmtCustomMetricVal(val, cm.format)}
             delta={null}
             accent={ACCENT_COLORS[(metrics.length + i) % ACCENT_COLORS.length]}
             scale={scale}
@@ -1214,14 +1210,17 @@ function SingleStatWidget({ instance, p, cfg }) {
   const prev = def.prev  ? def.prev(p)  : null;
   const label = cfg.label || def.label || key;
   return (
-    <div style={{ display: 'flex', gap: 10 }}>
-      <Kpi
-        label={label}
-        value={fmtMetricVal(val, def.format)}
-        delta={prev != null && val != null ? d(val, prev) : null}
-        accent={teal}
-        scale={scale * 1.4}
-      />
+    <div>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <Kpi
+          label={label}
+          value={fmtMetricVal(val, def.format)}
+          delta={prev != null && val != null ? d(val, prev) : null}
+          accent={teal}
+          scale={scale * 1.4}
+        />
+      </div>
+      <CustomMetricStrip instance={instance} p={p} cfg={cfg} scale={scale}/>
     </div>
   );
 }
@@ -1238,6 +1237,7 @@ function ChartAreaWidget({ instance, p, cfg }) {
   return (
     <ChartCard title={title} sub={sub}>
       <MiniLine data={safeSeries} w={300} h={72} color={teal} fill id={`uni-area-${instance.id}`}/>
+      <CustomMetricStrip instance={instance} p={p} cfg={cfg}/>
     </ChartCard>
   );
 }
@@ -1252,6 +1252,7 @@ function ChartBarWidget({ instance, p, cfg }) {
   return (
     <ChartCard title={title}>
       <MiniBar data={safeSeries} w={300} h={72} color={blue}/>
+      <CustomMetricStrip instance={instance} p={p} cfg={cfg}/>
     </ChartCard>
   );
 }
@@ -1295,6 +1296,7 @@ function ChartDonutWidget({ instance, p, cfg }) {
           ))}
         </div>
       </div>
+      <CustomMetricStrip instance={instance} p={p} cfg={cfg}/>
     </ChartCard>
   );
 }
@@ -1319,33 +1321,34 @@ function ChartHeatmapWidget({ instance, p, cfg }) {
         labelsCol={['Sen','Sel','Rab','Kam','Jum','Sab','Min']}
         cell={17} color={teal}
       />
+      <CustomMetricStrip instance={instance} p={p} cfg={cfg}/>
     </ChartCard>
   );
 }
 
 function UniversalTableWidget({ instance, p, cfg }) {
-  const src = instance.source;
-  const dims = window.DIM_REGISTRY?.[src] || [];
-  const selectedDims = cfg.dimensions || dims.slice(0,1).map(d => d.key);
+  const src          = instance.source;
+  const availDims    = window.DIM_REGISTRY?.[src] || [];
+  const availMetrics = window.TABLE_METRICS_REGISTRY?.[src] || [];
+  const selectedDims = cfg.dimensions || availDims.slice(0, 1).map(d => d.key);
 
-  // Source-specific metric + row definitions
-  let availMetrics, rows;
+  let rows;
   if (src === 'google') {
-    availMetrics = GOOGLE_TABLE_METRICS;
-    if (selectedDims.includes('keyword'))       rows = p?.keywords  || [];
-    else if (selectedDims.includes('ad_group')) rows = p?.adGroups  || [];
-    else                                         rows = p?.campaigns || [];
-  } else if (src === 'meta') {
-    availMetrics = META_TABLE_METRICS;
-    rows = p?.metaChannels || [];
+    const filterKeys = new Set((cfg.filters || []).map(f => f.dim).filter(Boolean));
+    if (filterKeys.has('device')) {
+      if (selectedDims.includes('keyword'))       rows = p?.keywordDeviceRows || [];
+      else if (selectedDims.includes('ad_group')) rows = p?.adGroupDeviceRows || [];
+      else                                        rows = p?.deviceRows        || [];
+    } else if (filterKeys.has('segment_value')) {
+      rows = p?.genderRows || [];
+    } else if (selectedDims.includes('device'))        rows = p?.deviceRows   || [];
+    else if (selectedDims.includes('segment_value'))   rows = p?.genderRows   || [];
+    else if (selectedDims.includes('keyword'))         rows = p?.keywords     || [];
+    else if (selectedDims.includes('ad_group'))        rows = p?.adGroups     || [];
+    else                                               rows = p?.campaigns    || [];
   } else if (src === 'search') {
-    availMetrics = SEARCH_TABLE_METRICS;
-    // Route to queries or pages based on selected dim
-    if (selectedDims.includes('page'))  rows = p?.gsc?.pages   || [];
-    else                                 rows = p?.gsc?.queries || [];
+    rows = selectedDims.includes('page') ? (p?.gsc?.pages || []) : (p?.gsc?.queries || []);
   } else {
-    const reg = window.DATA_REGISTRY?.[src] || {};
-    availMetrics = Object.entries(reg).map(([key, def]) => ({ key, label: def.label, fmt: def.format }));
     rows = (window.TABLE_DATA_REGISTRY?.[src] || (() => []))(p) || [];
   }
 
@@ -1354,10 +1357,10 @@ function UniversalTableWidget({ instance, p, cfg }) {
       widgetId={instance.id}
       widgetConfig={cfg}
       rows={rows}
-      availDims={dims}
+      availDims={availDims}
       availMetrics={availMetrics}
       defaultDims={selectedDims}
-      defaultMetrics={cfg.metrics || availMetrics.slice(0,5).map(m => m.key)}
+      defaultMetrics={cfg.metrics || availMetrics.slice(0, 5).map(m => m.key)}
       defaultName={cfg.name || 'Data Table'}
       customMetrics={cfg.customMetrics || []}
     />
@@ -1600,7 +1603,7 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
       map['google-campaigns'] = (
         <SelectableWidget id="google-campaigns" cardId="table-campaigns" editState={editState}>
           <DataTable widgetId="google-campaigns" widgetConfig={wcfg('google-campaigns')}
-            rows={campaigns} availDims={GOOGLE_TABLE_DIMS} availMetrics={GOOGLE_TABLE_METRICS}
+            rows={campaigns} availDims={window.DIM_REGISTRY?.google || []} availMetrics={window.TABLE_METRICS_REGISTRY?.google || []}
             defaultDims={['name']} defaultMetrics={['spend','clicks','impressions','ctr','cpa']}
             defaultName="Campaigns · Google Ads"/>
         </SelectableWidget>
@@ -1611,7 +1614,7 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
       map['google-adgroups'] = (
         <SelectableWidget id="google-adgroups" cardId="table-campaigns" editState={editState}>
           <DataTable widgetId="google-adgroups" widgetConfig={wcfg('google-adgroups')}
-            rows={p.adGroups} availDims={GOOGLE_TABLE_DIMS} availMetrics={GOOGLE_TABLE_METRICS}
+            rows={p.adGroups} availDims={window.DIM_REGISTRY?.google || []} availMetrics={window.TABLE_METRICS_REGISTRY?.google || []}
             defaultDims={['ad_group','name']} defaultMetrics={['spend','clicks','ctr','cpa']}
             defaultName="Ad Groups · Google Ads"/>
         </SelectableWidget>
@@ -1622,7 +1625,7 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
       map['google-keywords'] = (
         <SelectableWidget id="google-keywords" cardId="table-campaigns" editState={editState}>
           <DataTable widgetId="google-keywords" widgetConfig={wcfg('google-keywords')}
-            rows={p.keywords} availDims={GOOGLE_TABLE_DIMS} availMetrics={GOOGLE_TABLE_METRICS}
+            rows={p.keywords} availDims={window.DIM_REGISTRY?.google || []} availMetrics={window.TABLE_METRICS_REGISTRY?.google || []}
             defaultDims={['keyword']} defaultMetrics={['spend','clicks','ctr','cpa']}
             defaultName="Keywords · Google Ads"/>
         </SelectableWidget>
@@ -1860,7 +1863,7 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
       map['search-queries'] = (
         <SelectableWidget id="search-queries" cardId="table-rankings" editState={editState}>
           <DataTable widgetId="search-queries" widgetConfig={wcfg('search-queries')}
-            rows={queries} availDims={SEARCH_TABLE_DIMS} availMetrics={SEARCH_TABLE_METRICS}
+            rows={queries} availDims={window.DIM_REGISTRY?.search || []} availMetrics={window.TABLE_METRICS_REGISTRY?.search || []}
             defaultDims={['query']} defaultMetrics={['impressions','clicks','ctr','position']}
             defaultName="Top Queries · Search Console"/>
         </SelectableWidget>
@@ -1871,7 +1874,7 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
       map['search-pages'] = (
         <SelectableWidget id="search-pages" cardId="table-rankings" editState={editState}>
           <DataTable widgetId="search-pages" widgetConfig={wcfg('search-pages')}
-            rows={gsc.pages} availDims={SEARCH_TABLE_DIMS} availMetrics={SEARCH_TABLE_METRICS}
+            rows={gsc.pages} availDims={window.DIM_REGISTRY?.search || []} availMetrics={window.TABLE_METRICS_REGISTRY?.search || []}
             defaultDims={['page']} defaultMetrics={['impressions','clicks','ctr','position']}
             defaultName="Top Pages · Search Console"/>
         </SelectableWidget>
@@ -2553,7 +2556,7 @@ function GoogleAdsSection({ p, editState, widgetConfigs }) {
       {campaigns.length > 0 && (
         <SelectableWidget id="google-campaigns" cardId="table-campaigns" editState={editState}>
           <DataTable widgetId="google-campaigns" widgetConfig={wcfg('google-campaigns')}
-            rows={campaigns} availDims={GOOGLE_TABLE_DIMS} availMetrics={GOOGLE_TABLE_METRICS}
+            rows={campaigns} availDims={window.DIM_REGISTRY?.google || []} availMetrics={window.TABLE_METRICS_REGISTRY?.google || []}
             defaultDims={['name']} defaultMetrics={['spend','clicks','impressions','ctr','cpa']}
             defaultName="Campaigns · Google Ads"/>
         </SelectableWidget>
@@ -2562,7 +2565,7 @@ function GoogleAdsSection({ p, editState, widgetConfigs }) {
       {p.adGroups && p.adGroups.length > 0 && (
         <SelectableWidget id="google-adgroups" cardId="table-campaigns" editState={editState}>
           <DataTable widgetId="google-adgroups" widgetConfig={wcfg('google-adgroups')}
-            rows={p.adGroups} availDims={GOOGLE_TABLE_DIMS} availMetrics={GOOGLE_TABLE_METRICS}
+            rows={p.adGroups} availDims={window.DIM_REGISTRY?.google || []} availMetrics={window.TABLE_METRICS_REGISTRY?.google || []}
             defaultDims={['ad_group','name']} defaultMetrics={['spend','clicks','ctr','cpa']}
             defaultName="Ad Groups · Google Ads"/>
         </SelectableWidget>
@@ -2571,7 +2574,7 @@ function GoogleAdsSection({ p, editState, widgetConfigs }) {
       {p.keywords && p.keywords.length > 0 && (
         <SelectableWidget id="google-keywords" cardId="table-campaigns" editState={editState}>
           <DataTable widgetId="google-keywords" widgetConfig={wcfg('google-keywords')}
-            rows={p.keywords} availDims={GOOGLE_TABLE_DIMS} availMetrics={GOOGLE_TABLE_METRICS}
+            rows={p.keywords} availDims={window.DIM_REGISTRY?.google || []} availMetrics={window.TABLE_METRICS_REGISTRY?.google || []}
             defaultDims={['keyword']} defaultMetrics={['spend','clicks','ctr','cpa']}
             defaultName="Keywords · Google Ads"/>
         </SelectableWidget>
@@ -3108,7 +3111,7 @@ function SearchSection({ p, editState, widgetConfigs }) {
       {queries && queries.length > 0 && (
         <SelectableWidget id="search-queries" cardId="table-rankings" editState={editState}>
           <DataTable widgetId="search-queries" widgetConfig={wcfg('search-queries')}
-            rows={queries} availDims={SEARCH_TABLE_DIMS} availMetrics={SEARCH_TABLE_METRICS}
+            rows={queries} availDims={window.DIM_REGISTRY?.search || []} availMetrics={window.TABLE_METRICS_REGISTRY?.search || []}
             defaultDims={['query']} defaultMetrics={['impressions','clicks','ctr','position']}
             defaultName="Top Queries · Search Console"/>
         </SelectableWidget>
@@ -3117,7 +3120,7 @@ function SearchSection({ p, editState, widgetConfigs }) {
       {gsc.pages && gsc.pages.length > 0 && (
         <SelectableWidget id="search-pages" cardId="table-rankings" editState={editState}>
           <DataTable widgetId="search-pages" widgetConfig={wcfg('search-pages')}
-            rows={gsc.pages} availDims={SEARCH_TABLE_DIMS} availMetrics={SEARCH_TABLE_METRICS}
+            rows={gsc.pages} availDims={window.DIM_REGISTRY?.search || []} availMetrics={window.TABLE_METRICS_REGISTRY?.search || []}
             defaultDims={['page']} defaultMetrics={['impressions','clicks','ctr','position']}
             defaultName="Top Pages · Search Console"/>
         </SelectableWidget>
@@ -4211,6 +4214,7 @@ function ScreenReport({ clientId, onBack }) {
             sharedWidgetCount={sharedWidgetCount}
             instanceSource={instanceSource}
             onSourceChange={handleSourceChange}
+            pageData={p}
             style={{ flexShrink: 0 }}
           />
         )}
