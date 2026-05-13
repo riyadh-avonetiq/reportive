@@ -1941,6 +1941,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
   const dragIdRef    = React.useRef(null);   // mirrors dragId for doc-level handlers
   const containerRef = React.useRef(null);   // ref to the outer canvas div
   const justDropped  = React.useRef(false);
+  const widgetEls    = React.useRef({});     // id -> { el, rowIdx } for zone detection
   dragIdRef.current  = dragId;               // keep in sync every render
 
   // Wrap onSelect so a click fired immediately after a drop is suppressed
@@ -2242,14 +2243,6 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
             style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', padding: '0 2px', fontSize: 14, lineHeight: 1, flexShrink: 0 }}
           >×</button>
         </div>
-      )}
-      {/* 12-column grid overlay during pointer drag */}
-      {dragId && (
-        <div style={{
-          position: 'absolute', inset: -4, zIndex: 1, pointerEvents: 'none', borderRadius: 6,
-          background: 'repeating-linear-gradient(to right, rgba(0,194,184,.06) 0, rgba(0,194,184,.06) calc(100%/12 - 14px * 11/12), transparent calc(100%/12 - 14px * 11/12), transparent calc(100%/12))',
-          border: '1px solid rgba(0,194,184,.1)',
-        }}/>
       )}
 
       {/* Browse drag canvas hint border */}
