@@ -4048,7 +4048,15 @@ function ScreenReport({ clientId, onBack }) {
   const handleDeleteWidget = useCallback((id) => {
     updateWidgetLayouts(prev => {
       const rows = prev.rows
-        .map(row => row.filter(w => w.id !== id))
+        .map(row => {
+          const filtered = row.filter(w => w.id !== id);
+          if (filtered.length === row.length) return row; // widget not in this row
+          if (filtered.length === 0) return filtered;     // row will be removed
+          const count = filtered.length;
+          const base = Math.floor(12 / count);
+          const rem = 12 - base * count;
+          return filtered.map((w, i) => ({ ...w, span: base + (i < rem ? 1 : 0) }));
+        })
         .filter(row => row.length > 0);
       return { ...prev, rows };
     });
