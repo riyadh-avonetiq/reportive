@@ -56,14 +56,29 @@ window.DIM_REGISTRY = {
   ],
   meta: [
     { key: 'name',       label: 'Campaign' },
+    { key: 'adset_name', label: 'Ad Set' },
+    { key: 'ad_name',    label: 'Ad' },
+    { key: 'date',       label: 'Date' },
   ],
   ga4: [
-    { key: 'date',          label: 'Date' },
     { key: 'property_name', label: 'Property' },
+    { key: 'date',          label: 'Date' },
+    { key: 'gender',        label: 'Gender' },
+    { key: 'country',       label: 'Country' },
+    { key: 'page_path',     label: 'Page Path' },
+    { key: 'device',        label: 'Device' },
+    { key: 'channel_group', label: 'Channel Group' },
+    { key: 'medium',        label: 'Medium' },
+    { key: 'source',        label: 'Source' },
+    { key: 'region',        label: 'Region' },
+    { key: 'city',          label: 'City' },
   ],
   search: [
-    { key: 'query',      label: 'Query' },
-    { key: 'page',       label: 'Page URL' },
+    { key: 'date',    label: 'Date' },
+    { key: 'query',   label: 'Query' },
+    { key: 'country', label: 'Country' },
+    { key: 'device',  label: 'Device' },
+    { key: 'page',    label: 'Page URL', fmtCell: 'url' },
   ],
 };
 
@@ -79,29 +94,37 @@ window.TABLE_METRICS_REGISTRY = {
     { key: 'cpa',         label: 'CPA',          fmt: 'rupiah' },
   ],
   meta: [
-    { key: 'spend',              label: 'Spend',              fmt: 'rupiah' },
-    { key: 'impressions',        label: 'Impressions',        fmt: 'num' },
-    { key: 'reach',              label: 'Reach',              fmt: 'num' },
-    { key: 'clicks',             label: 'Link Clicks',        fmt: 'num' },
-    { key: 'landing_page_views', label: 'Landing Page Views', fmt: 'num' },
-    { key: 'conversions',        label: 'Conversions',        fmt: 'num' },
-    { key: 'purchases',          label: 'Purchases',          fmt: 'num' },
-    { key: 'purchase_value',     label: 'Purchase Value',     fmt: 'rupiah' },
-    { key: 'add_to_carts',       label: 'Add to Carts',       fmt: 'num' },
-    { key: 'ctr',                label: 'CTR',                fmt: 'pct' },
-    { key: 'cpc',                label: 'Avg CPC',            fmt: 'rupiah' },
-    { key: 'cpa',                label: 'CPA',                fmt: 'rupiah' },
-    { key: 'roas',               label: 'ROAS',               fmt: 'roas' },
+    { key: 'spend',                  label: 'Spend',                   fmt: 'rupiah' },
+    { key: 'impressions',            label: 'Impressions',             fmt: 'num' },
+    { key: 'reach',                  label: 'Reach',                   fmt: 'num' },
+    { key: 'clicks',                 label: 'Link Clicks',             fmt: 'num' },
+    { key: 'landing_page_views',     label: 'Landing Page Views',      fmt: 'num' },
+    { key: 'leads',                  label: 'Leads',                   fmt: 'num' },
+    { key: 'complete_registrations', label: 'Complete Registrations',  fmt: 'num' },
+    { key: 'messaging_conv_started', label: 'Messaging Conv. Started', fmt: 'num' },
+    { key: 'contacts',               label: 'Contacts',                fmt: 'num' },
+    { key: 'ig_profile_visits',      label: 'IG Profile Visits',       fmt: 'num' },
+    { key: 'post_engagements',       label: 'Post Engagements',        fmt: 'num' },
+    { key: 'purchases',              label: 'Purchases',               fmt: 'num' },
+    { key: 'purchase_value',         label: 'Purchase Value',          fmt: 'rupiah' },
+    { key: 'add_to_carts',           label: 'Add to Carts',            fmt: 'num' },
+    { key: 'add_to_cart_value',      label: 'Add to Cart Value',       fmt: 'rupiah' },
+    { key: 'ctr',                    label: 'CTR',                     fmt: 'pct' },
+    { key: 'cpc',                    label: 'Avg CPC',                 fmt: 'rupiah' },
+    { key: 'cpa',                    label: 'CPA',                     fmt: 'rupiah' },
+    { key: 'roas',                   label: 'ROAS',                    fmt: 'roas' },
   ],
   ga4: [
-    { key: 'sessions',             label: 'Sessions',         fmt: 'num' },
-    { key: 'total_users',          label: 'Users',            fmt: 'num' },
-    { key: 'new_users',            label: 'New Users',        fmt: 'num' },
-    { key: 'event_count',          label: 'Events',           fmt: 'num' },
-    { key: 'engaged_sessions',     label: 'Engaged Sessions', fmt: 'num' },
-    { key: 'engagement_rate',      label: 'Engagement Rate',  fmt: 'pct' },
-    { key: 'bounce_rate',          label: 'Bounce Rate',      fmt: 'pct' },
-    { key: 'avg_session_duration', label: 'Avg Duration (s)', fmt: 'num' },
+    { key: 'sessions',                 label: 'Sessions',             fmt: 'num' },
+    { key: 'total_users',              label: 'Total Users',          fmt: 'num' },
+    { key: 'new_users',                label: 'New Users',            fmt: 'num' },
+    { key: 'returning_users',          label: 'Returning Users',      fmt: 'num' },
+    { key: 'engaged_sessions',         label: 'Engaged Sessions',     fmt: 'num' },
+    { key: 'user_engagement_duration', label: 'Engagement Duration',  fmt: 'num' },
+    { key: 'event_count',              label: 'Events',               fmt: 'num' },
+    { key: 'bounce_rate',              label: 'Bounce Rate',          fmt: 'pct' },
+    { key: 'engagement_rate',          label: 'Engagement Rate',      fmt: 'pct' },
+    { key: 'avg_session_duration',     label: 'Avg Duration (s)',     fmt: 'num' },
   ],
   search: [
     { key: 'impressions', label: 'Impressions',  fmt: 'num' },
@@ -140,21 +163,39 @@ window.DIM_VALUES_EXTRACTOR = {
   meta: p => {
     const uniq = (rows, key) => [...new Set((rows || []).map(r => r[key]).filter(v => v != null && v !== ''))].sort();
     const rows = p?.metaChannels || [];
-    return { name: uniq(rows, 'name') };
+    return {
+      name:       uniq(rows, 'name'),
+      adset_name: [],
+      ad_name:    [],
+      date:       [],
+    };
   },
   ga4: p => {
     const uniq = (rows, key) => [...new Set((rows || []).map(r => r[key]).filter(v => v != null && v !== ''))].sort();
     const rows = p?.ga4Rows || [];
     return {
-      date:          uniq(rows, 'date'),
-      property_name: uniq(rows, 'property_name'),
+      property_name:  uniq(rows, 'property_name'),
+      date:           uniq(rows, 'date'),
+      gender:         uniq(rows, 'gender'),
+      country:        uniq(rows, 'country'),
+      page_path:      uniq(rows, 'page_path'),
+      device:         uniq(rows, 'device'),
+      channel_group:  uniq(rows, 'channel_group'),
+      medium:         uniq(rows, 'medium'),
+      source:         uniq(rows, 'source'),
+      region:         uniq(rows, 'region'),
+      city:           uniq(rows, 'city'),
     };
   },
   search: p => {
     const uniq = (rows, key) => [...new Set((rows || []).map(r => r[key]).filter(v => v != null && v !== ''))].sort();
+    const allRows = [...(p?.gsc?.queries || []), ...(p?.gsc?.pages || [])];
     return {
-      query: uniq(p?.gsc?.queries, 'query'),
-      page:  uniq(p?.gsc?.pages,   'page'),
+      date:    uniq(allRows, 'date'),
+      query:   uniq(p?.gsc?.queries, 'query'),
+      country: uniq(allRows, 'country'),
+      device:  uniq(allRows, 'device'),
+      page:    uniq(p?.gsc?.pages,   'page'),
     };
   },
 };
@@ -179,9 +220,9 @@ window.FILTER_DIM_REGISTRY = {
     // Default campaign level: has name, type + can pivot to device or gender
     return ['name', 'type', 'device', 'segment_value'];
   },
-  meta:   (_dims) => ['name'],
-  ga4:    (_dims) => ['date', 'property_name'],
-  search: (selectedDims) => (selectedDims || []).includes('page') ? ['page'] : ['query'],
+  meta:   (_dims) => ['name', 'adset_name', 'ad_name', 'date'],
+  ga4:    (_dims) => ['property_name', 'date'],
+  search: (_dims) => ['date', 'query', 'country', 'device', 'page'],
 };
 
 window.WIDGET_DEFAULTS = {

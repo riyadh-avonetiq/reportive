@@ -374,16 +374,23 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
   const metaByType = {};
   metaRows.forEach(r => {
     const k = r.campaign_name || 'Other';
-    if (!metaByType[k]) metaByType[k] = { spend: 0, clicks: 0, impressions: 0, reach: 0, landing_page_views: 0, conversions: 0, purchases: 0, purchase_value: 0, add_to_carts: 0 };
-    metaByType[k].spend               += +r.spend       || 0;
-    metaByType[k].clicks              += +r.link_clicks || 0;
-    metaByType[k].impressions         += +r.impressions || 0;
-    metaByType[k].reach               += +r.reach       || 0;
-    metaByType[k].landing_page_views  += +r.landing_page_views || 0;
-    metaByType[k].conversions         += (+r.leads || 0) + (+r.contacts || 0) + (+r.messaging_conv_started || 0) + (+r.complete_registrations || 0);
-    metaByType[k].purchases           += +r.purchases   || 0;
-    metaByType[k].purchase_value      += +r.purchase_value || 0;
-    metaByType[k].add_to_carts        += +r.add_to_carts || 0;
+    if (!metaByType[k]) metaByType[k] = { spend: 0, clicks: 0, impressions: 0, reach: 0, landing_page_views: 0, leads: 0, complete_registrations: 0, messaging_conv_started: 0, contacts: 0, ig_profile_visits: 0, post_engagements: 0, conversions: 0, purchases: 0, purchase_value: 0, add_to_carts: 0, add_to_cart_value: 0 };
+    metaByType[k].spend                  += +r.spend                   || 0;
+    metaByType[k].clicks                 += +r.link_clicks             || 0;
+    metaByType[k].impressions            += +r.impressions             || 0;
+    metaByType[k].reach                  += +r.reach                   || 0;
+    metaByType[k].landing_page_views     += +r.landing_page_views      || 0;
+    metaByType[k].leads                  += +r.leads                   || 0;
+    metaByType[k].complete_registrations += +r.complete_registrations  || 0;
+    metaByType[k].messaging_conv_started += +r.messaging_conv_started  || 0;
+    metaByType[k].contacts               += +r.contacts                || 0;
+    metaByType[k].ig_profile_visits      += +r.ig_profile_visits       || 0;
+    metaByType[k].post_engagements       += +r.post_engagements        || 0;
+    metaByType[k].conversions            += (+r.leads || 0) + (+r.contacts || 0) + (+r.messaging_conv_started || 0) + (+r.complete_registrations || 0);
+    metaByType[k].purchases              += +r.purchases               || 0;
+    metaByType[k].purchase_value         += +r.purchase_value          || 0;
+    metaByType[k].add_to_carts           += +r.add_to_carts            || 0;
+    metaByType[k].add_to_cart_value      += +r.add_to_cart_value       || 0;
   });
   const metaChannels = Object.entries(metaByType)
     .sort((a, b) => b[1].spend - a[1].spend)
@@ -703,7 +710,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     const metaQ = (_metaSupa && metaAccount !== null)
       ? (() => {
           let q = _metaSupa.from('meta_ads_daily')
-            .select('date, account_name, campaign_name, spend, impressions, reach, link_clicks, landing_page_views, leads, complete_registrations, messaging_conv_started, contacts, purchases, purchase_value, add_to_carts, add_to_cart_value, currency')
+            .select('date, account_name, campaign_name, adset_name, ad_name, spend, impressions, reach, link_clicks, landing_page_views, leads, complete_registrations, messaging_conv_started, contacts, ig_profile_visits, post_engagements, purchases, purchase_value, add_to_carts, add_to_cart_value, currency')
             .order('date', { ascending: true })
             .limit(20000);
           if (metaAccount) q = q.eq('account_name', metaAccount);
@@ -717,7 +724,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     const ga4Q = (_ga4Supa && ga4Property !== null)
       ? (() => {
           let q = _ga4Supa.from('ga4_totals')
-            .select('date, property_name, sessions, total_users, new_users, bounce_rate, engaged_sessions, engagement_rate, avg_session_duration, event_count')
+            .select('date, property_name, sessions, total_users, new_users, returning_users, bounce_rate, engaged_sessions, engagement_rate, avg_session_duration, user_engagement_duration, event_count')
             .order('date', { ascending: true })
             .limit(10000);
           if (ga4Property) q = q.eq('property_name', ga4Property);
@@ -746,7 +753,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     const gscQueryQ = (_gscSupa && gscProperty !== null)
       ? (() => {
           let q = _gscSupa.from('search_console_daily')
-            .select('query, impressions, clicks, position')
+            .select('date, query, country, device, impressions, clicks, position')
             .order('clicks', { ascending: false })
             .limit(50);
           if (gscProperty) q = q.eq('property', gscProperty);
@@ -758,7 +765,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     const gscPagesQ = (_gscSupa && gscProperty !== null)
       ? (() => {
           let q = _gscSupa.from('search_console_pages')
-            .select('page, impressions, clicks, position')
+            .select('date, page, country, device, impressions, clicks, position')
             .order('clicks', { ascending: false })
             .limit(50);
           if (gscProperty) q = q.eq('property', gscProperty);
