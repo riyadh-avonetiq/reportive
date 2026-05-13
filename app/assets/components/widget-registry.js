@@ -29,14 +29,16 @@ window.DATA_REGISTRY = {
     add_to_cart_value:      { label: 'Add to Cart Value',       format: 'rupiah', value: p => p?.meta?.add_to_cart_value,      prev: p => p?.metaPrev?.add_to_cart_value },
   },
   ga4: {
-    sessions:             { label: 'Sessions',          format: 'num', value: p => p?.ga4?.sessions,             prev: p => p?.ga4Prev?.sessions },
-    users:                { label: 'Total Users',        format: 'num', value: p => p?.ga4?.users,                prev: p => p?.ga4Prev?.users },
-    new_users:            { label: 'New Users',          format: 'num', value: p => p?.ga4?.new_users,            prev: p => p?.ga4Prev?.new_users },
-    pageviews:            { label: 'Events',             format: 'num', value: p => p?.ga4?.pageviews,            prev: p => p?.ga4Prev?.pageviews },
-    engaged:              { label: 'Engaged Sessions',   format: 'num', value: p => p?.ga4?.engaged,              prev: p => p?.ga4Prev?.engaged },
-    engagement_rate:      { label: 'Engagement Rate',    format: 'pct', value: p => p?.ga4?.engagement_rate,      prev: p => p?.ga4Prev?.engagement_rate },
-    bounce_rate:          { label: 'Bounce Rate',        format: 'pct', value: p => p?.ga4?.bounce_rate,          prev: p => p?.ga4Prev?.bounce_rate },
-    avg_session_duration: { label: 'Avg Duration (s)',   format: 'num', value: p => p?.ga4?.avg_session_duration, prev: p => p?.ga4Prev?.avg_session_duration },
+    sessions:                 { label: 'Sessions',             format: 'num', value: p => p?.ga4?.sessions,                 prev: p => p?.ga4Prev?.sessions },
+    total_users:              { label: 'Total Users',          format: 'num', value: p => p?.ga4?.total_users,              prev: p => p?.ga4Prev?.total_users },
+    new_users:                { label: 'New Users',            format: 'num', value: p => p?.ga4?.new_users,                prev: p => p?.ga4Prev?.new_users },
+    returning_users:          { label: 'Returning Users',      format: 'num', value: p => p?.ga4?.returning_users,          prev: p => p?.ga4Prev?.returning_users },
+    engaged_sessions:         { label: 'Engaged Sessions',     format: 'num', value: p => p?.ga4?.engaged_sessions,         prev: p => p?.ga4Prev?.engaged_sessions },
+    user_engagement_duration: { label: 'Engagement Duration',  format: 'num', value: p => p?.ga4?.user_engagement_duration, prev: p => p?.ga4Prev?.user_engagement_duration },
+    event_count:              { label: 'Events',               format: 'num', value: p => p?.ga4?.event_count,              prev: p => p?.ga4Prev?.event_count },
+    bounce_rate:              { label: 'Bounce Rate',          format: 'pct', value: p => p?.ga4?.bounce_rate,              prev: p => p?.ga4Prev?.bounce_rate },
+    engagement_rate:          { label: 'Engagement Rate',      format: 'pct', value: p => p?.ga4?.engagement_rate,          prev: p => p?.ga4Prev?.engagement_rate },
+    avg_session_duration:     { label: 'Avg Duration (s)',     format: 'num', value: p => p?.ga4?.avg_session_duration,     prev: p => p?.ga4Prev?.avg_session_duration },
   },
   search: {
     impressions: { label: 'Impressions',     format: 'num',    value: p => p?.gsc?.impressions,       prev: p => p?.gscPrev?.impressions,    series: p => p?.gsc?.series?.impressions },
@@ -227,7 +229,7 @@ window.WIDGET_DEFAULTS = {
   'kpi-strip': {
     google: { metrics: ['spend','impressions','clicks','conversions'], fontSize: 'M' },
     meta:   { metrics: ['spend','impressions','clicks','leads'],      fontSize: 'M' },
-    ga4:    { metrics: ['sessions','users','pageviews','bounce_rate'],fontSize: 'M' },
+    ga4:    { metrics: ['sessions','total_users','event_count','bounce_rate'], fontSize: 'M' },
     search: { metrics: ['impressions','clicks','ctr','position'],     fontSize: 'M' },
   },
   'single-stat': {
@@ -245,7 +247,7 @@ window.WIDGET_DEFAULTS = {
   'chart-bar': {
     google: { metric: 'impressions' },
     meta:   { metric: 'clicks' },
-    ga4:    { metric: 'pageviews' },
+    ga4:    { metric: 'event_count' },
     search: { metric: 'impressions' },
   },
   'chart-donut': {

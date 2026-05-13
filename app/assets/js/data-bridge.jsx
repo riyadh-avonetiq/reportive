@@ -126,25 +126,29 @@ function aggregateMeta(rows) {
 
 // ── Aggregate: GA4 ──────────────────────────────────────────────────
 function aggregateGa4(rows) {
-  const t = { sessions: 0, users: 0, new_users: 0, pageviews: 0, engaged: 0, bounceWeighted: 0, durationWeighted: 0, engagementWeighted: 0 };
+  const t = { sessions: 0, total_users: 0, new_users: 0, returning_users: 0, event_count: 0, engaged_sessions: 0, bounceWeighted: 0, durationWeighted: 0, engagementWeighted: 0, engageDurationWeighted: 0 };
   rows.forEach(r => {
-    const sess  = +r.sessions || 0;
-    t.sessions  += sess;
-    t.users     += +r.total_users         || 0;
-    t.new_users += +r.new_users           || 0;
-    t.pageviews += +r.event_count         || 0;
-    t.engaged   += +r.engaged_sessions    || 0;
+    const sess = +r.sessions || 0;
+    t.sessions          += sess;
+    t.total_users       += +r.total_users              || 0;
+    t.new_users         += +r.new_users                || 0;
+    t.returning_users   += +r.returning_users          || 0;
+    t.event_count       += +r.event_count              || 0;
+    t.engaged_sessions  += +r.engaged_sessions         || 0;
     if (r.bounce_rate != null && sess > 0)
-      t.bounceWeighted += +r.bounce_rate * sess;
+      t.bounceWeighted          += +r.bounce_rate              * sess;
     if (r.avg_session_duration != null && sess > 0)
-      t.durationWeighted += +r.avg_session_duration * sess;
+      t.durationWeighted        += +r.avg_session_duration     * sess;
     if (r.engagement_rate != null && sess > 0)
-      t.engagementWeighted += +r.engagement_rate * sess;
+      t.engagementWeighted      += +r.engagement_rate          * sess;
+    if (r.user_engagement_duration != null && sess > 0)
+      t.engageDurationWeighted  += +r.user_engagement_duration * sess;
   });
-  // bounce_rate stored as decimal (0–1) from GA4 API; multiply by 100 for display
-  t.bounce_rate          = t.sessions > 0 ? (t.bounceWeighted / t.sessions) * 100 : 0;
-  t.avg_session_duration = t.sessions > 0 ? t.durationWeighted / t.sessions : 0;
-  t.engagement_rate      = t.sessions > 0 ? (t.engagementWeighted / t.sessions) * 100 : 0;
+  // bounce_rate and engagement_rate stored as decimal (0–1) from GA4 API; multiply by 100 for display
+  t.bounce_rate              = t.sessions > 0 ? (t.bounceWeighted         / t.sessions) * 100 : 0;
+  t.avg_session_duration     = t.sessions > 0 ?  t.durationWeighted       / t.sessions        : 0;
+  t.engagement_rate          = t.sessions > 0 ? (t.engagementWeighted     / t.sessions) * 100 : 0;
+  t.user_engagement_duration = t.sessions > 0 ?  t.engageDurationWeighted / t.sessions        : 0;
   return t;
 }
 
@@ -521,8 +525,8 @@ function mockData() {
     key: 'mock', labelShort: 'Demo Data', labelLong: 'Demo · Hubungkan Supabase untuk data nyata', prevKey: null,
     ads:     { spend: 48_500_000, clicks: 18240, impressions: 482300, conversions: 1284, ctr: 3.78, cpc: 2658, cpa: 37772, roas: 3.82 },
     adsPrev: { spend: 43_100_000, clicks: 16500, impressions: 460000, conversions: 1073, ctr: 3.59, cpc: 2612, cpa: 40167, roas: 3.67 },
-    ga4:     { sessions: 24830, users: 18900, pageviews: 78400, engaged: 17800, bounce_rate: 38.5 },
-    ga4Prev: { sessions: 22980, users: 17500, pageviews: 71200, engaged: 16100, bounce_rate: 41.0 },
+    ga4:     { sessions: 24830, total_users: 18900, new_users: 12400, returning_users: 6430, event_count: 78400, engaged_sessions: 17800, bounce_rate: 38.5, engagement_rate: 71.7, avg_session_duration: 128, user_engagement_duration: 95 },
+    ga4Prev: { sessions: 22980, total_users: 17500, new_users: 11200, returning_users: 5780, event_count: 71200, engaged_sessions: 16100, bounce_rate: 41.0, engagement_rate: 70.0, avg_session_duration: 121, user_engagement_duration: 88 },
     psi:     { performance: 82, seo: 88, accessibility: 76, best_practices: 94, latestDay: null, recordCount: 1, avgPerformance: 82, avgSeo: 88, avgAccessibility: 76, avgBestPractices: 94, history: [] },
     gsc: {
       impressions: 124500, clicks: 8320, ctr: 6.68, position: 4.2,
