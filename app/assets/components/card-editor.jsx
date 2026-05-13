@@ -775,6 +775,37 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
   const [dragMetOver, setDragMetOver] = React.useState(null);
   const [dragDimIdx,  setDragDimIdx]  = React.useState(null);
   const [dragDimOver, setDragDimOver] = React.useState(null);
+  const [metPickerOpen, setMetPickerOpen] = React.useState(false);
+  const [customModal,   setCustomModal]   = React.useState(null); // null | {mode:'new'} | {mode:'edit',metric}
+  const [customDraft,   setCustomDraft]   = React.useState({ name: '', formula: '', format: 'num' });
+  const metPickerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!metPickerOpen) return;
+    const handler = e => { if (metPickerRef.current && !metPickerRef.current.contains(e.target)) setMetPickerOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [metPickerOpen]);
+
+  const openNewCustom = () => {
+    setCustomDraft({ name: '', formula: '', format: 'num' });
+    setCustomModal({ mode: 'new' });
+    setMetPickerOpen(false);
+  };
+  const openEditCustom = m => {
+    setCustomDraft({ name: m.name, formula: m.formula, format: m.format });
+    setCustomModal({ mode: 'edit', metric: m });
+  };
+  const saveCustomMetric = draft => {
+    const trimmed = { ...draft, name: draft.name.trim(), formula: draft.formula.trim() };
+    if (customModal.mode === 'new') {
+      const id = 'cm_' + Math.random().toString(36).slice(2, 8);
+      up({ customMetrics: [...(cfg.customMetrics || []), { id, ...trimmed }] });
+    } else {
+      up({ customMetrics: (cfg.customMetrics || []).map(m => m.id === customModal.metric.id ? { ...m, ...trimmed } : m) });
+    }
+    setCustomModal(null);
+  };
 
   if (!widgetId) {
     return (
@@ -1179,8 +1210,10 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
       {availM.length > 0 && (
         <>
           <EDivider/>
-          <ESection label={`Metrics (${(cfg.metrics || []).length}/${maxMetrics})`}>
+          <ESection label={`Metrics (${(cfg.metrics || []).length + (cfg.customMetrics || []).length}/${maxMetrics})`}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 6 }}>
+
+              {/* Regular metrics */}
               {(cfg.metrics || []).map((key, i) => {
                 const meta = availM.find(m => m.key === key) || { key, label: key };
                 return (
@@ -1210,27 +1243,62 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
                   </div>
                 );
               })}
+
+              {/* Custom metrics */}
+              {(isKpiStrip || isTable) && (cfg.customMetrics || []).map(cm => (
+                <div key={cm.id} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                  <div style={{ cursor: 'grab', color: EP.muted, display: 'flex', alignItems: 'center', flexShrink: 0 }}><DragDots/></div>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', background: `${EP.teal}0C`, border: `1px solid ${EP.teal}30`, borderRadius: 5 }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700, color: EP.teal, background: `${EP.teal}22`, padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>fx</span>
+                    <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, color: EP.teal, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cm.name}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, flexShrink: 0 }}>{cm.format === 'rupiah' ? 'Rp' : cm.format === 'pct' ? '%' : '#'}</span>
+                  </div>
+                  <button onClick={() => openEditCustom(cm)} title="Edit formula"
+                    style={{ width: 24, height: 24, border: `1px solid ${EP.edge}`, borderRadius: 5, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                  <button onClick={() => up({ customMetrics: (cfg.customMetrics || []).filter(m => m.id !== cm.id) })}
+                    style={{ width: 24, height: 24, border: `1px solid rgba(220,38,38,.3)`, borderRadius: 5, background: 'rgba(220,38,38,.08)', color: EP.red, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+              ))}
             </div>
-            {(cfg.metrics || []).length < maxMetrics && (
-              <button onClick={() => { const f = availM.find(m => !cfg.metrics.includes(m.key)); if (f) up({ metrics: [...cfg.metrics, f.key] }); }}
-                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px dashed ${EP.teal}66`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 1v8M1 5h8"/></svg>
-                Add metric
-              </button>
+
+            {/* Add metric — picker trigger */}
+            {((cfg.metrics || []).length + (cfg.customMetrics || []).length) < maxMetrics && (
+              <div style={{ position: 'relative' }} ref={metPickerRef}>
+                <button onClick={() => setMetPickerOpen(o => !o)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px dashed ${EP.teal}66`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 1v8M1 5h8"/></svg>
+                  Add metric
+                </button>
+                {metPickerOpen && (
+                  <MetricPickerDropdown
+                    availMetrics={availM}
+                    selectedKeys={cfg.metrics || []}
+                    showCustom={isKpiStrip || isTable}
+                    onAdd={key => { up({ metrics: [...(cfg.metrics || []), key] }); setMetPickerOpen(false); }}
+                    onCustom={openNewCustom}
+                    onClose={() => setMetPickerOpen(false)}
+                  />
+                )}
+              </div>
             )}
           </ESection>
         </>
       )}
 
-      {(isKpiStrip || isTable) && (
-        <>
-          <EDivider/>
-          <CustomMetricsSection
-            customMetrics={cfg.customMetrics || []}
-            onChange={v => up({ customMetrics: v })}
-            availMetrics={availM}
-          />
-        </>
+      {/* Custom metric formula modal */}
+      {customModal && (
+        <CustomMetricModal
+          draft={customDraft}
+          setDraft={setCustomDraft}
+          availMetrics={availM}
+          mode={customModal.mode}
+          onSave={saveCustomMetric}
+          onClose={() => setCustomModal(null)}
+        />
       )}
 
       <EDivider/>
@@ -1239,156 +1307,162 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
   );
 };
 
-// ─── Custom Metrics builder ───────────────────────────────────────
+// ─── Metric picker dropdown ───────────────────────────────────────
 
-const CustomMetricsSection = ({ customMetrics, onChange, availMetrics }) => {
-  const [editing, setEditing] = React.useState(null);
-  const [draft,   setDraft]   = React.useState({ name: '', formula: '', format: 'num' });
+const MetricPickerDropdown = ({ availMetrics, selectedKeys, showCustom, onAdd, onCustom, onClose }) => {
+  const [search, setSearch] = React.useState('');
+  const filtered = availMetrics.filter(m =>
+    !search || m.label.toLowerCase().includes(search.toLowerCase()) || m.key.toLowerCase().includes(search.toLowerCase())
+  );
+  return (
+    <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 2000, background: EP.bg, border: `1px solid ${EP.edge}`, borderRadius: 8, boxShadow: '0 10px 30px rgba(0,0,0,.5)', overflow: 'hidden' }}>
+      <div style={{ padding: '7px 8px', borderBottom: `1px solid ${EP.edge}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5 }}>
+          <svg width="10" height="10" fill="none" stroke={EP.muted} strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari metric…" autoFocus
+            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11 }}/>
+        </div>
+      </div>
+      <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+        {filtered.map(m => {
+          const picked = selectedKeys.includes(m.key);
+          return (
+            <button key={m.key} disabled={picked} onClick={() => { onAdd(m.key); onClose(); }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '8px 12px', background: 'none', border: 'none', textAlign: 'left', cursor: picked ? 'default' : 'pointer', opacity: picked ? 0.38 : 1 }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: EP.fg }}>{m.label}</span>
+              {picked && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={EP.teal} strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>}
+            </button>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div style={{ padding: '12px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted }}>No match</div>
+        )}
+      </div>
+      {showCustom && (
+        <div style={{ borderTop: `1px solid ${EP.edge}`, padding: '6px' }}>
+          <button onClick={onCustom}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '7px 10px', background: `${EP.teal}0D`, border: `1px solid ${EP.teal}33`, borderRadius: 6, cursor: 'pointer', textAlign: 'left' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, fontWeight: 700, color: EP.teal, background: `${EP.teal}25`, padding: '2px 5px', borderRadius: 3 }}>fx</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 600, color: EP.teal }}>Custom Metric</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, marginLeft: 'auto' }}>Buat formula sendiri →</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Custom metric formula modal ──────────────────────────────────
+
+const CustomMetricModal = ({ draft, setDraft, availMetrics, mode, onSave, onClose }) => {
   const formulaRef = React.useRef(null);
 
-  const insertAtCursor = text => {
+  const insert = text => {
     const el = formulaRef.current;
     if (!el) { setDraft(d => ({ ...d, formula: d.formula + text })); return; }
     const s = el.selectionStart, e = el.selectionEnd;
-    const next = draft.formula.slice(0, s) + text + draft.formula.slice(e);
-    setDraft(d => ({ ...d, formula: next }));
+    setDraft(d => ({ ...d, formula: d.formula.slice(0, s) + text + d.formula.slice(e) }));
     setTimeout(() => { el.focus(); el.setSelectionRange(s + text.length, s + text.length); }, 0);
   };
 
-  const save = () => {
-    if (!draft.name.trim() || !draft.formula.trim()) return;
-    if (editing === 'new') {
-      const id = 'cm_' + Math.random().toString(36).slice(2, 8);
-      onChange([...customMetrics, { id, name: draft.name.trim(), formula: draft.formula.trim(), format: draft.format }]);
-    } else {
-      onChange(customMetrics.map(m => m.id === editing ? { ...m, name: draft.name.trim(), formula: draft.formula.trim(), format: draft.format } : m));
-    }
-    setEditing(null);
-  };
-
-  const remove  = id => onChange(customMetrics.filter(m => m.id !== id));
-  const startEdit = m => { setDraft({ name: m.name, formula: m.formula, format: m.format }); setEditing(m.id); };
-  const startNew  = () => { setDraft({ name: '', formula: '', format: 'num' }); setEditing('new'); };
-
+  const OPERATORS = ['+', '-', '×', '÷', '(', ')'];
+  const OP_MAP = { '+': ' + ', '-': ' - ', '×': ' * ', '÷': ' / ', '(': '(', ')': ')' };
   const FORMAT_OPTS = [
-    { value: 'num',    label: '#  Number' },
-    { value: 'pct',    label: '%  Percent' },
+    { value: 'num',    label: '# Numeric' },
+    { value: 'pct',    label: '% Percent' },
     { value: 'rupiah', label: 'Rp Currency' },
   ];
-  const OPERATORS = ['+', '-', '×', '÷', '(', ')'];
-  const OP_MAP    = { '×': ' * ', '÷': ' / ', '+': ' + ', '-': ' - ', '(': '(', ')': ')' };
-
-  const fmtBadge = f => f === 'rupiah' ? 'Rp' : f === 'pct' ? '%' : '#';
+  const canSave = draft.name.trim() && draft.formula.trim();
 
   return (
-    <ESection label="Custom Metrics">
-      {customMetrics.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
-          {customMetrics.map(m => (
-            <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 8px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10.5, color: EP.teal }}>{m.name}</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: EP.muted, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.formula}</div>
-              </div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, padding: '2px 5px', background: 'rgba(255,255,255,.05)', borderRadius: 3, flexShrink: 0 }}>{fmtBadge(m.format)}</span>
-              <button onClick={() => startEdit(m)} title="Edit" style={{ width: 22, height: 22, border: `1px solid ${EP.edge}`, borderRadius: 4, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              </button>
-              <button onClick={() => remove(m.id)} title="Delete" style={{ width: 22, height: 22, border: `1px solid rgba(220,38,38,.3)`, borderRadius: 4, background: 'rgba(220,38,38,.08)', color: EP.red, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-              </button>
-            </div>
-          ))}
+    <div onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.65)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div onClick={e => e.stopPropagation()}
+        style={{ width: 400, maxHeight: '90vh', overflowY: 'auto', background: EP.bg, border: `1px solid ${EP.edge}`, borderRadius: 12, boxShadow: '0 24px 64px rgba(0,0,0,.7)' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: `1px solid ${EP.edge}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: EP.teal, background: `${EP.teal}22`, padding: '2px 6px', borderRadius: 3 }}>fx</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: EP.fg }}>{mode === 'new' ? 'Custom Metric' : 'Edit Metric'}</span>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: EP.muted, cursor: 'pointer', padding: 4, display: 'flex' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
         </div>
-      )}
 
-      {editing !== null ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px', background: EP.elevated, border: `1px solid ${EP.teal}40`, borderRadius: 7 }}>
+        {/* Body */}
+        <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 13 }}>
 
-          {/* Name */}
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 4 }}>LABEL</div>
-            <input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
-              placeholder="e.g. CPM"
-              style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px', background: EP.bg, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}
-            />
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 5 }}>LABEL</div>
+            <input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="e.g. CPM"
+              style={{ width: '100%', boxSizing: 'border-box', padding: '7px 9px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none' }}/>
           </div>
 
-          {/* Formula */}
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 4 }}>FORMULA</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 5 }}>FORMULA</div>
             <textarea ref={formulaRef} value={draft.formula} onChange={e => setDraft(d => ({ ...d, formula: e.target.value }))}
-              placeholder="e.g. (spend / impressions) * 1000"
-              rows={2}
-              style={{ width: '100%', boxSizing: 'border-box', padding: '7px 8px', background: EP.bg, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.teal, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', resize: 'none', lineHeight: 1.5 }}
-            />
+              placeholder="e.g. (spend / impressions) * 1000" rows={2}
+              style={{ width: '100%', boxSizing: 'border-box', padding: '7px 9px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.teal, fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', resize: 'none', lineHeight: 1.55 }}/>
           </div>
 
-          {/* Metric tokens */}
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 5 }}>VARIABLES</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 6 }}>VARIABLES</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
               {availMetrics.map(m => (
-                <button key={m.key} onClick={() => insertAtCursor(m.key)}
-                  style={{ padding: '3px 7px', background: 'rgba(0,194,184,.08)', border: `1px solid ${EP.teal}33`, borderRadius: 4, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 9.5, lineHeight: 1.5 }}>
+                <button key={m.key} onClick={() => insert(m.key)}
+                  style={{ padding: '3px 8px', background: `${EP.teal}0E`, border: `1px solid ${EP.teal}30`, borderRadius: 4, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, lineHeight: 1.5 }}>
                   {m.key}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Operators */}
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 5 }}>OPERATORS</div>
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 6 }}>OPERATORS</div>
+            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
               {OPERATORS.map(op => (
-                <button key={op} onClick={() => insertAtCursor(OP_MAP[op])}
-                  style={{ width: 30, height: 26, background: EP.bg, border: `1px solid ${EP.edge}`, borderRadius: 4, color: EP.fg, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <button key={op} onClick={() => insert(OP_MAP[op])}
+                  style={{ width: 34, height: 30, background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {op}
                 </button>
               ))}
               {[1000, 100].map(n => (
-                <button key={n} onClick={() => insertAtCursor(String(n))}
-                  style={{ padding: '0 8px', height: 26, background: EP.bg, border: `1px solid ${EP.edge}`, borderRadius: 4, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <button key={n} onClick={() => insert(String(n))}
+                  style={{ padding: '0 10px', height: 30, background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10.5, display: 'flex', alignItems: 'center' }}>
                   {n}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Format */}
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 5 }}>FORMAT</div>
-            <div style={{ display: 'flex', gap: 5 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 6 }}>FORMAT HASIL</div>
+            <div style={{ display: 'flex', gap: 6 }}>
               {FORMAT_OPTS.map(f => (
                 <button key={f.value} onClick={() => setDraft(d => ({ ...d, format: f.value }))}
-                  style={{ flex: 1, padding: '5px 4px', background: draft.format === f.value ? `${EP.teal}22` : 'transparent', border: `1px solid ${draft.format === f.value ? EP.teal : EP.edge}`, borderRadius: 5, color: draft.format === f.value ? EP.teal : EP.muted, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 9.5, fontWeight: draft.format === f.value ? 700 : 400, textAlign: 'center' }}>
+                  style={{ flex: 1, padding: '6px 4px', background: draft.format === f.value ? `${EP.teal}1A` : 'transparent', border: `1px solid ${draft.format === f.value ? EP.teal : EP.edge}`, borderRadius: 6, color: draft.format === f.value ? EP.teal : EP.muted, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 9.5, fontWeight: draft.format === f.value ? 700 : 400, textAlign: 'center' }}>
                   {f.label}
                 </button>
               ))}
             </div>
           </div>
-
-          {/* Actions */}
-          <div style={{ display: 'flex', gap: 5, marginTop: 2 }}>
-            <button onClick={() => setEditing(null)}
-              style={{ flex: 1, padding: '6px 0', background: 'transparent', border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600 }}>
-              Cancel
-            </button>
-            <button onClick={save} disabled={!draft.name.trim() || !draft.formula.trim()}
-              style={{ flex: 2, padding: '6px 0', background: EP.teal, border: 'none', borderRadius: 5, color: '#0B1628', cursor: (!draft.name.trim() || !draft.formula.trim()) ? 'default' : 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 700, opacity: (!draft.name.trim() || !draft.formula.trim()) ? 0.4 : 1 }}>
-              {editing === 'new' ? 'Add Metric' : 'Save'}
-            </button>
-          </div>
         </div>
-      ) : (
-        <button onClick={startNew}
-          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', background: 'transparent', border: `1px dashed ${EP.teal}55`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 1v8M1 5h8"/></svg>
-          Add custom metric
-        </button>
-      )}
-    </ESection>
+
+        {/* Footer */}
+        <div style={{ display: 'flex', gap: 8, padding: '12px 16px', borderTop: `1px solid ${EP.edge}` }}>
+          <button onClick={onClose}
+            style={{ flex: 1, padding: '7px 0', background: 'transparent', border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 600 }}>
+            Cancel
+          </button>
+          <button onClick={() => canSave && onSave(draft)} disabled={!canSave}
+            style={{ flex: 2, padding: '7px 0', background: canSave ? EP.teal : EP.elevated, border: 'none', borderRadius: 6, color: canSave ? '#0B1628' : EP.muted, cursor: canSave ? 'pointer' : 'default', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700 }}>
+            {mode === 'new' ? 'Add Metric' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
