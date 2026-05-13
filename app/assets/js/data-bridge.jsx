@@ -101,27 +101,26 @@ function aggregateAds(rows) {
 }
 
 // ── Aggregate: Meta Ads ─────────────────────────────────────────────
-// Meta table uses: link_clicks (not clicks), date (not day), purchases/leads (not conversions)
+// Meta table uses: link_clicks (not clicks), date (not day)
 function aggregateMeta(rows) {
-  const t = { spend: 0, impressions: 0, reach: 0, clicks: 0, landing_page_views: 0, conversions: 0, purchases: 0, purchase_value: 0, add_to_carts: 0 };
+  const t = { spend: 0, impressions: 0, reach: 0, clicks: 0, landing_page_views: 0, leads: 0, complete_registrations: 0, messaging_conv_started: 0, contacts: 0, ig_profile_visits: 0, post_engagements: 0, purchases: 0, purchase_value: 0, add_to_carts: 0, add_to_cart_value: 0 };
   rows.forEach(r => {
-    t.spend               += +r.spend                   || 0;
-    t.impressions         += +r.impressions             || 0;
-    t.reach               += +r.reach                   || 0;
-    t.clicks              += +r.link_clicks             || 0;
-    t.landing_page_views  += +r.landing_page_views      || 0;
-    t.conversions         += (+r.leads                  || 0)
-                           + (+r.contacts               || 0)
-                           + (+r.messaging_conv_started  || 0)
-                           + (+r.complete_registrations  || 0);
-    t.purchases           += +r.purchases               || 0;
-    t.purchase_value      += +r.purchase_value          || 0;
-    t.add_to_carts        += +r.add_to_carts            || 0;
+    t.spend                  += +r.spend                   || 0;
+    t.impressions            += +r.impressions             || 0;
+    t.reach                  += +r.reach                   || 0;
+    t.clicks                 += +r.link_clicks             || 0;
+    t.landing_page_views     += +r.landing_page_views      || 0;
+    t.leads                  += +r.leads                   || 0;
+    t.complete_registrations += +r.complete_registrations  || 0;
+    t.messaging_conv_started += +r.messaging_conv_started  || 0;
+    t.contacts               += +r.contacts                || 0;
+    t.ig_profile_visits      += +r.ig_profile_visits       || 0;
+    t.post_engagements       += +r.post_engagements        || 0;
+    t.purchases              += +r.purchases               || 0;
+    t.purchase_value         += +r.purchase_value          || 0;
+    t.add_to_carts           += +r.add_to_carts            || 0;
+    t.add_to_cart_value      += +r.add_to_cart_value       || 0;
   });
-  t.ctr  = t.impressions > 0 ? (t.clicks / t.impressions) * 100 : 0;
-  t.cpc  = t.clicks > 0 ? t.spend / t.clicks : 0;
-  t.cpa  = t.conversions > 0 ? t.spend / t.conversions : 0;
-  t.roas = t.spend > 0 && t.purchase_value > 0 ? t.purchase_value / t.spend : 0;
   return t;
 }
 
