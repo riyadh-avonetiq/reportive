@@ -1942,6 +1942,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
   const containerRef = React.useRef(null);   // ref to the outer canvas div
   const justDropped  = React.useRef(false);
   const widgetEls    = React.useRef({});     // id -> { el, rowIdx } for zone detection
+  const bottomZoneRef = React.useRef(null);  // ref to bottom drop zone, for flicker-free detection
   dragIdRef.current  = dragId;               // keep in sync every render
 
   // Wrap onSelect so a click fired immediately after a drop is suppressed
@@ -2062,6 +2063,13 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
         else                  type = 'swap';
         setDropTarget({ type, targetId: tid, rowIdx });
       } else {
+        // Don't clear a new-row dropTarget while cursor is still within the bottom zone
+        const bz = bottomZoneRef.current;
+        if (bz) {
+          const r = bz.getBoundingClientRect();
+          if (e.clientX >= r.left && e.clientX <= r.right &&
+              e.clientY >= r.top  && e.clientY <= r.bottom) return;
+        }
         setDropTarget(null);
       }
     }
@@ -2509,7 +2517,9 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
           />
         : dragId && (
           <div
+            ref={bottomZoneRef}
             onPointerEnter={() => setDropTarget({ type: 'new-row', insertAt: layouts.rows.length })}
+            onPointerLeave={() => setDropTarget(null)}
             style={{
               height: 40, borderRadius: 6,
               border: `1px dashed ${dropTarget?.type === 'new-row' && dropTarget.insertAt === layouts.rows.length ? teal : 'rgba(255,255,255,.1)'}`,
@@ -2532,7 +2542,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
           borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           boxShadow: '0 8px 32px rgba(0,0,0,.4)',
         }}>
-          <svg width="12" height="8" viewBox="0 0 12 8" fill="#00C2B8">
+          <svg width="12" height="8" viewBox="0 0 12 8" fill={teal}>
             <rect y="0" width="12" height="2" rx="1"/><rect y="3" width="12" height="2" rx="1"/><rect y="6" width="12" height="2" rx="1"/>
           </svg>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: teal, letterSpacing: '0.06em' }}>
