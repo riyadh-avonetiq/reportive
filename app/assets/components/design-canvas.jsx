@@ -467,6 +467,7 @@ function DCArtboardFrame({ sectionId, artboard, label, order, onRename, onReorde
     const up = () => {
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', up);
+      document.removeEventListener('pointercancel', up);
 
       // Clean up ghost and overlays
       ghost.remove();
@@ -477,22 +478,23 @@ function DCArtboardFrame({ sectionId, artboard, label, order, onRename, onReorde
 
       // Compute new order from active zone
       if (hoverSlotId && activeZone) {
+        const srcIdx = order.indexOf(id);
+        const tgtIdx = order.indexOf(hoverSlotId);
+        if (srcIdx === -1 || tgtIdx === -1) return;
         let newOrder;
         if (activeZone === 'center') {
           // Swap dragged slot and target slot
           newOrder = order.slice();
-          const srcIdx = newOrder.indexOf(id);
-          const tgtIdx = newOrder.indexOf(hoverSlotId);
           newOrder[srcIdx] = hoverSlotId;
           newOrder[tgtIdx] = id;
         } else {
           // Insert before or after target
           newOrder = order.filter((k) => k !== id);
-          const tgtIdx = newOrder.indexOf(hoverSlotId);
+          const insertIdx = newOrder.indexOf(hoverSlotId);
           if (activeZone === 'left' || activeZone === 'top') {
-            newOrder.splice(tgtIdx, 0, id);
+            newOrder.splice(insertIdx, 0, id);
           } else {
-            newOrder.splice(tgtIdx + 1, 0, id);
+            newOrder.splice(insertIdx + 1, 0, id);
           }
         }
         if (newOrder.join('|') !== order.join('|')) onReorder(newOrder);
@@ -501,6 +503,7 @@ function DCArtboardFrame({ sectionId, artboard, label, order, onRename, onReorde
 
     document.addEventListener('pointermove', move);
     document.addEventListener('pointerup', up);
+    document.addEventListener('pointercancel', up);
   };
 
   return (
