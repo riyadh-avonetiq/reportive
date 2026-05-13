@@ -1921,7 +1921,7 @@ function PointerRowZone({ insertAt, active, onPointerEnter, onPointerLeave, inne
         transition: 'height .15s ease, background .15s, border-color .15s',
         border: `1.5px dashed ${active ? teal : 'rgba(0,194,184,.25)'}`,
         background: active ? 'rgba(0,194,184,.08)' : 'rgba(0,194,184,.02)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'copy',
       }}
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
