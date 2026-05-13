@@ -2444,7 +2444,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
                         }}/>
                         {/* Center zone: swap positions */}
                         {isSwap && (
-                          <div style={{ position: 'absolute', inset: 0, borderRadius: 12, border: '2px dashed #00C2B8', background: 'rgba(0,194,184,.08)', zIndex: 5, pointerEvents: 'none' }}/>
+                          <div style={{ position: 'absolute', inset: 0, borderRadius: 12, border: `2px dashed ${teal}`, background: 'rgba(0,194,184,.08)', zIndex: 5, pointerEvents: 'none' }}/>
                         )}
                       </>
                     )}
