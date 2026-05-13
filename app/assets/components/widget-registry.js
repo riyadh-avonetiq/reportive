@@ -146,10 +146,8 @@ window.DIM_VALUES_EXTRACTOR = {
     const uniq = (rows, key) => [...new Set((rows || []).map(r => r[key]).filter(v => v != null && v !== ''))].sort();
     const rows = p?.ga4Rows || [];
     return {
-      source:  uniq(rows, 'source'),
-      channel: uniq(rows, 'channel'),
-      device:  uniq(rows, 'device'),
-      country: uniq(rows, 'country'),
+      date:          uniq(rows, 'date'),
+      property_name: uniq(rows, 'property_name'),
     };
   },
   search: p => {
@@ -182,7 +180,7 @@ window.FILTER_DIM_REGISTRY = {
     return ['name', 'type', 'device', 'segment_value'];
   },
   meta:   (_dims) => ['name'],
-  ga4:    (_dims) => ['source', 'channel', 'device', 'country'],
+  ga4:    (_dims) => ['date', 'property_name'],
   search: (selectedDims) => (selectedDims || []).includes('page') ? ['page'] : ['query'],
 };
 
@@ -223,7 +221,7 @@ window.WIDGET_DEFAULTS = {
   'table': {
     google: { dimensions: ['name'],    metrics: ['spend','impressions','clicks','conversions'],      pageSize: 10, fontSize: 'M' },
     meta:   { dimensions: ['name'],    metrics: ['spend','impressions','clicks','ctr','cpa'],        pageSize: 10, fontSize: 'M' },
-    ga4:    { dimensions: ['source'],  metrics: ['sessions','users','new_users','engaged'],          pageSize: 10, fontSize: 'M' },
+    ga4:    { dimensions: ['date'], metrics: ['sessions','total_users','new_users','engaged_sessions'], pageSize: 10, fontSize: 'M' },
     search: { dimensions: ['query'],   metrics: ['impressions','clicks','ctr','position'],           pageSize: 10, fontSize: 'M' },
   },
   'text': {
