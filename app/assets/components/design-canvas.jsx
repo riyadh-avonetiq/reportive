@@ -54,7 +54,7 @@ if (typeof document !== 'undefined' && !document.getElementById('dc-styles')) {
   '.dc-zone.right{top:20%;right:0;width:20%;height:60%}',
   '.dc-zone.top{top:0;left:0;width:100%;height:20%}',
   '.dc-zone.bottom{bottom:0;left:0;width:100%;height:20%}',
-  '.dc-zone.center{top:20%;left:20%;width:60%;height:60%}',
+  '.dc-zone.center{top:0;left:0;width:100%;height:100%;z-index:4}',
   '.dc-zone.active.left{background:rgba(201,100,66,.18);border-left:2px solid #c96442}',
   '.dc-zone.active.right{background:rgba(201,100,66,.18);border-right:2px solid #c96442}',
   '.dc-zone.active.top{background:rgba(201,100,66,.18);border-top:2px solid #c96442}',
