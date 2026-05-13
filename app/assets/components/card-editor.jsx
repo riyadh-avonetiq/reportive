@@ -655,76 +655,6 @@ const SetupCarousel = ({ state, setState }) => (
   </>
 );
 
-// ─── Source / metric / dim definitions (exposed on window) ──────────
-
-const SOURCE_METRICS = {
-  google: [
-    { key: 'spend',       label: 'Total Spend',   fmt: 'rupiah' },
-    { key: 'clicks',      label: 'Clicks',         fmt: 'num' },
-    { key: 'impressions', label: 'Impressions',    fmt: 'num' },
-    { key: 'conversions', label: 'Conversions',    fmt: 'num' },
-    { key: 'ctr',         label: 'CTR',            fmt: 'pct' },
-    { key: 'cpc',         label: 'Avg CPC',        fmt: 'rupiah' },
-    { key: 'cvr',         label: 'Conv. Rate',     fmt: 'pct' },
-    { key: 'cpa',         label: 'CPA',            fmt: 'rupiah' },
-    { key: 'roas',        label: 'ROAS',           fmt: 'roas' },
-  ],
-  meta: [
-    { key: 'spend',               label: 'Total Spend',        fmt: 'rupiah' },
-    { key: 'impressions',         label: 'Impressions',        fmt: 'num' },
-    { key: 'reach',               label: 'Reach',              fmt: 'num' },
-    { key: 'clicks',              label: 'Link Clicks',        fmt: 'num' },
-    { key: 'landing_page_views',  label: 'Landing Page Views', fmt: 'num' },
-    { key: 'conversions',         label: 'Conversions',        fmt: 'num' },
-    { key: 'purchases',           label: 'Purchases',          fmt: 'num' },
-    { key: 'purchase_value',      label: 'Purchase Value',     fmt: 'rupiah' },
-    { key: 'add_to_carts',        label: 'Add to Carts',       fmt: 'num' },
-    { key: 'ctr',                 label: 'CTR',                fmt: 'pct' },
-    { key: 'cpc',                 label: 'Avg CPC',            fmt: 'rupiah' },
-    { key: 'cpa',                 label: 'CPA',                fmt: 'rupiah' },
-    { key: 'roas',                label: 'ROAS',               fmt: 'roas' },
-  ],
-  ga4: [
-    { key: 'sessions',             label: 'Sessions',         fmt: 'num' },
-    { key: 'users',                label: 'Total Users',      fmt: 'num' },
-    { key: 'new_users',            label: 'New Users',        fmt: 'num' },
-    { key: 'pageviews',            label: 'Events',           fmt: 'num' },
-    { key: 'engaged',              label: 'Engaged Sessions', fmt: 'num' },
-    { key: 'engagement_rate',      label: 'Engagement Rate',  fmt: 'pct' },
-    { key: 'bounce_rate',          label: 'Bounce Rate',      fmt: 'pct' },
-    { key: 'avg_session_duration', label: 'Avg Duration (s)', fmt: 'num' },
-  ],
-  search: [
-    { key: 'impressions', label: 'Impressions',  fmt: 'num' },
-    { key: 'clicks',      label: 'Organic Clicks', fmt: 'num' },
-    { key: 'ctr',         label: 'CTR',          fmt: 'pct' },
-    { key: 'position',    label: 'Avg Position', fmt: 'num' },
-  ],
-};
-
-const SOURCE_DIMS = {
-  google: [
-    { key: 'name',       label: 'Campaign' },
-    { key: 'type',       label: 'Campaign Type' },
-    { key: 'ad_group',   label: 'Ad Group' },
-    { key: 'keyword',    label: 'Keyword' },
-    { key: 'match_type', label: 'Match Type' },
-  ],
-  meta: [
-    { key: 'name', label: 'Campaign' },
-  ],
-  ga4: [
-    { key: 'source',  label: 'Source / Medium' },
-    { key: 'channel', label: 'Channel' },
-    { key: 'device',  label: 'Device' },
-    { key: 'country', label: 'Country' },
-  ],
-  search: [
-    { key: 'query', label: 'Query' },
-    { key: 'page',  label: 'Page URL' },
-  ],
-};
-
 const CARD_DISPLAY_NAMES = {
   'kpi-strip':       'KPI Strip',
   'chart-area':      'Area Chart',
@@ -770,9 +700,11 @@ const DragDots = () => (
 );
 
 // ─── TAB: Setup (simplified) ─────────────────────────────────────────
-const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connectedSources, sharedWidgetCount = 0, instanceSource, onSourceChange }) => {
+const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connectedSources, sharedWidgetCount = 0, instanceSource, onSourceChange, pageData }) => {
   const [dragMetIdx,  setDragMetIdx]  = React.useState(null);
   const [dragMetOver, setDragMetOver] = React.useState(null);
+  const dragAllIdxRef  = React.useRef(null);
+  const dragAllOverRef = React.useRef(null);
   const [dragDimIdx,  setDragDimIdx]  = React.useState(null);
   const [dragDimOver, setDragDimOver] = React.useState(null);
   const [metPickerOpen, setMetPickerOpen] = React.useState(false);
@@ -800,12 +732,20 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     const trimmed = { ...draft, name: draft.name.trim(), formula: draft.formula.trim() };
     if (customModal.mode === 'new') {
       const id = 'cm_' + Math.random().toString(36).slice(2, 8);
-      up({ customMetrics: [...(cfg.customMetrics || []), { id, ...trimmed }] });
+      up({ customMetrics: [...(cfg.customMetrics || []), { id, ...trimmed }], metricOrder: [..._metricOrder, id] });
     } else {
       up({ customMetrics: (cfg.customMetrics || []).map(m => m.id === customModal.metric.id ? { ...m, ...trimmed } : m) });
     }
     setCustomModal(null);
   };
+
+  // ── Data derivation (must be before any early return) ────────────
+  const widgetType = cardId;
+  const srcKey     = instanceSource || (widgetId || '').split('-')[0];
+  const dimValMap  = React.useMemo(
+    () => (window.DIM_VALUES_EXTRACTOR?.[srcKey] || (() => ({})))(pageData || {}),
+    [srcKey, pageData]
+  );
 
   if (!widgetId) {
     return (
@@ -831,21 +771,21 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     </div>
   ) : null;
 
-  // ── Data derivation ─────────────────────────────────────────────
-  const widgetType = cardId;
-  const srcKey     = instanceSource || (widgetId || '').split('-')[0];
+  const isTable     = widgetType === 'table' || (widgetType || '').startsWith('table-');
 
-  // Prefer DATA_REGISTRY (universal) over legacy SOURCE_METRICS
   const regSrc  = window.DATA_REGISTRY?.[srcKey] || {};
   const regKeys = Object.keys(regSrc);
-  const availM  = regKeys.length > 0
-    ? regKeys.map(key => ({ key, label: regSrc[key].label }))
-    : (SOURCE_METRICS[srcKey] || []);
-  const availD  = (window.DIM_REGISTRY?.[srcKey]) || (SOURCE_DIMS[srcKey] || []);
+  const availM  = isTable
+    ? (window.TABLE_METRICS_REGISTRY?.[srcKey] || [])
+    : (regKeys.length > 0
+        ? regKeys.map(key => ({ key, label: regSrc[key].label }))
+        : []);
+  const availD  = window.DIM_REGISTRY?.[srcKey] || [];
 
   // Widget type flags
+  // filterableD — dims valid as filter fields given the current dimension selection
+  // Computed inline (not memoized) since it depends on cfg.dimensions which changes with edits
   const isText      = widgetType === 'text';
-  const isTable     = widgetType === 'table' || (widgetType || '').startsWith('table-');
   const isKpiStrip  = widgetType === 'kpi-strip';
   const isSingleM   = ['single-stat', 'chart-area', 'chart-bar'].includes(widgetType);
   const isDonut     = widgetType === 'chart-donut';
@@ -874,8 +814,27 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
   const up = changes => onConfigChange && onConfigChange(widgetId, changes);
   const connectedList = ['google','meta','ga4','search'].filter(s => connectedSources?.[s]);
 
-  const reorderMetrics = (from, to) => {
-    const nx = [...cfg.metrics]; const [m] = nx.splice(from, 1); nx.splice(to, 0, m); up({ metrics: nx });
+  const showCust = !isText && !isNarrative && !isDesignOnly;
+  const _validMetricKeys = new Set(cfg.metrics || []);
+  const _validCustomMap  = new Map((cfg.customMetrics || []).map(cm => [cm.id, cm]));
+  const _metricDefaultOrder = [
+    ...(cfg.metrics || []),
+    ...(showCust ? (cfg.customMetrics || []).map(cm => cm.id) : []),
+  ];
+  const _metricOrder = (() => {
+    const base = (cfg.metricOrder || _metricDefaultOrder).filter(
+      id => _validMetricKeys.has(id) || _validCustomMap.has(id)
+    );
+    const existing = [...base];
+    _metricDefaultOrder.forEach(id => { if (!existing.includes(id)) existing.push(id); });
+    return existing;
+  })();
+
+  const reorderAllMetrics = (from, to) => {
+    const order = [..._metricOrder];
+    const [moved] = order.splice(from, 1);
+    order.splice(to, 0, moved);
+    up({ metricOrder: order });
   };
   const reorderDims = (from, to) => {
     const nx = [...cfg.dimensions]; const [m] = nx.splice(from, 1); nx.splice(to, 0, m); up({ dimensions: nx });
@@ -1048,6 +1007,51 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     );
   }
 
+  // ── Shared custom-metrics block (for single-metric widget types) ──
+  const renderCustomMetrics = () => (
+    <>
+      <EDivider/>
+      <ESection label={`Custom Metrics${(cfg.customMetrics || []).length ? ` (${(cfg.customMetrics || []).length})` : ''}`}>
+        {(cfg.customMetrics || []).length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 6 }}>
+            {(cfg.customMetrics || []).map(cm => (
+              <div key={cm.id} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', background: `${EP.teal}0C`, border: `1px solid ${EP.teal}30`, borderRadius: 5 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700, color: EP.teal, background: `${EP.teal}22`, padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>fx</span>
+                  <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, color: EP.teal, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cm.name}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, flexShrink: 0 }}>{cm.format === 'rupiah' ? 'Rp' : cm.format === 'pct' ? '%' : '#'}</span>
+                </div>
+                <button onClick={() => openEditCustom(cm)} title="Edit formula"
+                  style={{ width: 24, height: 24, border: `1px solid ${EP.edge}`, borderRadius: 5, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button onClick={() => up({ customMetrics: (cfg.customMetrics || []).filter(m => m.id !== cm.id) })}
+                  style={{ width: 24, height: 24, border: `1px solid rgba(220,38,38,.3)`, borderRadius: 5, background: 'rgba(220,38,38,.08)', color: EP.red, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <button onClick={openNewCustom}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px dashed ${EP.teal}66`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 1v8M1 5h8"/></svg>
+          Add custom metric
+        </button>
+      </ESection>
+      {customModal && (
+        <CustomMetricModal
+          draft={customDraft}
+          setDraft={setCustomDraft}
+          availMetrics={availM}
+          mode={customModal.mode}
+          onSave={saveCustomMetric}
+          onClose={() => setCustomModal(null)}
+        />
+      )}
+    </>
+  );
+
   // ── HEATMAP WIDGET ───────────────────────────────────────────────
   if (isHeatmap) {
     return (
@@ -1058,6 +1062,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
         </ESection>
         <EDivider/>
         {SourceSection}
+        {renderCustomMetrics()}
       </>
     );
   }
@@ -1081,8 +1086,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
             </ESection>
           </>
         )}
-        <EDivider/>
-        <ESizeButtons label="Font size" value={cfg.fontSize || 'M'} onChange={v => up({ fontSize: v })}/>
+        {renderCustomMetrics()}
       </>
     );
   }
@@ -1097,15 +1101,6 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
         </ESection>
         <EDivider/>
         {SourceSection}
-        {availM.length > 0 && (
-          <>
-            <EDivider/>
-            <ESection label="Metric">
-              <ESelect value={cfg.metric || availM[0]?.key} onChange={v => up({ metric: v })}
-                options={availM.map(m => ({ value: m.key, label: m.label }))}/>
-            </ESection>
-          </>
-        )}
         {availD.length > 0 && (
           <>
             <EDivider/>
@@ -1115,6 +1110,16 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
             </ESection>
           </>
         )}
+        {availM.length > 0 && (
+          <>
+            <EDivider/>
+            <ESection label="Metric">
+              <ESelect value={cfg.metric || availM[0]?.key} onChange={v => up({ metric: v })}
+                options={availM.map(m => ({ value: m.key, label: m.label }))}/>
+            </ESection>
+          </>
+        )}
+        {renderCustomMetrics()}
       </>
     );
   }
@@ -1167,43 +1172,6 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
               </button>
             )}
           </ESection>
-          <EDivider/>
-          <ESection label="Filters">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 6 }}>
-              {(cfg.filters || []).map((f, fi) => (
-                <div key={fi} style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                  <div style={{ width: 82 }}>
-                    <ESelect value={f.dim || cfg.dimensions[0]} onChange={v => { const nf = [...cfg.filters]; nf[fi] = { ...f, dim: v }; up({ filters: nf }); }}
-                      options={(cfg.dimensions || []).map(k => { const d = availD.find(x => x.key === k)||{key:k,label:k}; return { value:k, label:d.label }; })}/>
-                  </div>
-                  <div style={{ width: 42 }}>
-                    <ESelect value={f.op || 'contains'} onChange={v => { const nf = [...cfg.filters]; nf[fi] = { ...f, op: v }; up({ filters: nf }); }}
-                      options={[{value:'contains',label:'~'},{value:'is',label:'='},{value:'not',label:'≠'},{value:'starts',label:'^'}]}/>
-                  </div>
-                  <input value={f.val || ''} onChange={e => { const nf = [...cfg.filters]; nf[fi] = { ...f, val: e.target.value }; up({ filters: nf }); }}
-                    placeholder="value"
-                    style={{ flex: 1, minWidth: 0, padding: '6px 7px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}/>
-                  <button onClick={() => up({ filters: cfg.filters.filter((_, j) => j !== fi) })}
-                    style={{ width: 22, height: 22, border: `1px solid ${EP.edge}`, borderRadius: 4, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13, lineHeight: 1 }}>×</button>
-                </div>
-              ))}
-            </div>
-            <button onClick={() => up({ filters: [...(cfg.filters||[]), { dim: cfg.dimensions[0] || 'campaign', op: 'contains', val: '' }] })}
-              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 5, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 600 }}>
-              <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4.5 1v7M1 4.5h7"/></svg>
-              Add filter
-            </button>
-          </ESection>
-          <EDivider/>
-          <ESection label="Rows per page">
-            <div style={{ display: 'flex', gap: 5 }}>
-              {[5, 10, 20, 50].map(n => (
-                <button key={n} onClick={() => up({ pageSize: n })}
-                  style={{ flex: 1, padding: '6px 0', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, borderRadius: 6, cursor: 'pointer', border: `1px solid ${(cfg.pageSize || 10) === n ? EP.teal : EP.edge}`, background: (cfg.pageSize || 10) === n ? EP.teal + '22' : 'transparent', color: (cfg.pageSize || 10) === n ? EP.teal : EP.muted }}
-                >{n}</button>
-              ))}
-            </div>
-          </ESection>
         </>
       )}
 
@@ -1212,57 +1180,79 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
           <EDivider/>
           <ESection label={`Metrics (${(cfg.metrics || []).length + (cfg.customMetrics || []).length}/${maxMetrics})`}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 6 }}>
-
-              {/* Regular metrics */}
-              {(cfg.metrics || []).map((key, i) => {
-                const meta = availM.find(m => m.key === key) || { key, label: key };
-                return (
-                  <div key={i}
-                    draggable
-                    onDragStart={() => setDragMetIdx(i)}
-                    onDragEnter={() => setDragMetOver(i)}
-                    onDragOver={e => e.preventDefault()}
-                    onDragEnd={() => { if (dragMetIdx !== null && dragMetOver !== null && dragMetIdx !== dragMetOver) reorderMetrics(dragMetIdx, dragMetOver); setDragMetIdx(null); setDragMetOver(null); }}
-                    style={{ display: 'flex', gap: 4, alignItems: 'center', opacity: dragMetIdx === i ? 0.4 : 1, borderTop: dragMetOver === i && dragMetIdx !== i ? `2px solid ${EP.teal}` : '2px solid transparent' }}
-                  >
-                    <div title="Drag to reorder" style={{ cursor: 'grab', color: EP.muted, display: 'flex', alignItems: 'center', flexShrink: 0 }}><DragDots/></div>
-                    <div style={{ flex: 1 }}>
-                      <ESelect value={key} onChange={v => { const nx = [...cfg.metrics]; nx[i] = v; up({ metrics: nx }); }}
-                        options={availM.map(m => ({ value: m.key, label: m.label, disabled: m.key !== key && cfg.metrics.includes(m.key) }))}/>
-                    </div>
-                    <input value={cfg.metricLabels?.[key] ?? meta.label}
-                      onChange={e => up({ metricLabels: { ...(cfg.metricLabels || {}), [key]: e.target.value } })}
-                      placeholder={meta.label}
-                      style={{ width: 72, padding: '6px 7px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}
-                    />
-                    <button onClick={() => up({ metrics: cfg.metrics.filter((_, j) => j !== i) })}
-                      disabled={cfg.metrics.length <= 1}
-                      style={{ width: 24, height: 24, border: `1px solid rgba(220,38,38,.3)`, borderRadius: 5, background: 'rgba(220,38,38,.08)', color: EP.red, cursor: cfg.metrics.length <= 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: cfg.metrics.length <= 1 ? 0.3 : 1 }}>
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                    </button>
-                  </div>
-                );
-              })}
-
-              {/* Custom metrics */}
-              {(isKpiStrip || isTable) && (cfg.customMetrics || []).map(cm => (
-                <div key={cm.id} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                  <div style={{ cursor: 'grab', color: EP.muted, display: 'flex', alignItems: 'center', flexShrink: 0 }}><DragDots/></div>
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', background: `${EP.teal}0C`, border: `1px solid ${EP.teal}30`, borderRadius: 5 }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700, color: EP.teal, background: `${EP.teal}22`, padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>fx</span>
-                    <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, color: EP.teal, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cm.name}</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, flexShrink: 0 }}>{cm.format === 'rupiah' ? 'Rp' : cm.format === 'pct' ? '%' : '#'}</span>
-                  </div>
-                  <button onClick={() => openEditCustom(cm)} title="Edit formula"
-                    style={{ width: 24, height: 24, border: `1px solid ${EP.edge}`, borderRadius: 5, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                  </button>
-                  <button onClick={() => up({ customMetrics: (cfg.customMetrics || []).filter(m => m.id !== cm.id) })}
-                    style={{ width: 24, height: 24, border: `1px solid rgba(220,38,38,.3)`, borderRadius: 5, background: 'rgba(220,38,38,.08)', color: EP.red, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                  </button>
-                </div>
-              ))}
+              {(() => {
+                const items = _metricOrder.map(id => {
+                  if (_validMetricKeys.has(id)) {
+                    const origI = (cfg.metrics || []).indexOf(id);
+                    return { type: 'metric', key: id, origI };
+                  }
+                  const cm = _validCustomMap.get(id);
+                  if (cm) return { type: 'custom', cm };
+                  return null;
+                }).filter(Boolean);
+                const dragHandlers = i => ({
+                  draggable: true,
+                  onDragStart: () => { dragAllIdxRef.current = i; setDragMetIdx(i); },
+                  onDragEnter: () => { dragAllOverRef.current = i; setDragMetOver(i); },
+                  onDragOver: e => e.preventDefault(),
+                  onDragEnd: () => {
+                    const from = dragAllIdxRef.current; const to = dragAllOverRef.current;
+                    if (from !== null && to !== null && from !== to) reorderAllMetrics(from, to);
+                    dragAllIdxRef.current = null; dragAllOverRef.current = null;
+                    setDragMetIdx(null); setDragMetOver(null);
+                  },
+                });
+                const dragStyle = i => ({
+                  display: 'flex', gap: 4, alignItems: 'center',
+                  opacity: dragMetIdx === i ? 0.4 : 1,
+                  borderTop: dragMetOver === i && dragMetIdx !== i ? `2px solid ${EP.teal}` : '2px solid transparent',
+                });
+                return items.map((item, i) => {
+                  if (item.type === 'metric') {
+                    const { key, origI } = item;
+                    const meta = availM.find(m => m.key === key) || { key, label: key };
+                    return (
+                      <div key={`m_${key}`} {...dragHandlers(i)} style={dragStyle(i)}>
+                        <div title="Drag to reorder" style={{ cursor: 'grab', color: EP.muted, display: 'flex', alignItems: 'center', flexShrink: 0 }}><DragDots/></div>
+                        <div style={{ flex: 1 }}>
+                          <ESelect value={key} onChange={v => { const nx = [...cfg.metrics]; nx[origI] = v; up({ metrics: nx }); }}
+                            options={availM.map(m => ({ value: m.key, label: m.label, disabled: m.key !== key && cfg.metrics.includes(m.key) }))}/>
+                        </div>
+                        <input value={cfg.metricLabels?.[key] ?? meta.label}
+                          onChange={e => up({ metricLabels: { ...(cfg.metricLabels || {}), [key]: e.target.value } })}
+                          placeholder={meta.label}
+                          style={{ width: 72, padding: '6px 7px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}
+                        />
+                        <button onClick={() => { const newMet = cfg.metrics.filter((_, j) => j !== origI); up({ metrics: newMet, metricOrder: _metricOrder.filter(id => id !== key) }); }}
+                          disabled={cfg.metrics.length <= 1}
+                          style={{ width: 24, height: 24, border: `1px solid rgba(220,38,38,.3)`, borderRadius: 5, background: 'rgba(220,38,38,.08)', color: EP.red, cursor: cfg.metrics.length <= 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: cfg.metrics.length <= 1 ? 0.3 : 1 }}>
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                      </div>
+                    );
+                  } else {
+                    const { cm } = item;
+                    return (
+                      <div key={`c_${cm.id}`} {...dragHandlers(i)} style={dragStyle(i)}>
+                        <div style={{ cursor: 'grab', color: EP.muted, display: 'flex', alignItems: 'center', flexShrink: 0 }}><DragDots/></div>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', background: `${EP.teal}0C`, border: `1px solid ${EP.teal}30`, borderRadius: 5 }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700, color: EP.teal, background: `${EP.teal}22`, padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>fx</span>
+                          <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, color: EP.teal, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cm.name}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, flexShrink: 0 }}>{cm.format === 'rupiah' ? 'Rp' : cm.format === 'pct' ? '%' : '#'}</span>
+                        </div>
+                        <button onClick={() => openEditCustom(cm)} title="Edit formula"
+                          style={{ width: 24, height: 24, border: `1px solid ${EP.edge}`, borderRadius: 5, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                        <button onClick={() => up({ customMetrics: (cfg.customMetrics || []).filter(m => m.id !== cm.id), metricOrder: _metricOrder.filter(id => id !== cm.id) })}
+                          style={{ width: 24, height: 24, border: `1px solid rgba(220,38,38,.3)`, borderRadius: 5, background: 'rgba(220,38,38,.08)', color: EP.red, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                      </div>
+                    );
+                  }
+                });
+              })()}
             </div>
 
             {/* Add metric — picker trigger */}
@@ -1277,14 +1267,65 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
                   <MetricPickerDropdown
                     availMetrics={availM}
                     selectedKeys={cfg.metrics || []}
-                    showCustom={isKpiStrip || isTable}
-                    onAdd={key => { up({ metrics: [...(cfg.metrics || []), key] }); setMetPickerOpen(false); }}
+                    showCustom={!isText && !isNarrative && !isDesignOnly}
+                    onAdd={key => { up({ metrics: [...(cfg.metrics || []), key], metricOrder: [..._metricOrder, key] }); setMetPickerOpen(false); }}
                     onCustom={openNewCustom}
                     onClose={() => setMetPickerOpen(false)}
                   />
                 )}
               </div>
             )}
+          </ESection>
+        </>
+      )}
+
+      {isTable && (
+        <>
+          <EDivider/>
+          <ESection label="Filters">
+            {(() => {
+              const validFilterKeys = (window.FILTER_DIM_REGISTRY?.[srcKey] || (() => availD.map(d => d.key)))(cfg.dimensions || []);
+              const filterableD = availD.filter(d => validFilterKeys.includes(d.key));
+              const defaultFilterDim = filterableD[0]?.key || availD[0]?.key || 'name';
+              return (
+            <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 6 }}>
+              {(cfg.filters || []).map((f, fi) => (
+                <div key={fi} style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                  <div style={{ width: 82 }}>
+                    <ESelect value={f.dim || defaultFilterDim} onChange={v => { const nf = [...cfg.filters]; nf[fi] = { ...f, dim: v, val: '' }; up({ filters: nf }); }}
+                      options={filterableD.map(d => ({ value: d.key, label: d.label }))}/>
+                  </div>
+                  <div style={{ width: 42 }}>
+                    <ESelect value={f.op || 'contains'} onChange={v => { const nf = [...cfg.filters]; nf[fi] = { ...f, op: v }; up({ filters: nf }); }}
+                      options={[{value:'contains',label:'~'},{value:'is',label:'='},{value:'not',label:'≠'},{value:'starts',label:'^'}]}/>
+                  </div>
+                  {(dimValMap[f.dim || availD[0]?.key] || []).length > 0 ? (
+                    <select value={f.val || ''} onChange={e => { const nf = [...cfg.filters]; nf[fi] = { ...f, val: e.target.value }; up({ filters: nf }); }}
+                      style={{ flex: 1, minWidth: 0, padding: '6px 7px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: f.val ? EP.fg : EP.muted, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none', appearance: 'none' }}>
+                      <option value="">— pilih nilai —</option>
+                      {(dimValMap[f.dim || availD[0]?.key] || []).map(v => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input value={f.val || ''} onChange={e => { const nf = [...cfg.filters]; nf[fi] = { ...f, val: e.target.value }; up({ filters: nf }); }}
+                      placeholder="value"
+                      style={{ flex: 1, minWidth: 0, padding: '6px 7px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}/>
+                  )}
+                  <button onClick={() => up({ filters: cfg.filters.filter((_, j) => j !== fi) })}
+                    style={{ width: 22, height: 22, border: `1px solid ${EP.edge}`, borderRadius: 4, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13, lineHeight: 1 }}>×</button>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => up({ filters: [...(cfg.filters||[]), { dim: defaultFilterDim, op: 'contains', val: '' }] })}
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 5, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 600 }}>
+              <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4.5 1v7M1 4.5h7"/></svg>
+              Add filter
+            </button>
+            </>
+            );
+            })()}
           </ESection>
         </>
       )}
@@ -1301,8 +1342,6 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
         />
       )}
 
-      <EDivider/>
-      <ESizeButtons label="Font size" value={cfg.fontSize || 'M'} onChange={v => up({ fontSize: v })}/>
     </>
   );
 };
@@ -1470,13 +1509,35 @@ const CustomMetricModal = ({ draft, setDraft, availMetrics, mode, onSave, onClos
 
 const ACCENT_COLORS = ['#F8B400', '#00C2B8', '#7000FF', '#4285F4', '#16A34A', '#E3170A', '#0EA5E9', '#EC4899'];
 
-const StyleTab = ({ state, setState }) => (
+const StyleTab = ({ state, setState, widgetConfig, widgetId, cardId, onConfigChange }) => {
+  const wcfg = widgetConfig || {};
+  const wup  = changes => onConfigChange && onConfigChange(widgetId, changes);
+  const isTableStyle = cardId === 'table' || (cardId || '').startsWith('table-');
+  return (
   <>
+    <ESection label="Font size">
+      <ESizeButtons value={wcfg.fontSize || 'M'} onChange={v => wup({ fontSize: v })}/>
+    </ESection>
+    <EDivider/>
+    {isTableStyle && (
+      <>
+        <ESection label="Rows per page">
+          <div style={{ display: 'flex', gap: 5 }}>
+            {[5, 10, 20, 50].map(n => (
+              <button key={n} onClick={() => wup({ pageSize: n })}
+                style={{ flex: 1, padding: '6px 0', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, borderRadius: 6, cursor: 'pointer', border: `1px solid ${(wcfg.pageSize || 10) === n ? EP.teal : EP.edge}`, background: (wcfg.pageSize || 10) === n ? EP.teal + '22' : 'transparent', color: (wcfg.pageSize || 10) === n ? EP.teal : EP.muted }}
+              >{n}</button>
+            ))}
+          </div>
+        </ESection>
+        <EDivider/>
+      </>
+    )}
     <ESection label="Card title">
       <EToggle value={state.showTitle !== false} onChange={v => setState({ ...state, showTitle: v })} label="Show title"/>
     </ESection>
     <EDivider/>
-    <ESection label="Font size">
+    <ESection label="Text size">
       <ESizeButtons label="Card title" value={state.titleSize || 'M'} onChange={v => setState({ ...state, titleSize: v })}/>
       <ESizeButtons label="Metric value" value={state.valueSize || 'M'} onChange={v => setState({ ...state, valueSize: v })}/>
     </ESection>
@@ -1536,7 +1597,8 @@ const StyleTab = ({ state, setState }) => (
       </ESection>
     </ESection>
   </>
-);
+  );
+};
 
 // ─── TAB: Pages ───────────────────────────────────────────────────
 
@@ -2183,6 +2245,7 @@ const CardEditorPanel = ({
   sharedWidgetCount = 0,
   instanceSource = null,
   onSourceChange = null,
+  pageData = null,
   style = {},
 }) => {
   const [tab, setTab] = React.useState(defaultTab);
@@ -2258,9 +2321,10 @@ const CardEditorPanel = ({
             sharedWidgetCount={sharedWidgetCount}
             instanceSource={instanceSource}
             onSourceChange={onSourceChange}
+            pageData={pageData}
           />
         )}
-        {tab === 'style' && <StyleTab state={styleState} setState={setStyleState}/>}
+        {tab === 'style' && <StyleTab state={styleState} setState={setStyleState} widgetConfig={widgetConfig} widgetId={widgetId} cardId={activeCardId} onConfigChange={onConfigChange}/>}
       </div>
 
       {/* Footer */}
@@ -2303,4 +2367,4 @@ const DashboardWithEditor = ({ cardId = 'kpi-single', editorTab = 'setup', slots
   );
 };
 
-Object.assign(window, { CardEditorPanel, DashboardWithEditor, SOURCE_METRICS, SOURCE_DIMS });
+Object.assign(window, { CardEditorPanel, DashboardWithEditor });
