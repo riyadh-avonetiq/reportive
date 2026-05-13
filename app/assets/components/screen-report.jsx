@@ -2081,8 +2081,6 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
         let type;
         if      (relX < 0.25) type = 'before';
         else if (relX > 0.75) type = 'after';
-        else if (relY < 0.25) type = 'above';
-        else if (relY > 0.75) type = 'below';
         else                  type = 'swap';
         setDropTarget({ type, targetId: tid, rowIdx });
       } else {
@@ -2138,7 +2136,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
           }
         }
 
-      } else if (target.type === 'above' || target.type === 'below' || target.type === 'new-row') {
+      } else if (target.type === 'new-row') {
         // Remove dragged widget from its source row, insert as new full-width row
         let dragEntry = null;
         const srcRowIdx = rows.findIndex(row => row.some(w => w.id === id));
@@ -2152,9 +2150,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
           rows[srcRowIdx] = redistributeRow(rows[srcRowIdx]);
         }
         rows = rows.filter(row => row.length > 0);
-        let insertAt = target.type === 'new-row' ? target.insertAt
-                     : target.type === 'above'   ? target.rowIdx
-                     :                              target.rowIdx + 1;  // 'below'
+        let insertAt = target.insertAt;
         if (srcWillBeEmpty && srcRowIdx < insertAt) insertAt = Math.max(0, insertAt - 1);
         if (dragEntry) rows.splice(insertAt, 0, [{ ...dragEntry, span: 12 }]);
       }
@@ -2349,8 +2345,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
                 // Pointer drag zones (existing widget reorder)
                 const isPointerBefore  = !browseDragActive && dropTarget?.type === 'before' && dropTarget.targetId === id;
                 const isPointerAfter   = !browseDragActive && dropTarget?.type === 'after'  && dropTarget.targetId === id;
-                const isPointerAbove   = !browseDragActive && dropTarget?.type === 'above'  && dropTarget.targetId === id;
-                const isPointerBelow   = !browseDragActive && dropTarget?.type === 'below'  && dropTarget.targetId === id;
+
                 const isSwap           = !browseDragActive && dropTarget?.type === 'swap'   && dropTarget.targetId === id;
                 // Browse drag zones (new widgets from sidebar)
                 const isBefore   = browseDragActive && browseDropTarget?.type === 'before' && browseDropTarget.id === id;
@@ -2462,22 +2457,6 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
                           zIndex: 10, pointerEvents: 'none', borderRadius: '0 10px 10px 0',
                           background: isPointerAfter ? 'rgba(0,194,184,.14)' : 'transparent',
                           borderRight: `3px solid ${isPointerAfter ? teal : 'transparent'}`,
-                          transition: 'background .08s, border-color .08s',
-                        }}/>
-                        {/* Top zone: new row above */}
-                        <div style={{
-                          position: 'absolute', top: 0, left: '25%', right: '25%', height: '25%',
-                          zIndex: 10, pointerEvents: 'none',
-                          background: isPointerAbove ? 'rgba(0,194,184,.14)' : 'transparent',
-                          borderTop: `3px solid ${isPointerAbove ? teal : 'transparent'}`,
-                          transition: 'background .08s, border-color .08s',
-                        }}/>
-                        {/* Bottom zone: new row below */}
-                        <div style={{
-                          position: 'absolute', bottom: 0, left: '25%', right: '25%', height: '25%',
-                          zIndex: 10, pointerEvents: 'none',
-                          background: isPointerBelow ? 'rgba(0,194,184,.14)' : 'transparent',
-                          borderBottom: `3px solid ${isPointerBelow ? teal : 'transparent'}`,
                           transition: 'background .08s, border-color .08s',
                         }}/>
                         {/* Center zone: swap positions */}
