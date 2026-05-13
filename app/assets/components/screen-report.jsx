@@ -2307,14 +2307,21 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
                 const { id } = entry;
                 const entrySpan = entry.span || autoSpan;
                 const actualIdx  = row.indexOf(entry);
-                const isDragging = dragId === id;
-                const isSwap     = !browseDragActive && dropTarget?.type === 'swap' && dropTarget.targetId === id;
+                const isDragging       = dragId === id;
+                // Pointer drag zones (existing widget reorder)
+                const isPointerBefore  = !browseDragActive && dropTarget?.type === 'before' && dropTarget.targetId === id;
+                const isPointerAfter   = !browseDragActive && dropTarget?.type === 'after'  && dropTarget.targetId === id;
+                const isPointerAbove   = !browseDragActive && dropTarget?.type === 'above'  && dropTarget.targetId === id;
+                const isPointerBelow   = !browseDragActive && dropTarget?.type === 'below'  && dropTarget.targetId === id;
+                const isSwap           = !browseDragActive && dropTarget?.type === 'swap'   && dropTarget.targetId === id;
+                // Browse drag zones (new widgets from sidebar)
                 const isBefore   = browseDragActive && browseDropTarget?.type === 'before' && browseDropTarget.id === id;
                 const isAfter    = browseDragActive && browseDropTarget?.type === 'after'  && browseDropTarget.id === id;
                 const isReplace  = browseDragActive && browseDropTarget?.type === 'replace' && browseDropTarget.id === id;
 
                 return (
                   <div key={id}
+                    ref={el => el ? (widgetEls.current[id] = { el, rowIdx }) : delete widgetEls.current[id]}
                     style={{
                       gridColumn: `span ${entrySpan}`, position: 'relative',
                       display: 'flex', flexDirection: 'column',
@@ -2400,9 +2407,46 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
                       </div>
                     )}
 
-                    {/* Pointer swap highlight */}
-                    {isSwap && (
-                      <div style={{ position: 'absolute', inset: 0, borderRadius: 12, border: '2px dashed #00C2B8', background: 'rgba(0,194,184,.08)', zIndex: 5, pointerEvents: 'none' }}/>
+                    {/* Pointer drag zone overlays */}
+                    {dragId && !isDragging && (
+                      <>
+                        {/* Left zone: insert before in row */}
+                        <div style={{
+                          position: 'absolute', top: 0, left: 0, bottom: 0, width: '25%',
+                          zIndex: 10, pointerEvents: 'none', borderRadius: '10px 0 0 10px',
+                          background: isPointerBefore ? 'rgba(0,194,184,.14)' : 'transparent',
+                          borderLeft: `3px solid ${isPointerBefore ? teal : 'transparent'}`,
+                          transition: 'background .08s, border-color .08s',
+                        }}/>
+                        {/* Right zone: insert after in row */}
+                        <div style={{
+                          position: 'absolute', top: 0, right: 0, bottom: 0, width: '25%',
+                          zIndex: 10, pointerEvents: 'none', borderRadius: '0 10px 10px 0',
+                          background: isPointerAfter ? 'rgba(0,194,184,.14)' : 'transparent',
+                          borderRight: `3px solid ${isPointerAfter ? teal : 'transparent'}`,
+                          transition: 'background .08s, border-color .08s',
+                        }}/>
+                        {/* Top zone: new row above */}
+                        <div style={{
+                          position: 'absolute', top: 0, left: '25%', right: '25%', height: '25%',
+                          zIndex: 10, pointerEvents: 'none',
+                          background: isPointerAbove ? 'rgba(0,194,184,.14)' : 'transparent',
+                          borderTop: `3px solid ${isPointerAbove ? teal : 'transparent'}`,
+                          transition: 'background .08s, border-color .08s',
+                        }}/>
+                        {/* Bottom zone: new row below */}
+                        <div style={{
+                          position: 'absolute', bottom: 0, left: '25%', right: '25%', height: '25%',
+                          zIndex: 10, pointerEvents: 'none',
+                          background: isPointerBelow ? 'rgba(0,194,184,.14)' : 'transparent',
+                          borderBottom: `3px solid ${isPointerBelow ? teal : 'transparent'}`,
+                          transition: 'background .08s, border-color .08s',
+                        }}/>
+                        {/* Center zone: swap positions */}
+                        {isSwap && (
+                          <div style={{ position: 'absolute', inset: 0, borderRadius: 12, border: '2px dashed #00C2B8', background: 'rgba(0,194,184,.08)', zIndex: 5, pointerEvents: 'none' }}/>
+                        )}
+                      </>
                     )}
 
                     {/* Browse mode: left-edge zone (insert before), right-edge zone (insert after), center replace */}
