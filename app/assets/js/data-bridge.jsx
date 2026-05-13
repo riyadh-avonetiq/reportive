@@ -37,9 +37,6 @@ const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'
 // ── Format helpers ──────────────────────────────────────────────────
 const fmtRupiahShort = v => {
   if (v == null || isNaN(v)) return '—';
-  if (v >= 1_000_000_000) return 'Rp ' + (v / 1_000_000_000).toFixed(1).replace('.', ',') + ' M';
-  if (v >= 1_000_000)     return 'Rp ' + (v / 1_000_000).toFixed(1).replace('.', ',') + ' Jt';
-  if (v >= 1_000)         return 'Rp ' + (v / 1_000).toFixed(1).replace('.', ',') + ' Rb';
   return 'Rp ' + Math.round(v).toLocaleString('id-ID');
 };
 const fmtNum    = v => (v == null || isNaN(v)) ? '—' : Math.round(v).toLocaleString('id-ID');
@@ -439,9 +436,59 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
       cpa: k.conversions > 0 ? k.spend / k.conversions : 0,
     }));
 
+  // Keywords × device (from google_ads which has keyword + device per row)
+  const _byKeywordDevice = {};
+  (adsDetailRows || []).filter(r => r.keyword).forEach(r => {
+    const key = (r.campaign_name||'') + '\x00' + (r.ad_group||'') + '\x00' + (r.keyword||'') + '\x00' + (r.match_type||'') + '\x00' + (r.device||'');
+    if (!_byKeywordDevice[key]) _byKeywordDevice[key] = { name: r.campaign_name||'', campaign: r.campaign_name||'', ad_group: r.ad_group||'', keyword: r.keyword||'', match_type: r.match_type||'', device: r.device||'', spend: 0, impressions: 0, clicks: 0, conversions: 0 };
+    _byKeywordDevice[key].spend       += +r.spend       || 0;
+    _byKeywordDevice[key].impressions += +r.impressions || 0;
+    _byKeywordDevice[key].clicks      += +r.clicks      || 0;
+    _byKeywordDevice[key].conversions += +r.conversions || 0;
+  });
+  const keywordDeviceRows = Object.values(_byKeywordDevice).sort((a, b) => b.spend - a.spend).slice(0, 2000);
+
+  // Ad groups × device (from google_ads which has device column)
+  const _byAdGroupDevice = {};
+  (adsDetailRows || []).forEach(r => {
+    if (!r.device || !r.ad_group) return;
+    const key = (r.campaign_name||'') + '\x00' + (r.ad_group||'') + '\x00' + (r.device||'');
+    if (!_byAdGroupDevice[key]) _byAdGroupDevice[key] = { name: r.campaign_name||'', campaign: r.campaign_name||'', ad_group: r.ad_group||'', type: r.campaign_type||'', device: r.device||'', spend: 0, impressions: 0, clicks: 0, conversions: 0 };
+    _byAdGroupDevice[key].spend       += +r.spend       || 0;
+    _byAdGroupDevice[key].impressions += +r.impressions || 0;
+    _byAdGroupDevice[key].clicks      += +r.clicks      || 0;
+    _byAdGroupDevice[key].conversions += +r.conversions || 0;
+  });
+  const adGroupDeviceRows = Object.values(_byAdGroupDevice).sort((a, b) => b.spend - a.spend).slice(0, 1000);
+
+  // Device breakdown (from google_ads which has device column)
+  const _byDevice = {};
+  (adsDetailRows || []).forEach(r => {
+    if (!r.device) return;
+    const key = (r.campaign_name || '') + '\x00' + r.device;
+    if (!_byDevice[key]) _byDevice[key] = { name: r.campaign_name || '', campaign: r.campaign_name || '', type: r.campaign_type || '', device: r.device, spend: 0, impressions: 0, clicks: 0, conversions: 0 };
+    _byDevice[key].spend       += +r.spend       || 0;
+    _byDevice[key].impressions += +r.impressions || 0;
+    _byDevice[key].clicks      += +r.clicks      || 0;
+    _byDevice[key].conversions += +r.conversions || 0;
+  });
+  const deviceRows = Object.values(_byDevice).sort((a, b) => b.spend - a.spend).slice(0, 1000);
+
+  // Gender breakdown (from google_ads_seg where segment_type = 'gender')
+  const _byGender = {};
+  (adsSegRows || []).filter(r => r.segment_type === 'gender').forEach(r => {
+    const key = (r.campaign_name || '') + '\x00' + (r.segment_value || '');
+    if (!_byGender[key]) _byGender[key] = { name: r.campaign_name || '', campaign: r.campaign_name || '', segment_value: r.segment_value || '', spend: 0, impressions: 0, clicks: 0, conversions: 0 };
+    _byGender[key].spend       += +r.spend       || 0;
+    _byGender[key].impressions += +r.impressions || 0;
+    _byGender[key].clicks      += +r.clicks      || 0;
+    _byGender[key].conversions += +r.conversions || 0;
+  });
+  const genderRows = Object.values(_byGender).sort((a, b) => b.conversions - a.conversions);
+
   // Conversion actions (from google_ads_seg where segment_type = 'conversion_action')
   const _byConvAction = {};
-  (adsSegRows || []).forEach(r => {
+  (adsSegRows || []).filter(r => r.segment_type === 'conversion_action').forEach(r => {
     const key = r.segment_value || 'Other';
     if (!_byConvAction[key]) _byConvAction[key] = { name: key, conversions: 0 };
     _byConvAction[key].conversions += +r.conversions || 0;
@@ -457,7 +504,8 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
     prevKey: prevLabel || null,
     ads, adsPrev, meta, metaPrev, ga4, ga4Prev, psi, gsc, gscPrev,
     series, channels, campaigns, metaSeries, metaChannels,
-    adGroups, keywords, conversionActions,
+    adGroups, keywords, keywordDeviceRows, adGroupDeviceRows, deviceRows, genderRows, conversionActions,
+    ga4Rows,
   };
 }
 
@@ -522,6 +570,57 @@ function mockData() {
       { name: 'Product Launch · Bold Brew', campaign: 'Product Launch · Bold Brew', ad_group: 'New Coffee Line', keyword: 'kopi bold brew',  match_type: 'Broad', type: 'Search', spend: 2_100_000, clicks: 680, impressions: 17400, conversions: 56, ctr: 3.91, cpc: 3088, cvr: 8.24, cpa: 37500 },
       { name: 'Product Launch · Bold Brew', campaign: 'Product Launch · Bold Brew', ad_group: 'New Coffee Line', keyword: 'kopi specialty single origin', match_type: 'Phrase', type: 'Search', spend: 1_800_000, clicks: 560, impressions: 14700, conversions: 46, ctr: 3.81, cpc: 3214, cvr: 8.21, cpa: 39130 },
     ],
+    keywordDeviceRows: [
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Exact',   keyword: 'kopi senja',          match_type: 'Exact', device: 'Mobile',  spend: 1_104_000, impressions: 8520,  clicks: 348, conversions: 31 },
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Exact',   keyword: 'kopi senja',          match_type: 'Exact', device: 'Desktop', spend:   552_000, impressions: 4260,  clicks: 174, conversions: 16 },
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Exact',   keyword: 'kopi senja',          match_type: 'Exact', device: 'Other',   spend:   184_000, impressions: 1420,  clicks:  58, conversions:  5 },
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Exact',   keyword: 'kopi senja nusantara', match_type: 'Exact', device: 'Mobile',  spend:   816_000, impressions: 6360,  clicks: 240, conversions: 22 },
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Exact',   keyword: 'kopi senja nusantara', match_type: 'Exact', device: 'Desktop', spend:   408_000, impressions: 3180,  clicks: 120, conversions: 10 },
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Phrase',  keyword: 'beli kopi senja',      match_type: 'Phrase',device: 'Mobile',  spend:   588_000, impressions: 5040,  clicks: 186, conversions: 17 },
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Phrase',  keyword: 'beli kopi senja',      match_type: 'Phrase',device: 'Desktop', spend:   294_000, impressions: 2520,  clicks:  93, conversions:  8 },
+      { name: 'Product Launch · Bold Brew', campaign: 'Product Launch · Bold Brew', ad_group: 'New Coffee Line', keyword: 'kopi bold brew',             match_type: 'Broad', device: 'Mobile',  spend: 1_260_000, impressions: 10440, clicks: 408, conversions: 34 },
+      { name: 'Product Launch · Bold Brew', campaign: 'Product Launch · Bold Brew', ad_group: 'New Coffee Line', keyword: 'kopi bold brew',             match_type: 'Broad', device: 'Desktop', spend:   630_000, impressions:  5220, clicks: 204, conversions: 17 },
+      { name: 'Product Launch · Bold Brew', campaign: 'Product Launch · Bold Brew', ad_group: 'New Coffee Line', keyword: 'kopi specialty single origin',match_type: 'Phrase',device: 'Mobile',  spend: 1_080_000, impressions:  8820, clicks: 336, conversions: 28 },
+      { name: 'Product Launch · Bold Brew', campaign: 'Product Launch · Bold Brew', ad_group: 'New Coffee Line', keyword: 'kopi specialty single origin',match_type: 'Phrase',device: 'Desktop', spend:   540_000, impressions:  4410, clicks: 168, conversions: 14 },
+    ],
+    adGroupDeviceRows: [
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Exact',   type: 'Search',  device: 'Mobile',  spend: 1_920_000, impressions: 14880, clicks: 588, conversions: 53 },
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Exact',   type: 'Search',  device: 'Desktop', spend:   960_000, impressions:  7440, clicks: 294, conversions: 26 },
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Phrase',  type: 'Search',  device: 'Mobile',  spend: 1_680_000, impressions: 13440, clicks: 504, conversions: 38 },
+      { name: 'Brand Awareness Q1', campaign: 'Brand Awareness Q1', ad_group: 'Brand - Phrase',  type: 'Search',  device: 'Desktop', spend:   840_000, impressions:  6720, clicks: 252, conversions: 19 },
+      { name: 'Retargeting · Cart',  campaign: 'Retargeting · Cart',  ad_group: 'Cart Abandoners', type: 'Display', device: 'Mobile',  spend: 1_560_000, impressions: 18720, clicks: 672, conversions:  89 },
+      { name: 'Retargeting · Cart',  campaign: 'Retargeting · Cart',  ad_group: 'Cart Abandoners', type: 'Display', device: 'Desktop', spend:   780_000, impressions:  9360, clicks: 336, conversions:  44 },
+      { name: 'Retargeting · Cart',  campaign: 'Retargeting · Cart',  ad_group: 'Product Viewers', type: 'Display', device: 'Mobile',  spend:   960_000, impressions: 12840, clicks: 396, conversions:  42 },
+      { name: 'Retargeting · Cart',  campaign: 'Retargeting · Cart',  ad_group: 'Product Viewers', type: 'Display', device: 'Desktop', spend:   480_000, impressions:  6420, clicks: 198, conversions:  21 },
+      { name: 'Product Launch · Bold Brew', campaign: 'Product Launch · Bold Brew', ad_group: 'New Coffee Line', type: 'Search', device: 'Mobile',  spend: 2_340_000, impressions: 19260, clicks: 744, conversions:  61 },
+      { name: 'Product Launch · Bold Brew', campaign: 'Product Launch · Bold Brew', ad_group: 'New Coffee Line', type: 'Search', device: 'Desktop', spend: 1_170_000, impressions:  9630, clicks: 372, conversions:  31 },
+    ],
+    deviceRows: [
+      { name: 'Brand Awareness Q1',        campaign: 'Brand Awareness Q1',        type: 'Search',  device: 'Mobile',  spend: 5_040_000, impressions: 37080, clicks: 1404, conversions: 113 },
+      { name: 'Brand Awareness Q1',        campaign: 'Brand Awareness Q1',        type: 'Search',  device: 'Desktop', spend: 2_520_000, impressions: 18540, clicks:  702, conversions:  56 },
+      { name: 'Brand Awareness Q1',        campaign: 'Brand Awareness Q1',        type: 'Search',  device: 'Other',   spend:   840_000, impressions:  6180, clicks:  234, conversions:  19 },
+      { name: 'Retargeting · Cart',         campaign: 'Retargeting · Cart',         type: 'Display', device: 'Mobile',  spend: 2_520_000, impressions: 31560, clicks: 1068, conversions: 131 },
+      { name: 'Retargeting · Cart',         campaign: 'Retargeting · Cart',         type: 'Display', device: 'Desktop', spend: 1_260_000, impressions: 15780, clicks:  534, conversions:  65 },
+      { name: 'Retargeting · Cart',         campaign: 'Retargeting · Cart',         type: 'Display', device: 'Other',   spend:   420_000, impressions:  5260, clicks:  178, conversions:  22 },
+      { name: 'Product Launch · Bold Brew', campaign: 'Product Launch · Bold Brew', type: 'Search',  device: 'Mobile',  spend: 3_660_000, impressions: 31620, clicks: 1188, conversions:  95 },
+      { name: 'Product Launch · Bold Brew', campaign: 'Product Launch · Bold Brew', type: 'Search',  device: 'Desktop', spend: 1_830_000, impressions: 15810, clicks:  594, conversions:  47 },
+      { name: 'Ramadan Promo',              campaign: 'Ramadan Promo',              type: 'Display', device: 'Mobile',  spend: 1_740_000, impressions: 17280, clicks:  552, conversions:  47 },
+      { name: 'Ramadan Promo',              campaign: 'Ramadan Promo',              type: 'Display', device: 'Desktop', spend:   870_000, impressions:  8640, clicks:  276, conversions:  23 },
+      { name: 'Ramadan Promo',              campaign: 'Ramadan Promo',              type: 'Display', device: 'Other',   spend:   290_000, impressions:  2880, clicks:   92, conversions:   8 },
+    ],
+    genderRows: [
+      { name: 'Brand Awareness Q1',        campaign: 'Brand Awareness Q1',        segment_value: 'Male',    spend: 5_040_000, impressions: 37080, clicks: 1404, conversions: 113 },
+      { name: 'Brand Awareness Q1',        campaign: 'Brand Awareness Q1',        segment_value: 'Female',  spend: 2_520_000, impressions: 18540, clicks:  702, conversions:  56 },
+      { name: 'Brand Awareness Q1',        campaign: 'Brand Awareness Q1',        segment_value: 'Unknown', spend:   840_000, impressions:  6180, clicks:  234, conversions:  19 },
+      { name: 'Retargeting · Cart',         campaign: 'Retargeting · Cart',         segment_value: 'Male',    spend: 2_100_000, impressions: 26280, clicks:  890, conversions: 109 },
+      { name: 'Retargeting · Cart',         campaign: 'Retargeting · Cart',         segment_value: 'Female',  spend: 1_680_000, impressions: 21040, clicks:  712, conversions:  87 },
+      { name: 'Retargeting · Cart',         campaign: 'Retargeting · Cart',         segment_value: 'Unknown', spend:   420_000, impressions:  5260, clicks:  178, conversions:  22 },
+      { name: 'Product Launch · Bold Brew', campaign: 'Product Launch · Bold Brew', segment_value: 'Male',    spend: 3_660_000, impressions: 31620, clicks: 1188, conversions:  95 },
+      { name: 'Product Launch · Bold Brew', campaign: 'Product Launch · Bold Brew', segment_value: 'Female',  spend: 1_830_000, impressions: 15810, clicks:  594, conversions:  47 },
+      { name: 'Ramadan Promo',              campaign: 'Ramadan Promo',              segment_value: 'Male',    spend: 1_740_000, impressions: 17280, clicks:  552, conversions:  47 },
+      { name: 'Ramadan Promo',              campaign: 'Ramadan Promo',              segment_value: 'Female',  spend:   870_000, impressions:  8640, clicks:  276, conversions:  23 },
+      { name: 'Ramadan Promo',              campaign: 'Ramadan Promo',              segment_value: 'Unknown', spend:   290_000, impressions:  2880, clicks:   92, conversions:   8 },
+    ],
     meta:     { spend: 32_400_000, impressions: 680000, clicks: 12400, conversions: 842, ctr: 1.82, cpc: 2613, cpa: 38478, roas: 2.74 },
     metaPrev: { spend: 28_800_000, impressions: 610000, clicks: 10900, conversions: 720, ctr: 1.79, cpc: 2642, cpa: 40000, roas: 2.51 },
     metaSeries: {
@@ -582,16 +681,16 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     if (to)   adsSheetQ = adsSheetQ.lte('day', to);
 
     let adsDetailQ = _supa.from('google_ads')
-      .select('day, account_name, campaign_name, campaign_type, ad_group, keyword, match_type, spend, impressions, clicks, conversions')
+      .select('day, account_name, campaign_name, campaign_type, ad_group, keyword, match_type, device, spend, impressions, clicks, conversions')
       .order('day', { ascending: true });
     if (account) adsDetailQ = adsDetailQ.eq('account_name', account);
     if (from)    adsDetailQ = adsDetailQ.gte('day', from);
     if (to)      adsDetailQ = adsDetailQ.lte('day', to);
 
-    // ── Google Ads Segments (conversion actions) ────────────────
+    // ── Google Ads Segments (conversion actions + gender) ───────
     let adsSegQ = _supa.from('google_ads_seg')
-      .select('day, account_name, campaign_name, segment_type, segment_value, conversions')
-      .eq('segment_type', 'conversion_action')
+      .select('day, account_name, campaign_name, segment_type, segment_value, spend, impressions, clicks, conversions')
+      .in('segment_type', ['conversion_action', 'gender'])
       .order('day', { ascending: true })
       .limit(50000);
     if (account) adsSegQ = adsSegQ.eq('account_name', account);
