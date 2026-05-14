@@ -756,7 +756,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     const gscQueryQ = (_gscSupa && gscProperty !== null)
       ? (() => {
           let q = _gscSupa.from('search_console_daily')
-            .select('date, query, country, device, impressions, clicks, position')
+            .select('date, query, impressions, clicks, position')
             .order('clicks', { ascending: false })
             .limit(50);
           if (gscProperty) q = q.eq('property', gscProperty);
@@ -768,7 +768,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     const gscPagesQ = (_gscSupa && gscProperty !== null)
       ? (() => {
           let q = _gscSupa.from('search_console_pages')
-            .select('date, page, country, device, impressions, clicks, position')
+            .select('date, page, impressions, clicks, position')
             .order('clicks', { ascending: false })
             .limit(50);
           if (gscProperty) q = q.eq('property', gscProperty);
@@ -798,6 +798,9 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
 
     // search_console_summary: accurate daily totals from GSC API (dimensions: date, searchType: web)
     // Do NOT fall back to search_console_daily — per-query rows inflate impressions 5-10x
+    if (gscSumR.error) console.warn('[Reportive] GSC summary error:', gscSumR.error.message);
+    if (gscQryR.error) console.warn('[Reportive] GSC queries error:', gscQryR.error.message);
+    if (gscPgsR.error) console.warn('[Reportive] GSC pages error:',   gscPgsR.error.message);
     const gscSummaryData = (gscSumR.error || !gscSumR.data) ? [] : gscSumR.data;
 
 
