@@ -1336,14 +1336,21 @@ function UniversalTableWidget({ instance, p, cfg }) {
 
   // GSC: tab-driven — tabs replace dimension selector
   if (src === 'search') {
-    const rows      = gscTab === 'page' ? (p?.gsc?.pages || []) : (p?.gsc?.queries || []);
-    const dimKey    = gscTab === 'page' ? 'page' : 'query';
-    const dimDef    = availDims.find(d => d.key === dimKey);
+    const GSC_TABS = [
+      { key: 'query',   label: 'Queries',   rowsFn: p => p?.gsc?.queries   || [], name: 'Top Queries' },
+      { key: 'page',    label: 'Pages',     rowsFn: p => p?.gsc?.pages     || [], name: 'Top Pages' },
+      { key: 'country', label: 'Countries', rowsFn: p => p?.gsc?.countries || [], name: 'Countries' },
+      { key: 'device',  label: 'Devices',   rowsFn: p => p?.gsc?.devices   || [], name: 'Devices' },
+      { key: 'date',    label: 'Date',      rowsFn: p => p?.gsc?.dates     || [], name: 'Date' },
+    ];
+    const activeTab = GSC_TABS.find(t => t.key === gscTab) || GSC_TABS[0];
+    const rows   = activeTab.rowsFn(p);
+    const dimDef = availDims.find(d => d.key === activeTab.key);
     const tabBar = (
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--navy-edge)', paddingLeft: 4 }}>
-        {[{ key: 'query', label: 'Queries' }, { key: 'page', label: 'Pages' }].map(t => (
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--navy-edge)', paddingLeft: 4, overflowX: 'auto' }}>
+        {GSC_TABS.map(t => (
           <button key={t.key} onClick={() => setGscTab(t.key)} style={{
-            padding: '7px 14px', background: 'none', border: 'none',
+            padding: '7px 14px', background: 'none', border: 'none', whiteSpace: 'nowrap',
             borderBottom: gscTab === t.key ? `2px solid ${teal}` : '2px solid transparent',
             marginBottom: -1,
             color: gscTab === t.key ? teal : sec,
@@ -1360,9 +1367,9 @@ function UniversalTableWidget({ instance, p, cfg }) {
         rows={rows}
         availDims={dimDef ? [dimDef] : []}
         availMetrics={availMetrics}
-        defaultDims={[dimKey]}
+        defaultDims={[activeTab.key]}
         defaultMetrics={cfg.metrics || availMetrics.slice(0, 4).map(m => m.key)}
-        defaultName={cfg.name || (gscTab === 'page' ? 'Top Pages' : 'Top Queries')}
+        defaultName={cfg.name || activeTab.name}
         customMetrics={cfg.customMetrics || []}
         tabBar={tabBar}
       />

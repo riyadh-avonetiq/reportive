@@ -80,6 +80,9 @@ window.DIM_REGISTRY = {
   search: [
     { key: 'query',   label: 'Query' },
     { key: 'page',    label: 'Page URL', fmtCell: 'url' },
+    { key: 'date',    label: 'Date' },
+    { key: 'country', label: 'Country' },
+    { key: 'device',  label: 'Device' },
   ],
 };
 
@@ -187,8 +190,11 @@ window.DIM_VALUES_EXTRACTOR = {
   search: p => {
     const uniq = (rows, key) => [...new Set((rows || []).map(r => r[key]).filter(v => v != null && v !== ''))].sort();
     return {
-      query: uniq(p?.gsc?.queries, 'query'),
-      page:  uniq(p?.gsc?.pages,   'page'),
+      query:   uniq(p?.gsc?.queries,   'query'),
+      page:    uniq(p?.gsc?.pages,     'page'),
+      date:    uniq(p?.gsc?.dates,     'date'),
+      country: uniq(p?.gsc?.countries, 'country'),
+      device:  uniq(p?.gsc?.devices,   'device'),
     };
   },
 };
@@ -215,7 +221,7 @@ window.FILTER_DIM_REGISTRY = {
   },
   meta:   (_dims) => ['name', 'adset_name', 'ad_name', 'date'],
   ga4:    (_dims) => ['property_name', 'date'],
-  search: (_dims) => ['query', 'page'],
+  search: (_dims) => ['query', 'page', 'date', 'country', 'device'],
 };
 
 window.WIDGET_DEFAULTS = {

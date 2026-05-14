@@ -156,10 +156,12 @@ function aggregateGa4(rows) {
 // summaryRows: (date, property) level — used for totals and daily chart
 // queryRows:   (query) level       — used for top-queries table
 // pagesRows:   (page) level        — used for top-pages table
-function aggregateGsc(summaryRows, queryRows, pagesRows) {
-  summaryRows = summaryRows || [];
-  queryRows   = queryRows   || [];
-  pagesRows   = pagesRows   || [];
+function aggregateGsc(summaryRows, queryRows, pagesRows, countryRows, deviceRows) {
+  summaryRows  = summaryRows  || [];
+  queryRows    = queryRows    || [];
+  pagesRows    = pagesRows    || [];
+  countryRows  = countryRows  || [];
+  deviceRows   = deviceRows   || [];
   if (!summaryRows.length && !queryRows.length && !pagesRows.length) return null;
 
   // Totals from summary (impression-weighted position)
@@ -200,14 +202,19 @@ function aggregateGsc(summaryRows, queryRows, pagesRows) {
     .sort((a, b) => b.clicks - a.clicks)
     .slice(0, 15);
 
-  // Daily series from summary rows
+  // Daily series + date table rows — from summary (accurate; do not use daily query rows)
   const byDate = {};
   summaryRows.forEach(r => {
     const d = r.date || r.day;
     if (!d) return;
-    if (!byDate[d]) byDate[d] = { impressions: 0, clicks: 0 };
-    byDate[d].impressions += +r.impressions || 0;
-    byDate[d].clicks      += +r.clicks     || 0;
+    if (!byDate[d]) byDate[d] = { impressions: 0, clicks: 0, posWeightedSum: 0, posImprSum: 0 };
+    const imp = +r.impressions || 0;
+    byDate[d].impressions += imp;
+    byDate[d].clicks      += +r.clicks || 0;
+    if (r.position != null && imp > 0) {
+      byDate[d].posWeightedSum += +r.position * imp;
+      byDate[d].posImprSum     += imp;
+    }
   });
   const dateKeys = Object.keys(byDate).sort();
   const series = {
@@ -215,6 +222,13 @@ function aggregateGsc(summaryRows, queryRows, pagesRows) {
     clicks:      dateKeys.map(k => byDate[k].clicks),
     labels:      dateKeys,
   };
+  const dates = dateKeys.map(k => ({
+    date:        k,
+    impressions: byDate[k].impressions,
+    clicks:      byDate[k].clicks,
+    ctr:         byDate[k].impressions > 0 ? (byDate[k].clicks / byDate[k].impressions) * 100 : 0,
+    position:    byDate[k].posImprSum > 0 ? byDate[k].posWeightedSum / byDate[k].posImprSum : 0,
+  }));
 
   // Top pages — group by page URL
   const byPage = {};
@@ -240,7 +254,53 @@ function aggregateGsc(summaryRows, queryRows, pagesRows) {
     .sort((a, b) => b.clicks - a.clicks)
     .slice(0, 15);
 
-  return { impressions, clicks, ctr, position, queries, pages, series };
+  // Countries — group by country
+  const byCountry = {};
+  countryRows.forEach(r => {
+    const c = r.country || '(unknown)';
+    if (!byCountry[c]) byCountry[c] = { country: c, impressions: 0, clicks: 0, posWeightedSum: 0, posImprSum: 0 };
+    const imp = +r.impressions || 0;
+    byCountry[c].impressions    += imp;
+    byCountry[c].clicks         += +r.clicks || 0;
+    if (r.position != null && imp > 0) {
+      byCountry[c].posWeightedSum += +r.position * imp;
+      byCountry[c].posImprSum     += imp;
+    }
+  });
+  const countries = Object.values(byCountry)
+    .map(c => ({
+      country:     c.country,
+      impressions: c.impressions,
+      clicks:      c.clicks,
+      ctr:         c.impressions > 0 ? (c.clicks / c.impressions) * 100 : 0,
+      position:    c.posImprSum > 0 ? c.posWeightedSum / c.posImprSum : 0,
+    }))
+    .sort((a, b) => b.clicks - a.clicks);
+
+  // Devices — group by device
+  const byDevice = {};
+  deviceRows.forEach(r => {
+    const dv = r.device || '(unknown)';
+    if (!byDevice[dv]) byDevice[dv] = { device: dv, impressions: 0, clicks: 0, posWeightedSum: 0, posImprSum: 0 };
+    const imp = +r.impressions || 0;
+    byDevice[dv].impressions    += imp;
+    byDevice[dv].clicks         += +r.clicks || 0;
+    if (r.position != null && imp > 0) {
+      byDevice[dv].posWeightedSum += +r.position * imp;
+      byDevice[dv].posImprSum     += imp;
+    }
+  });
+  const devices = Object.values(byDevice)
+    .map(dv => ({
+      device:      dv.device,
+      impressions: dv.impressions,
+      clicks:      dv.clicks,
+      ctr:         dv.impressions > 0 ? (dv.clicks / dv.impressions) * 100 : 0,
+      position:    dv.posImprSum > 0 ? dv.posWeightedSum / dv.posImprSum : 0,
+    }))
+    .sort((a, b) => b.clicks - a.clicks);
+
+  return { impressions, clicks, ctr, position, queries, pages, series, dates, countries, devices };
 }
 
 // ── Aggregate: PageSpeed Insights ───────────────────────────────────
@@ -278,7 +338,7 @@ function aggregatePsi(rows) {
 }
 
 // ── Build aggregated data object ────────────────────────────────────
-function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRows, prevGa4Rows, prevGscSummary, prevGscQueries, from, to, prevFrom, prevTo, metaRows, prevMetaRows, gscPages, prevGscPages, adsDetailRows, adsSegRows, adsSheetRows) {
+function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRows, prevGa4Rows, prevGscSummary, prevGscQueries, from, to, prevFrom, prevTo, metaRows, prevMetaRows, gscPages, prevGscPages, adsDetailRows, adsSegRows, adsSheetRows, gscCountries, gscDevices) {
   // Use ads_data (sheet-synced, matches google_ads_daily) when available; fall back to google_ads
   const detailRows = adsSheetRows && adsSheetRows.length ? adsSheetRows : adsDetailRows;
   console.log('[Reportive] detail source:', adsSheetRows && adsSheetRows.length ? 'ads_data (' + adsSheetRows.length + ' rows)' : 'google_ads (' + adsDetailRows.length + ' rows)');
@@ -286,6 +346,8 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
   prevMetaRows = prevMetaRows || [];
   gscPages     = gscPages     || [];
   prevGscPages = prevGscPages || [];
+  gscCountries = gscCountries || [];
+  gscDevices   = gscDevices   || [];
 
   const ads      = aggregateAds(adsRows);
   const adsPrev  = aggregateAds(prevAdsRows);
@@ -294,7 +356,7 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
   const ga4      = aggregateGa4(ga4Rows);
   const ga4Prev  = aggregateGa4(prevGa4Rows);
   const psi      = aggregatePsi(psiRows);
-  const gsc      = aggregateGsc(gscSummary, gscQueries, gscPages);
+  const gsc      = aggregateGsc(gscSummary, gscQueries, gscPages, gscCountries, gscDevices);
   const gscPrev  = aggregateGsc(prevGscSummary, prevGscQueries, prevGscPages);
 
   // Daily series from Google Ads rows
@@ -778,6 +840,32 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
         })()
       : Promise.resolve({ data: [] });
 
+    // Country and device breakdown — separate queries so a missing column doesn't break queries/pages
+    const gscCountryQ = (_gscSupa && gscProperty !== null)
+      ? (() => {
+          let q = _gscSupa.from('search_console_daily')
+            .select('country, impressions, clicks, position')
+            .order('clicks', { ascending: false })
+            .limit(200);
+          if (gscProperty) q = q.eq('property', gscProperty);
+          if (from) q = q.gte('date', from);
+          if (to)   q = q.lte('date', to);
+          return q;
+        })()
+      : Promise.resolve({ data: [] });
+    const gscDeviceQ = (_gscSupa && gscProperty !== null)
+      ? (() => {
+          let q = _gscSupa.from('search_console_daily')
+            .select('device, impressions, clicks, position')
+            .order('clicks', { ascending: false })
+            .limit(200);
+          if (gscProperty) q = q.eq('property', gscProperty);
+          if (from) q = q.gte('date', from);
+          if (to)   q = q.lte('date', to);
+          return q;
+        })()
+      : Promise.resolve({ data: [] });
+
     // ── PageSpeed Insights ──────────────────────────────────────
     // Fetch latest rows for URL, descending by day.
     // If a date range is selected, filter within it; if no data found, fall back to latest overall.
@@ -794,13 +882,15 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
         })()
       : Promise.resolve({ data: [] });
 
-    const [adsR, adsSheetR, adsDetailRows, adsSegR, metaR, ga4R, gscSumR, gscQryR, gscPgsR, psiR] = await Promise.all([adsQ, adsSheetQ, fetchPaged(adsDetailQ), adsSegQ, metaQ, ga4Q, gscSummaryQ, gscQueryQ, gscPagesQ, psiQ]);
+    const [adsR, adsSheetR, adsDetailRows, adsSegR, metaR, ga4R, gscSumR, gscQryR, gscPgsR, gscCtyR, gscDevR, psiR] = await Promise.all([adsQ, adsSheetQ, fetchPaged(adsDetailQ), adsSegQ, metaQ, ga4Q, gscSummaryQ, gscQueryQ, gscPagesQ, gscCountryQ, gscDeviceQ, psiQ]);
 
     // search_console_summary: accurate daily totals from GSC API (dimensions: date, searchType: web)
     // Do NOT fall back to search_console_daily — per-query rows inflate impressions 5-10x
-    if (gscSumR.error) console.warn('[Reportive] GSC summary error:', gscSumR.error.message);
-    if (gscQryR.error) console.warn('[Reportive] GSC queries error:', gscQryR.error.message);
-    if (gscPgsR.error) console.warn('[Reportive] GSC pages error:',   gscPgsR.error.message);
+    if (gscSumR.error) console.warn('[Reportive] GSC summary error:',   gscSumR.error.message);
+    if (gscQryR.error) console.warn('[Reportive] GSC queries error:',   gscQryR.error.message);
+    if (gscPgsR.error) console.warn('[Reportive] GSC pages error:',     gscPgsR.error.message);
+    if (gscCtyR.error) console.warn('[Reportive] GSC countries error:', gscCtyR.error.message);
+    if (gscDevR.error) console.warn('[Reportive] GSC devices error:',   gscDevR.error.message);
     const gscSummaryData = (gscSumR.error || !gscSumR.data) ? [] : gscSumR.data;
 
 
@@ -845,10 +935,12 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
       adsSeg:     adsSegR.error    ? [] : (adsSegR.data || []),
       meta:       metaData,
       ga4:        ga4R.error       ? [] : (ga4R.data       || []),
-      gscSummary: gscSummaryData,
-      gscQueries: gscQryR.error    ? [] : (gscQryR.data    || []),
-      gscPages:   gscPgsR.error    ? [] : (gscPgsR.data    || []),
-      psi:        psiData,
+      gscSummary:   gscSummaryData,
+      gscQueries:   gscQryR.error ? [] : (gscQryR.data || []),
+      gscPages:     gscPgsR.error ? [] : (gscPgsR.data || []),
+      gscCountries: gscCtyR.error ? [] : (gscCtyR.data || []),
+      gscDevices:   gscDevR.error ? [] : (gscDevR.data || []),
+      psi:          psiData,
     };
   } catch (e) {
     console.warn('[Reportive] Fetch failed:', e.message);
@@ -910,6 +1002,7 @@ function LiveProvider({ children }) {
           raw.gscPages || [], rawPrev.gscPages || [],
           raw.adsDetail || [], raw.adsSeg || [],
           raw.adsSheet || null,
+          raw.gscCountries || [], raw.gscDevices || [],
         );
       }
       setState({ loading: false, error: null, data, _isMock: isMock });
