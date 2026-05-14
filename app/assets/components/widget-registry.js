@@ -23,6 +23,7 @@ window.DATA_REGISTRY = {
     contacts:               { label: 'Contacts',                format: 'num',    value: p => p?.meta?.contacts,               prev: p => p?.metaPrev?.contacts },
     ig_profile_visits:      { label: 'IG Profile Visits',       format: 'num',    value: p => p?.meta?.ig_profile_visits,      prev: p => p?.metaPrev?.ig_profile_visits },
     post_engagements:       { label: 'Post Engagements',        format: 'num',    value: p => p?.meta?.post_engagements,       prev: p => p?.metaPrev?.post_engagements },
+    content_views:          { label: 'Content Views',           format: 'num',    value: p => p?.meta?.content_views,          prev: p => p?.metaPrev?.content_views },
     purchases:              { label: 'Purchases',               format: 'num',    value: p => p?.meta?.purchases,              prev: p => p?.metaPrev?.purchases },
     purchase_value:         { label: 'Purchase Value',          format: 'rupiah', value: p => p?.meta?.purchase_value,         prev: p => p?.metaPrev?.purchase_value },
     add_to_carts:           { label: 'Add to Carts',            format: 'num',    value: p => p?.meta?.add_to_carts,           prev: p => p?.metaPrev?.add_to_carts },
@@ -32,9 +33,7 @@ window.DATA_REGISTRY = {
     sessions:                 { label: 'Sessions',             format: 'num', value: p => p?.ga4?.sessions,                 prev: p => p?.ga4Prev?.sessions },
     total_users:              { label: 'Total Users',          format: 'num', value: p => p?.ga4?.total_users,              prev: p => p?.ga4Prev?.total_users },
     new_users:                { label: 'New Users',            format: 'num', value: p => p?.ga4?.new_users,                prev: p => p?.ga4Prev?.new_users },
-    returning_users:          { label: 'Returning Users',      format: 'num', value: p => p?.ga4?.returning_users,          prev: p => p?.ga4Prev?.returning_users },
     engaged_sessions:         { label: 'Engaged Sessions',     format: 'num', value: p => p?.ga4?.engaged_sessions,         prev: p => p?.ga4Prev?.engaged_sessions },
-    user_engagement_duration: { label: 'Engagement Duration',  format: 'num', value: p => p?.ga4?.user_engagement_duration, prev: p => p?.ga4Prev?.user_engagement_duration },
     event_count:              { label: 'Events',               format: 'num', value: p => p?.ga4?.event_count,              prev: p => p?.ga4Prev?.event_count },
     bounce_rate:              { label: 'Bounce Rate',          format: 'pct', value: p => p?.ga4?.bounce_rate,              prev: p => p?.ga4Prev?.bounce_rate },
     engagement_rate:          { label: 'Engagement Rate',      format: 'pct', value: p => p?.ga4?.engagement_rate,          prev: p => p?.ga4Prev?.engagement_rate },
@@ -59,10 +58,10 @@ window.DIM_REGISTRY = {
     { key: 'segment_value', label: 'Gender' },
   ],
   meta: [
-    { key: 'name',       label: 'Campaign' },
-    { key: 'adset_name', label: 'Ad Set' },
-    { key: 'ad_name',    label: 'Ad' },
-    { key: 'date',       label: 'Date' },
+    { key: 'campaign_name', label: 'Campaign' },
+    { key: 'adset_name',    label: 'Ad Set' },
+    { key: 'ad_name',       label: 'Ad' },
+    { key: 'date',          label: 'Date' },
   ],
   ga4: [
     { key: 'property_name', label: 'Property' },
@@ -80,9 +79,9 @@ window.DIM_REGISTRY = {
   search: [
     { key: 'query',   label: 'Query' },
     { key: 'page',    label: 'Page URL', fmtCell: 'url' },
-    { key: 'date',    label: 'Date' },
-    { key: 'country', label: 'Country' },
-    { key: 'device',  label: 'Device' },
+    { key: 'date',    label: 'Date',    fmtCell: 'gsc-date' },
+    { key: 'country', label: 'Country', fmtCell: 'gsc-country' },
+    { key: 'device',  label: 'Device',  fmtCell: 'gsc-device' },
   ],
 };
 
@@ -109,6 +108,7 @@ window.TABLE_METRICS_REGISTRY = {
     { key: 'contacts',               label: 'Contacts',                fmt: 'num' },
     { key: 'ig_profile_visits',      label: 'IG Profile Visits',       fmt: 'num' },
     { key: 'post_engagements',       label: 'Post Engagements',        fmt: 'num' },
+    { key: 'content_views',          label: 'Content Views',           fmt: 'num' },
     { key: 'purchases',              label: 'Purchases',               fmt: 'num' },
     { key: 'purchase_value',         label: 'Purchase Value',          fmt: 'rupiah' },
     { key: 'add_to_carts',           label: 'Add to Carts',            fmt: 'num' },
@@ -118,9 +118,7 @@ window.TABLE_METRICS_REGISTRY = {
     { key: 'sessions',                 label: 'Sessions',             fmt: 'num' },
     { key: 'total_users',              label: 'Total Users',          fmt: 'num' },
     { key: 'new_users',                label: 'New Users',            fmt: 'num' },
-    { key: 'returning_users',          label: 'Returning Users',      fmt: 'num' },
     { key: 'engaged_sessions',         label: 'Engaged Sessions',     fmt: 'num' },
-    { key: 'user_engagement_duration', label: 'Engagement Duration',  fmt: 'num' },
     { key: 'event_count',              label: 'Events',               fmt: 'num' },
     { key: 'bounce_rate',              label: 'Bounce Rate',          fmt: 'pct' },
     { key: 'engagement_rate',          label: 'Engagement Rate',      fmt: 'pct' },
@@ -136,7 +134,32 @@ window.TABLE_METRICS_REGISTRY = {
 
 window.TABLE_DATA_REGISTRY = {
   google: p => p?.campaigns || [],
-  meta:   p => p?.metaChannels || [],
+  meta:   p => {
+    const insights = p?.metaInsightsRows || [];
+    const daily    = p?.metaRows         || [];
+    if (insights.length > 0) {
+      return insights.map(r => ({
+        ...r,
+        campaign_name:          r.campaign_name || r.name || '',
+        name:                   r.name || r.campaign_name || '',
+        clicks:                 +(r.link_clicks ?? r.clicks) || 0,
+        contacts:               +(r.contacts)               || 0,
+        ig_profile_visits:      +(r.ig_profile_visits)      || 0,
+        content_views:          +(r.content_views)          || 0,
+        complete_registrations: +(r.complete_registrations) || 0,
+        purchases:              +(r.purchases)              || 0,
+        purchase_value:         +(r.purchase_value)         || 0,
+        add_to_carts:           +(r.add_to_carts)           || 0,
+        add_to_cart_value:      +(r.add_to_cart_value)      || 0,
+      }));
+    }
+    return daily.map(r => ({
+      ...r,
+      campaign_name: r.campaign_name || r.name || '',
+      name:          r.name || r.campaign_name || '',
+      clicks:        +(r.link_clicks ?? r.clicks) || 0,
+    }));
+  },
   ga4:    p => (p?.ga4Rows || []).map(r => ({
     ...r,
     bounce_rate:     (+(r.bounce_rate)     || 0) * 100,
@@ -162,12 +185,12 @@ window.DIM_VALUES_EXTRACTOR = {
   },
   meta: p => {
     const uniq = (rows, key) => [...new Set((rows || []).map(r => r[key]).filter(v => v != null && v !== ''))].sort();
-    const rows = p?.metaChannels || [];
+    const rows = p?.metaInsightsRows || p?.metaRows || p?.metaChannels || [];
     return {
-      name:       uniq(rows, 'name'),
-      adset_name: [],
-      ad_name:    [],
-      date:       [],
+      campaign_name: uniq(rows, 'campaign_name'),
+      adset_name:    uniq(rows, 'adset_name'),
+      ad_name:       uniq(rows, 'ad_name'),
+      date:          uniq(rows, 'date'),
     };
   },
   ga4: p => {
@@ -219,7 +242,7 @@ window.FILTER_DIM_REGISTRY = {
     // Default campaign level: has name, type + can pivot to device or gender
     return ['name', 'type', 'device', 'segment_value'];
   },
-  meta:   (_dims) => ['name', 'adset_name', 'ad_name', 'date'],
+  meta:   (_dims) => ['campaign_name', 'adset_name', 'ad_name', 'date'],
   ga4:    (_dims) => ['property_name', 'date'],
   search: (_dims) => ['query', 'page', 'date', 'country', 'device'],
 };

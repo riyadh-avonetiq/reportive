@@ -797,6 +797,63 @@ function shortUrlFmt(url) {
   } catch { return url; }
 }
 
+const _gscCountryFmt = (() => {
+  try {
+    const dn = new Intl.DisplayNames(['en'], { type: 'region' });
+    const a3a2 = {
+      afg:'AF',alb:'AL',dza:'DZ',and:'AD',ago:'AO',arg:'AR',arm:'AM',aus:'AU',aut:'AT',
+      aze:'AZ',bhs:'BS',bhr:'BH',bgd:'BD',blr:'BY',bel:'BE',blz:'BZ',ben:'BJ',btn:'BT',
+      bol:'BO',bih:'BA',bwa:'BW',bra:'BR',brn:'BN',bgr:'BG',bfa:'BF',bdi:'BI',khm:'KH',
+      cmr:'CM',can:'CA',cpv:'CV',caf:'CF',tcd:'TD',chl:'CL',chn:'CN',col:'CO',com:'KM',
+      cod:'CD',cog:'CG',cri:'CR',hrv:'HR',cub:'CU',cyp:'CY',cze:'CZ',dnk:'DK',dji:'DJ',
+      dom:'DO',ecu:'EC',egy:'EG',slv:'SV',gnq:'GQ',eri:'ER',est:'EE',eth:'ET',fji:'FJ',
+      fin:'FI',fra:'FR',gab:'GA',gmb:'GM',geo:'GE',deu:'DE',gha:'GH',grc:'GR',gtm:'GT',
+      gin:'GN',gnb:'GW',guy:'GY',hti:'HT',hnd:'HN',hkg:'HK',hun:'HU',isl:'IS',ind:'IN',
+      idn:'ID',irn:'IR',irq:'IQ',irl:'IE',isr:'IL',ita:'IT',jam:'JM',jpn:'JP',jor:'JO',
+      kaz:'KZ',ken:'KE',prk:'KP',kor:'KR',kwt:'KW',kgz:'KG',lao:'LA',lva:'LV',lbn:'LB',
+      lso:'LS',lbr:'LR',lby:'LY',lie:'LI',ltu:'LT',lux:'LU',mac:'MO',mkd:'MK',mdg:'MG',
+      mwi:'MW',mys:'MY',mdv:'MV',mli:'ML',mlt:'MT',mrt:'MR',mus:'MU',mex:'MX',mda:'MD',
+      mco:'MC',mng:'MN',mne:'ME',mar:'MA',moz:'MZ',mmr:'MM',nam:'NA',npl:'NP',nld:'NL',
+      nzl:'NZ',nic:'NI',ner:'NE',nga:'NG',nor:'NO',omn:'OM',pak:'PK',pan:'PA',png:'PG',
+      pry:'PY',per:'PE',phl:'PH',pol:'PL',prt:'PT',qat:'QA',rou:'RO',rus:'RU',rwa:'RW',
+      sau:'SA',sen:'SN',srb:'RS',sle:'SL',sgp:'SG',svk:'SK',svn:'SI',som:'SO',zaf:'ZA',
+      ssd:'SS',esp:'ES',lka:'LK',sdn:'SD',sur:'SR',swz:'SZ',swe:'SE',che:'CH',syr:'SY',
+      twn:'TW',tjk:'TJ',tza:'TZ',tha:'TH',tls:'TL',tgo:'TG',tto:'TT',tun:'TN',tur:'TR',
+      tkm:'TM',uga:'UG',ukr:'UA',are:'AE',gbr:'GB',usa:'US',ury:'UY',uzb:'UZ',ven:'VE',
+      vnm:'VN',yem:'YE',zmb:'ZM',zwe:'ZW',
+    };
+    return code => {
+      if (!code) return '—';
+      const a2 = a3a2[code.toLowerCase()];
+      if (!a2) return code.toUpperCase();
+      try { return dn.of(a2) || code.toUpperCase(); } catch { return code.toUpperCase(); }
+    };
+  } catch { return code => code ? code.toUpperCase() : '—'; }
+})();
+
+const _gscDateFmt = (() => {
+  try {
+    const df = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    return str => {
+      if (!str) return '—';
+      const [y, m, d] = str.split('-').map(Number);
+      if (!y || !m || !d) return str;
+      return df.format(new Date(y, m - 1, d));
+    };
+  } catch { return str => str || '—'; }
+})();
+
+function dimDisplayValue(dim, rawValue) {
+  if (rawValue == null || rawValue === '') return '';
+  const s = String(rawValue);
+  if (!dim) return s;
+  if (dim.fmtCell === 'gsc-date')    return _gscDateFmt(s);
+  if (dim.fmtCell === 'gsc-country') return _gscCountryFmt(s);
+  if (dim.fmtCell === 'gsc-device')  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  if (dim.fmtCell === 'url')         return shortUrlFmt(s);
+  return s;
+}
+
 function fmtMetricVal(val, fmt_) {
   if (val == null) return '—';
   switch (fmt_) {
@@ -890,10 +947,32 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
 
   const fScale  = FONT_SCALES[cfg.fontSize] || 1;
   const fs      = n => Math.round(n * fScale);
-  const dims    = cfg.dimensions.map(k => availDims.find(d => d.key === k)).filter(Boolean);
-  const metrics = cfg.metrics.map(k => availMetrics.find(m => m.key === k)).filter(Boolean);
+  const dims = (() => {
+    const resolved = (cfg.dimensions || []).map(k => availDims.find(d => d.key === k)).filter(Boolean);
+    return resolved.length > 0 ? resolved : (availDims.length > 0 ? [availDims[0]] : []);
+  })();
+  const metrics = (() => {
+    const resolved = (cfg.metrics || []).map(k => availMetrics.find(m => m.key === k)).filter(Boolean);
+    return resolved.length > 0 ? resolved : availMetrics.slice(0, 4);
+  })();
   const customMetrics = customMetricsProp || cfg.customMetrics || [];
   const pgSize  = Math.max(1, cfg.pageSize || 10);
+
+  const metricCols = (() => {
+    const regMap  = Object.fromEntries(metrics.map(m => [m.key, { type: 'regular', m }]));
+    const custMap = Object.fromEntries(customMetrics.map(cm => [cm.id, { type: 'custom', cm }]));
+    const order   = cfg.metricOrder;
+    if (order && order.length) {
+      const cols = order.map(id => regMap[id] || custMap[id]).filter(Boolean);
+      metrics.forEach(m => { if (!cols.find(c => c.type === 'regular' && c.m.key === m.key)) cols.push(regMap[m.key]); });
+      customMetrics.forEach(cm => { if (!cols.find(c => c.type === 'custom' && c.cm.id === cm.id)) cols.push(custMap[cm.id]); });
+      return cols;
+    }
+    return [
+      ...metrics.map(m => ({ type: 'regular', m })),
+      ...customMetrics.map(cm => ({ type: 'custom', cm })),
+    ];
+  })();
 
   const toggleSort = key => {
     if (sortKey === key) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
@@ -915,7 +994,7 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
     });
     dims.forEach(d => {
       const s = (searches[d.key] || '').toLowerCase();
-      if (s) r = r.filter(row => String(row[d.key] || '').toLowerCase().includes(s));
+      if (s) r = r.filter(row => dimDisplayValue(d, row[d.key]).toLowerCase().includes(s));
     });
     return r;
   }, [rows, cfg.filters, searches, dims]);
@@ -997,40 +1076,41 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
                   {d.label}
                 </th>
               ))}
-              {metrics.map(m => (
-                <SortTh key={m.key} label={cfg.metricLabels?.[m.key] || m.label} sortKey={m.key} active={sortKey === m.key} dir={sortDir} onSort={toggleSort}/>
-              ))}
-              {customMetrics.map(cm => (
-                <SortTh key={cm.id} label={cm.name} sortKey={cm.id} active={sortKey === cm.id} dir={sortDir} onSort={toggleSort}/>
-              ))}
+              {metricCols.map(col => col.type === 'regular'
+                ? <SortTh key={col.m.key} label={cfg.metricLabels?.[col.m.key] || col.m.label} sortKey={col.m.key} active={sortKey === col.m.key} dir={sortDir} onSort={toggleSort}/>
+                : <SortTh key={col.cm.id} label={col.cm.name} sortKey={col.cm.id} active={sortKey === col.cm.id} dir={sortDir} onSort={toggleSort}/>
+              )}
             </tr>
             <tr style={{ background: 'var(--navy-deep)', borderBottom: '1px solid var(--navy-edge)' }}>
               {dims.map(d => {
                 const val = searches[d.key] || '';
                 return (
                   <th key={d.key} style={{ padding: `${fs(4)}px ${fs(8)}px` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: `${fs(3)}px ${fs(6)}px`, background: 'var(--navy-elevated)', border: `1px solid ${val ? teal + '60' : 'var(--navy-edge)'}`, borderRadius: 5 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: `${fs(3)}px ${fs(6)}px`, background: 'var(--navy-elevated)', border: `1px solid ${val ? teal + '60' : 'var(--navy-edge)'}`, borderRadius: 5, maxWidth: 220 }}>
                       <svg width="9" height="9" fill="none" stroke={muted} strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                       <input value={val} onChange={e => setSearches(prev => ({ ...prev, [d.key]: e.target.value }))} placeholder={`${d.label}…`}
-                        style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: fg, fontFamily: T.body, fontSize: fs(10), width: '100%' }}/>
+                        style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: fg, fontFamily: T.body, fontSize: fs(10) }}/>
                       {val && <button onClick={() => setSearches(prev => ({ ...prev, [d.key]: '' }))} style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', padding: 0, fontSize: 11, lineHeight: 1 }}>×</button>}
                     </div>
                   </th>
                 );
               })}
-              {metrics.map(m => <th key={m.key}/>)}
-              {customMetrics.map(cm => <th key={cm.id}/>)}
+              {metricCols.map(col => <th key={col.type === 'regular' ? col.m.key : col.cm.id}/>)}
             </tr>
           </thead>
           <tbody>
             {pageRows.length === 0 && (
-              <tr><td colSpan={dims.length + metrics.length + customMetrics.length} style={{ padding: fs(20), textAlign: 'center', fontFamily: T.mono, fontSize: fs(10), color: muted }}>No results</td></tr>
+              <tr><td colSpan={dims.length + metricCols.length} style={{ padding: fs(20), textAlign: 'center', fontFamily: T.mono, fontSize: fs(10), color: muted }}>No results</td></tr>
             )}
             {pageRows.map((r, i) => (
               <tr key={i} style={{ borderTop: '1px solid rgba(51,71,102,.5)' }}>
                 {dims.map((d, di) => {
                   const raw  = r[d.key];
-                  const disp = d.fmtCell === 'url' ? shortUrlFmt(raw) : (raw || '—');
+                  const disp = d.fmtCell === 'url'        ? shortUrlFmt(raw)
+                             : d.fmtCell === 'gsc-country' ? _gscCountryFmt(raw)
+                             : d.fmtCell === 'gsc-device'  ? (raw ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase() : '—')
+                             : d.fmtCell === 'gsc-date'    ? _gscDateFmt(raw)
+                             : (raw || '—');
                   return (
                     <td key={d.key} title={d.fmtCell === 'url' ? (raw || '') : undefined}
                       style={{ padding: `${fs(8)}px ${fs(12)}px`, fontFamily: T.display, fontWeight: di === 0 ? 600 : 400, color: fg, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: fs(12) }}>
@@ -1038,16 +1118,14 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
                     </td>
                   );
                 })}
-                {metrics.map(m => (
-                  <td key={m.key} style={{ padding: `${fs(8)}px ${fs(12)}px`, textAlign: 'right', fontFamily: T.mono, color: sec, fontSize: fs(11), whiteSpace: 'nowrap' }}>
-                    {fmtMetricVal(r[m.key], m.fmt)}
-                  </td>
-                ))}
-                {customMetrics.map(cm => (
-                  <td key={cm.id} style={{ padding: `${fs(8)}px ${fs(12)}px`, textAlign: 'right', fontFamily: T.mono, color: sec, fontSize: fs(11), whiteSpace: 'nowrap' }}>
-                    {fmtCustomMetricVal(r[cm.id], cm.format)}
-                  </td>
-                ))}
+                {metricCols.map(col => col.type === 'regular'
+                  ? <td key={col.m.key} style={{ padding: `${fs(8)}px ${fs(12)}px`, textAlign: 'right', fontFamily: T.mono, color: sec, fontSize: fs(11), whiteSpace: 'nowrap' }}>
+                      {fmtMetricVal(r[col.m.key], col.m.fmt)}
+                    </td>
+                  : <td key={col.cm.id} style={{ padding: `${fs(8)}px ${fs(12)}px`, textAlign: 'right', fontFamily: T.mono, color: sec, fontSize: fs(11), whiteSpace: 'nowrap' }}>
+                      {fmtCustomMetricVal(r[col.cm.id], col.cm.format)}
+                    </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -1363,7 +1441,7 @@ function UniversalTableWidget({ instance, p, cfg }) {
     return (
       <DataTable
         widgetId={instance.id}
-        widgetConfig={cfg}
+        widgetConfig={(() => { const { dimensions: _d, ...rest } = cfg; return rest; })()}
         rows={rows}
         availDims={dimDef ? [dimDef] : []}
         availMetrics={availMetrics}

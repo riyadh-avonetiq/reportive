@@ -103,7 +103,7 @@ function aggregateAds(rows) {
 // ── Aggregate: Meta Ads ─────────────────────────────────────────────
 // Meta table uses: link_clicks (not clicks), date (not day)
 function aggregateMeta(rows) {
-  const t = { spend: 0, impressions: 0, reach: 0, clicks: 0, landing_page_views: 0, leads: 0, complete_registrations: 0, messaging_conv_started: 0, contacts: 0, ig_profile_visits: 0, post_engagements: 0, purchases: 0, purchase_value: 0, add_to_carts: 0, add_to_cart_value: 0 };
+  const t = { spend: 0, impressions: 0, reach: 0, clicks: 0, landing_page_views: 0, leads: 0, complete_registrations: 0, messaging_conv_started: 0, contacts: 0, ig_profile_visits: 0, post_engagements: 0, content_views: 0, purchases: 0, purchase_value: 0, add_to_carts: 0, add_to_cart_value: 0 };
   rows.forEach(r => {
     t.spend                  += +r.spend                   || 0;
     t.impressions            += +r.impressions             || 0;
@@ -116,6 +116,7 @@ function aggregateMeta(rows) {
     t.contacts               += +r.contacts                || 0;
     t.ig_profile_visits      += +r.ig_profile_visits       || 0;
     t.post_engagements       += +r.post_engagements        || 0;
+    t.content_views          += +r.content_views           || 0;
     t.purchases              += +r.purchases               || 0;
     t.purchase_value         += +r.purchase_value          || 0;
     t.add_to_carts           += +r.add_to_carts            || 0;
@@ -338,7 +339,7 @@ function aggregatePsi(rows) {
 }
 
 // ── Build aggregated data object ────────────────────────────────────
-function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRows, prevGa4Rows, prevGscSummary, prevGscQueries, from, to, prevFrom, prevTo, metaRows, prevMetaRows, gscPages, prevGscPages, adsDetailRows, adsSegRows, adsSheetRows, gscCountries, gscDevices) {
+function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRows, prevGa4Rows, prevGscSummary, prevGscQueries, from, to, prevFrom, prevTo, metaRows, prevMetaRows, gscPages, prevGscPages, adsDetailRows, adsSegRows, adsSheetRows, gscCountries, gscDevices, metaInsightsRows) {
   // Use ads_data (sheet-synced, matches google_ads_daily) when available; fall back to google_ads
   const detailRows = adsSheetRows && adsSheetRows.length ? adsSheetRows : adsDetailRows;
   console.log('[Reportive] detail source:', adsSheetRows && adsSheetRows.length ? 'ads_data (' + adsSheetRows.length + ' rows)' : 'google_ads (' + adsDetailRows.length + ' rows)');
@@ -577,7 +578,8 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
     ads, adsPrev, meta, metaPrev, ga4, ga4Prev, psi, gsc, gscPrev,
     series, channels, campaigns, metaSeries, metaChannels,
     adGroups, keywords, keywordDeviceRows, adGroupDeviceRows, deviceRows, genderRows, conversionActions,
-    ga4Rows,
+    ga4Rows, metaRows,
+    metaInsightsRows: (metaInsightsRows || []).map(r => ({ ...r, clicks: +r.link_clicks || 0 })),
   };
 }
 
@@ -707,7 +709,24 @@ function mockData() {
       { name: 'Prospecting - Interest',  spend: 10_800_000, clicks: 4230, impressions: 240000, conversions: 298, ctr: 1.76, cpc: 2554 },
       { name: 'Lookalike Audience',      spend:  7_400_000, clicks: 2690, impressions: 150000, conversions: 132, ctr: 1.79, cpc: 2750 },
     ],
-    ga4Rows: [],
+    metaRows: [
+      { date: '2025-03-01', campaign_name: 'Retargeting Campaign',   adset_name: 'Retargeting - Website Visitors', ad_name: 'Ad Video 1', spend: 4_800_000, link_clicks: 1820, impressions: 96000,  reach: 48000, leads: 58, purchases: 12, purchase_value: 3_600_000 },
+      { date: '2025-03-01', campaign_name: 'Retargeting Campaign',   adset_name: 'Retargeting - App Users',        ad_name: 'Ad Image 2', spend: 4_200_000, link_clicks: 1640, impressions: 88000,  reach: 44000, leads: 42, purchases:  9, purchase_value: 2_700_000 },
+      { date: '2025-03-01', campaign_name: 'Prospecting - Interest', adset_name: 'Interest - Health & Wellness',   ad_name: 'Ad Video 3', spend: 5_500_000, link_clicks: 2100, impressions: 120000, reach: 62000, leads: 74, purchases: 15, purchase_value: 4_500_000 },
+      { date: '2025-03-01', campaign_name: 'Prospecting - Interest', adset_name: 'Interest - Medical',             ad_name: 'Ad Image 4', spend: 3_900_000, link_clicks: 1480, impressions:  96000, reach: 49000, leads: 51, purchases: 10, purchase_value: 3_000_000 },
+      { date: '2025-03-01', campaign_name: 'Lookalike Audience',     adset_name: 'LAL - Purchasers 1%',            ad_name: 'Ad Video 5', spend: 4_100_000, link_clicks: 1390, impressions:  78000, reach: 39000, leads: 38, purchases:  7, purchase_value: 2_100_000 },
+      { date: '2025-03-08', campaign_name: 'Retargeting Campaign',   adset_name: 'Retargeting - Website Visitors', ad_name: 'Ad Video 1', spend: 5_200_000, link_clicks: 2020, impressions: 104000, reach: 52000, leads: 64, purchases: 14, purchase_value: 4_200_000 },
+      { date: '2025-03-08', campaign_name: 'Prospecting - Interest', adset_name: 'Interest - Health & Wellness',   ad_name: 'Ad Video 3', spend: 6_100_000, link_clicks: 2380, impressions: 134000, reach: 68000, leads: 82, purchases: 17, purchase_value: 5_100_000 },
+    ],
+    ga4Rows: [
+      { date: '2025-03-01', property_name: 'Demo Website', sessions: 1240, total_users: 980, new_users: 640, returning_users: 340, engaged_sessions: 880, bounce_rate: 0.28, engagement_rate: 0.71, avg_session_duration: 132, user_engagement_duration: 94, event_count: 3840 },
+      { date: '2025-03-02', property_name: 'Demo Website', sessions: 1380, total_users: 1060, new_users: 720, returning_users: 340, engaged_sessions: 960, bounce_rate: 0.30, engagement_rate: 0.70, avg_session_duration: 128, user_engagement_duration: 90, event_count: 4260 },
+      { date: '2025-03-03', property_name: 'Demo Website', sessions: 1120, total_users: 890, new_users: 580, returning_users: 310, engaged_sessions: 790, bounce_rate: 0.29, engagement_rate: 0.71, avg_session_duration: 125, user_engagement_duration: 88, event_count: 3460 },
+      { date: '2025-03-04', property_name: 'Demo Website', sessions: 1560, total_users: 1210, new_users: 820, returning_users: 390, engaged_sessions: 1100, bounce_rate: 0.27, engagement_rate: 0.71, avg_session_duration: 140, user_engagement_duration: 100, event_count: 4820 },
+      { date: '2025-03-05', property_name: 'Demo Website', sessions: 1690, total_users: 1320, new_users: 890, returning_users: 430, engaged_sessions: 1200, bounce_rate: 0.25, engagement_rate: 0.71, avg_session_duration: 145, user_engagement_duration: 103, event_count: 5230 },
+      { date: '2025-03-06', property_name: 'Demo Website', sessions: 980,  total_users: 760,  new_users: 490, returning_users: 270, engaged_sessions: 680,  bounce_rate: 0.31, engagement_rate: 0.69, avg_session_duration: 119, user_engagement_duration: 84, event_count: 3030 },
+      { date: '2025-03-07', property_name: 'Demo Website', sessions: 1050, total_users: 820,  new_users: 540, returning_users: 280, engaged_sessions: 730,  bounce_rate: 0.30, engagement_rate: 0.70, avg_session_duration: 122, user_engagement_duration: 87, event_count: 3250 },
+    ],
   };
 }
 
@@ -775,7 +794,21 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     const metaQ = (_metaSupa && metaAccount !== null)
       ? (() => {
           let q = _metaSupa.from('meta_ads_daily')
-            .select('date, account_name, campaign_name, adset_name, ad_name, spend, impressions, reach, link_clicks, landing_page_views, leads, complete_registrations, messaging_conv_started, contacts, ig_profile_visits, post_engagements, purchases, purchase_value, add_to_carts, add_to_cart_value, currency')
+            .select('date, account_name, campaign_name, spend, impressions, reach, link_clicks, landing_page_views, leads, complete_registrations, messaging_conv_started, contacts, ig_profile_visits, post_engagements, purchases, purchase_value, add_to_carts, add_to_cart_value, currency')
+            .order('date', { ascending: true })
+            .limit(20000);
+          if (metaAccount) q = q.eq('account_name', metaAccount);
+          if (from) q = q.gte('date', from);
+          if (to)   q = q.lte('date', to);
+          return q;
+        })()
+      : Promise.resolve({ data: [] });
+
+    // ── Meta Ads Insights (ad-set / ad level for table widget) ──
+    const metaInsightsQ = (_metaSupa && metaAccount !== null)
+      ? (() => {
+          let q = _metaSupa.from('meta_ads_insights')
+            .select('campaign_name, adset_name, ad_name, date, spend, impressions, reach, link_clicks, landing_page_views, leads, complete_registrations, messaging_conv_started, contacts, ig_profile_visits, post_engagements, content_views, purchases, purchase_value, add_to_carts, add_to_cart_value')
             .order('date', { ascending: true })
             .limit(20000);
           if (metaAccount) q = q.eq('account_name', metaAccount);
@@ -789,7 +822,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     const ga4Q = (_ga4Supa && ga4Property !== null)
       ? (() => {
           let q = _ga4Supa.from('ga4_totals')
-            .select('date, property_name, sessions, total_users, new_users, returning_users, bounce_rate, engaged_sessions, engagement_rate, avg_session_duration, user_engagement_duration, event_count')
+            .select('date, property_name, sessions, total_users, new_users, bounce_rate, engaged_sessions, engagement_rate, avg_session_duration, event_count')
             .order('date', { ascending: true })
             .limit(10000);
           if (ga4Property) q = q.eq('property_name', ga4Property);
@@ -882,7 +915,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
         })()
       : Promise.resolve({ data: [] });
 
-    const [adsR, adsSheetR, adsDetailRows, adsSegR, metaR, ga4R, gscSumR, gscQryR, gscPgsR, gscCtyR, gscDevR, psiR] = await Promise.all([adsQ, adsSheetQ, fetchPaged(adsDetailQ), adsSegQ, metaQ, ga4Q, gscSummaryQ, gscQueryQ, gscPagesQ, gscCountryQ, gscDeviceQ, psiQ]);
+    const [adsR, adsSheetR, adsDetailRows, adsSegR, metaR, metaInsightsR, ga4R, gscSumR, gscQryR, gscPgsR, gscCtyR, gscDevR, psiR] = await Promise.all([adsQ, adsSheetQ, fetchPaged(adsDetailQ), adsSegQ, metaQ, metaInsightsQ, ga4Q, gscSummaryQ, gscQueryQ, gscPagesQ, gscCountryQ, gscDeviceQ, psiQ]);
 
     // search_console_summary: accurate daily totals from GSC API (dimensions: date, searchType: web)
     // Do NOT fall back to search_console_daily — per-query rows inflate impressions 5-10x
@@ -894,7 +927,11 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     const gscSummaryData = (gscSumR.error || !gscSumR.data) ? [] : gscSumR.data;
 
 
+    if (metaR.error)         console.warn('[Reportive] Meta error:',         metaR.error.message);
+    if (metaInsightsR.error) console.warn('[Reportive] Meta insights error:', metaInsightsR.error.message);
+    if (ga4R.error)          console.warn('[Reportive] GA4 error:',           ga4R.error.message);
     const metaData = metaR.error ? [] : (metaR.data || []);
+    console.log('[Reportive] rows — meta:', metaData.length, '| meta insights:', (metaInsightsR.data || []).length, '| ga4:', (ga4R.data || []).length);
 
     // PSI fallback: date-range returned nothing → get latest available
     let psiData = psiR.error ? [] : (psiR.data || []);
@@ -933,7 +970,8 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
       adsSheet:   adsSheetRows,
       adsDetail:  adsDetailRows,
       adsSeg:     adsSegR.error    ? [] : (adsSegR.data || []),
-      meta:       metaData,
+      meta:         metaData,
+      metaInsights: metaInsightsR.error ? [] : (metaInsightsR.data || []),
       ga4:        ga4R.error       ? [] : (ga4R.data       || []),
       gscSummary:   gscSummaryData,
       gscQueries:   gscQryR.error ? [] : (gscQryR.data || []),
@@ -1003,6 +1041,7 @@ function LiveProvider({ children }) {
           raw.adsDetail || [], raw.adsSeg || [],
           raw.adsSheet || null,
           raw.gscCountries || [], raw.gscDevices || [],
+          raw.metaInsights || [],
         );
       }
       setState({ loading: false, error: null, data, _isMock: isMock });
