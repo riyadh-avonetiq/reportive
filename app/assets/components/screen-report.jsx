@@ -865,7 +865,7 @@ function CustomMetricStrip({ instance, p, cfg, scale }) {
 }
 
 // ─── Universal configurable data table ────────────────────────────
-function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defaultDims, defaultMetrics, defaultName, customMetrics: customMetricsProp }) {
+function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defaultDims, defaultMetrics, defaultName, customMetrics: customMetricsProp, tabBar }) {
   const cfg = {
     name: '',
     dimensions: defaultDims || availDims.slice(0, 1).map(d => d.key),
@@ -978,6 +978,7 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
 
   return (
     <RCard padding={0} style={{ overflow: 'hidden' }}>
+      {tabBar}
       <div style={{ padding: `${fs(10)}px ${fs(16)}px ${fs(8)}px`, borderBottom: '1px solid var(--navy-edge)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: fs(7) }}>
           <div>
@@ -1331,6 +1332,42 @@ function UniversalTableWidget({ instance, p, cfg }) {
   const availDims    = window.DIM_REGISTRY?.[src] || [];
   const availMetrics = window.TABLE_METRICS_REGISTRY?.[src] || [];
   const selectedDims = cfg.dimensions || availDims.slice(0, 1).map(d => d.key);
+  const [gscTab, setGscTab] = React.useState('query');
+
+  // GSC: tab-driven — tabs replace dimension selector
+  if (src === 'search') {
+    const rows      = gscTab === 'page' ? (p?.gsc?.pages || []) : (p?.gsc?.queries || []);
+    const dimKey    = gscTab === 'page' ? 'page' : 'query';
+    const dimDef    = availDims.find(d => d.key === dimKey);
+    const tabBar = (
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--navy-edge)', paddingLeft: 4 }}>
+        {[{ key: 'query', label: 'Queries' }, { key: 'page', label: 'Pages' }].map(t => (
+          <button key={t.key} onClick={() => setGscTab(t.key)} style={{
+            padding: '7px 14px', background: 'none', border: 'none',
+            borderBottom: gscTab === t.key ? `2px solid ${teal}` : '2px solid transparent',
+            marginBottom: -1,
+            color: gscTab === t.key ? teal : sec,
+            fontFamily: T.display, fontSize: 11, fontWeight: 600,
+            cursor: 'pointer', transition: 'color .12s, border-color .12s',
+          }}>{t.label}</button>
+        ))}
+      </div>
+    );
+    return (
+      <DataTable
+        widgetId={instance.id}
+        widgetConfig={cfg}
+        rows={rows}
+        availDims={dimDef ? [dimDef] : []}
+        availMetrics={availMetrics}
+        defaultDims={[dimKey]}
+        defaultMetrics={cfg.metrics || availMetrics.slice(0, 4).map(m => m.key)}
+        defaultName={cfg.name || (gscTab === 'page' ? 'Top Pages' : 'Top Queries')}
+        customMetrics={cfg.customMetrics || []}
+        tabBar={tabBar}
+      />
+    );
+  }
 
   let rows;
   if (src === 'google') {
@@ -1346,8 +1383,6 @@ function UniversalTableWidget({ instance, p, cfg }) {
     else if (selectedDims.includes('keyword'))         rows = p?.keywords     || [];
     else if (selectedDims.includes('ad_group'))        rows = p?.adGroups     || [];
     else                                               rows = p?.campaigns    || [];
-  } else if (src === 'search') {
-    rows = selectedDims.includes('page') ? (p?.gsc?.pages || []) : (p?.gsc?.queries || []);
   } else {
     rows = (window.TABLE_DATA_REGISTRY?.[src] || (() => []))(p) || [];
   }

@@ -1137,7 +1137,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
       <EDivider/>
       {SourceSection}
 
-      {isTable && availD.length > 0 && (
+      {isTable && availD.length > 0 && srcKey !== 'search' && (
         <>
           <EDivider/>
           <ESection label={`Dimensions (${(cfg.dimensions || []).length}/${maxDims})`}>
