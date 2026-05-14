@@ -830,9 +830,9 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     const gscPagesQ = (_gscSupa && gscProperty !== null)
       ? (() => {
           let q = _gscSupa.from('search_console_pages')
-            .select('date, page, impressions, clicks, position')
+            .select('page, impressions, clicks, position')
             .order('clicks', { ascending: false })
-            .limit(50);
+            .limit(200);
           if (gscProperty) q = q.eq('property', gscProperty);
           if (from) q = q.gte('date', from);
           if (to)   q = q.lte('date', to);
@@ -840,10 +840,10 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
         })()
       : Promise.resolve({ data: [] });
 
-    // Country and device breakdown — separate queries so a missing column doesn't break queries/pages
+    // Country and device breakdown — dedicated tables, not search_console_daily
     const gscCountryQ = (_gscSupa && gscProperty !== null)
       ? (() => {
-          let q = _gscSupa.from('search_console_daily')
+          let q = _gscSupa.from('search_console_countries')
             .select('country, impressions, clicks, position')
             .order('clicks', { ascending: false })
             .limit(200);
@@ -855,7 +855,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
       : Promise.resolve({ data: [] });
     const gscDeviceQ = (_gscSupa && gscProperty !== null)
       ? (() => {
-          let q = _gscSupa.from('search_console_daily')
+          let q = _gscSupa.from('search_console_devices')
             .select('device, impressions, clicks, position')
             .order('clicks', { ascending: false })
             .limit(200);
