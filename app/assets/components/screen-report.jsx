@@ -1526,22 +1526,25 @@ function TextWidget({ cfg }) {
 
 // ─── Editable narrative widget renderers ──────────────────────────
 function NarrativeHeroWidget({ cfg }) {
-  const title = cfg.title || 'Performa marketing naik 19,7%';
-  const body  = cfg.body  || 'Konversi meningkat seiring shift anggaran ke Google Ads. SEO organik tumbuh 8,1% tanpa tambahan budget.';
-  const badge = cfg.badge || '4 sources live';
+  const fsSizeMap = { S: 16, M: 22, L: 30 };
+  const headlinePx = fsSizeMap[cfg.fontSize] || 22;
+  // Migrate legacy single-block format to blocks array
+  const blocks = cfg.blocks && cfg.blocks.length
+    ? cfg.blocks
+    : [{ headline: cfg.title || 'Performa marketing naik 19,7%', body: cfg.body || 'Konversi meningkat seiring shift anggaran ke Google Ads. SEO organik tumbuh 8,1% tanpa tambahan budget.', headlineColor: '', bodyColor: '' }];
   return (
-    <RCard padding={20} style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg,rgba(0,194,184,.06),rgba(248,180,0,.04))' }}>
+    <RCard padding={24} style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg,rgba(0,194,184,.06),rgba(248,180,0,.04))' }}>
       <div style={{ position: 'absolute', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle,rgba(248,180,0,.18),transparent 70%)', filter: 'blur(60px)', top: -120, right: -60 }}/>
-      <div style={{ position: 'relative' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <RStatus type="connected" label={badge}/>
-        </div>
-        <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: fg, lineHeight: 1.2 }}>{title}</div>
-        {body && <p style={{ fontFamily: T.body, fontSize: 12.5, color: sec, margin: '8px 0 12px', maxWidth: 560, lineHeight: 1.5 }}>{body}</p>}
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button style={{ padding: '7px 12px', background: 'transparent', color: sec, border: '1px solid var(--navy-edge)', borderRadius: 8, fontFamily: T.display, fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>Share with client</button>
-          <button style={{ padding: '7px 12px', background: 'var(--navy-elevated)', color: fg, border: '1px solid var(--navy-edge)', borderRadius: 8, fontFamily: T.display, fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>View details →</button>
-        </div>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {blocks.map((block, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '16px 0' }}/>}
+            <div>
+              <div style={{ fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2 }}>{block.headline || ''}</div>
+              {block.body && <p style={{ fontFamily: T.body, fontSize: 12.5, color: block.bodyColor || sec, margin: '8px 0 0', maxWidth: 620, lineHeight: 1.6 }}>{block.body}</p>}
+            </div>
+          </React.Fragment>
+        ))}
       </div>
     </RCard>
   );

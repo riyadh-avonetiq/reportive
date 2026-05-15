@@ -895,22 +895,64 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
 
   // ── NARRATIVE HERO ───────────────────────────────────────────────
   if (isNarrHero) {
+    const heroBlocks = cfg.blocks && cfg.blocks.length
+      ? cfg.blocks
+      : [{ headline: cfg.title || '', body: cfg.body || '', headlineColor: '', bodyColor: '' }];
+    const upBlock = (i, patch) => {
+      const next = heroBlocks.map((b, idx) => idx === i ? { ...b, ...patch } : b);
+      up({ blocks: next });
+    };
+    const addBlock = () => { if (heroBlocks.length < 4) up({ blocks: [...heroBlocks, { headline: '', body: '', headlineColor: '', bodyColor: '' }] }); };
+    const removeBlock = (i) => { if (heroBlocks.length > 1) up({ blocks: heroBlocks.filter((_, idx) => idx !== i) }); };
+    const hColors = ['', '#FCFCFC', '#00C2B8', '#F8B400', '#F87171'];
+    const bColors = ['', '#9BABBF', '#FCFCFC', '#00C2B8', '#F8B400'];
+    const colorLabel = { '': 'Default', '#FCFCFC': 'White', '#00C2B8': 'Teal', '#F8B400': 'Gold', '#F87171': 'Red', '#9BABBF': 'Muted' };
     return (
       <>
         {sharedBanner}
-        <ESection label="Headline">
-          <EInput value={cfg.title || ''} onChange={v => up({ title: v })} placeholder="Performa marketing naik 19,7%"/>
-        </ESection>
-        <EDivider/>
-        <ESection label="Body text">
-          <textarea value={cfg.body || ''} onChange={e => up({ body: e.target.value })}
-            placeholder="Narasi ringkasan performa..."
-            rows={4} style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}/>
-        </ESection>
-        <EDivider/>
-        <ESection label="Status badge">
-          <EInput value={cfg.badge || ''} onChange={v => up({ badge: v })} placeholder="4 sources live"/>
-        </ESection>
+        {heroBlocks.map((block, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <EDivider/>}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <ELabel>{heroBlocks.length > 1 ? `Block ${i + 1}` : 'Content'}</ELabel>
+              {heroBlocks.length > 1 && (
+                <button onClick={() => removeBlock(i)} style={{ background: 'transparent', border: 'none', color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, padding: '2px 6px' }}>× Remove</button>
+              )}
+            </div>
+            <ESection label="Headline">
+              <EInput value={block.headline} onChange={v => upBlock(i, { headline: v })} placeholder="Tulis headline..."/>
+            </ESection>
+            <ESection label="Headline color">
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                {hColors.map(c => (
+                  <div key={c} title={colorLabel[c]} onClick={() => upBlock(i, { headlineColor: c })}
+                    style={{ width: 22, height: 22, borderRadius: '50%', cursor: 'pointer', background: c || 'rgba(255,255,255,0.85)', border: block.headlineColor === c ? `2px solid ${EP.fg}` : '2px solid transparent', boxShadow: block.headlineColor === c ? `0 0 0 2px ${c || EP.fg}` : 'none', flexShrink: 0 }}/>
+                ))}
+              </div>
+            </ESection>
+            <ESection label="Body text">
+              <textarea value={block.body} onChange={e => upBlock(i, { body: e.target.value })}
+                placeholder="Narasi ringkasan..."
+                rows={3} style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}/>
+            </ESection>
+            <ESection label="Body color">
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                {bColors.map(c => (
+                  <div key={c} title={colorLabel[c]} onClick={() => upBlock(i, { bodyColor: c })}
+                    style={{ width: 22, height: 22, borderRadius: '50%', cursor: 'pointer', background: c || 'rgba(155,171,191,0.6)', border: block.bodyColor === c ? `2px solid ${EP.fg}` : '2px solid transparent', boxShadow: block.bodyColor === c ? `0 0 0 2px ${c || '#9BABBF'}` : 'none', flexShrink: 0 }}/>
+                ))}
+              </div>
+            </ESection>
+          </React.Fragment>
+        ))}
+        {heroBlocks.length < 4 && (
+          <>
+            <EDivider/>
+            <button onClick={addBlock} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px 0', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 6, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 600 }}>
+              + Add block
+            </button>
+          </>
+        )}
       </>
     );
   }
