@@ -1635,10 +1635,10 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
       : highlightNums(block.headline);
   };
 
-  // Single-click to switch when already editing; double-click for initial entry
-  const editClick = (bi, field) => editCell
+  // Single click always enters edit mode when widget is selected
+  const editClick = (bi, field) => isEditing
     ? { onClick: e => { e.stopPropagation(); startEdit(bi, field); } }
-    : { onDoubleClick: e => { e.stopPropagation(); startEdit(bi, field); } };
+    : {};
 
   // Stop drag-canvas from consuming pointer events inside widget content areas
   const stopDrag = isEditing ? { onPointerDown: e => e.stopPropagation() } : {};
