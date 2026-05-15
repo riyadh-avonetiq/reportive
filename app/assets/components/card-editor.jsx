@@ -937,14 +937,6 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
                 placeholder="Narasi ringkasan..."
                 rows={3} style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}/>
             </ESection>
-            <ESection label="Body format">
-              <div style={{ display: 'flex', gap: 4 }}>
-                {[['', '¶ Text'], ['bullet', '• Bullet'], ['numbered', '1. Number']].map(([val, lbl]) => (
-                  <button key={val} onClick={() => upBlock(i, { listType: val })}
-                    style={{ flex: 1, padding: '6px 0', border: 'none', borderRadius: 6, cursor: 'pointer', background: (block.listType || '') === val ? EP.teal : EP.elevated, color: (block.listType || '') === val ? '#0C182C' : EP.sec, fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700, transition: 'background .12s' }}>{lbl}</button>
-                ))}
-              </div>
-            </ESection>
             <ESection label="Body color">
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 {bColors.map(c => (

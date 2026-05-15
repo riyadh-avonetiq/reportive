@@ -1525,7 +1525,35 @@ function TextWidget({ cfg }) {
 }
 
 // ─── Editable narrative widget renderers ──────────────────────────
-function NarrativeHeroWidget({ cfg }) {
+function renderMarkdownBody(text, style) {
+  if (!text) return null;
+  const lines = text.split('\n');
+  const out = [];
+  let listItems = [];
+  let listKind = null;
+  const flushList = () => {
+    if (!listItems.length) return;
+    const Tag = listKind === 'ol' ? 'ol' : 'ul';
+    out.push(<Tag key={out.length} style={{ ...style, paddingLeft: 20, margin: out.length === 0 ? '8px 0 0' : '4px 0 0', marginBottom: 0 }}>{listItems.map((t, j) => <li key={j}>{t}</li>)}</Tag>);
+    listItems = []; listKind = null;
+  };
+  lines.forEach(line => {
+    const b = line.match(/^[-*]\s+(.*)/), n = line.match(/^\d+\.\s+(.*)/);
+    if (b) { if (listKind !== 'ul') flushList(); listKind = 'ul'; listItems.push(b[1]); }
+    else if (n) { if (listKind !== 'ol') flushList(); listKind = 'ol'; listItems.push(n[1]); }
+    else if (line.trim()) { flushList(); out.push(<p key={out.length} style={{ ...style, margin: out.length === 0 ? '8px 0 0' : '4px 0 0', padding: 0 }}>{line}</p>); }
+    else flushList();
+  });
+  flushList();
+  return out.length ? out : null;
+}
+
+function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
+  const [editCell, setEditCell] = React.useState(null); // { bi, field }
+  const [draft,    setDraft]    = React.useState('');
+
+  React.useEffect(() => { if (!isEditing) setEditCell(null); }, [isEditing]);
+
   const fs = cfg.fontSize || 'M';
   const headlinePx = { S: 16, M: 22, L: 30 }[fs] || 22;
   const bodyPx     = { S: 11, M: 12.5, L: 14 }[fs] || 12.5;
@@ -1533,24 +1561,24 @@ function NarrativeHeroWidget({ cfg }) {
     ? cfg.blocks
     : [{ headline: cfg.title || 'Performa marketing naik 19,7%', body: cfg.body || 'Konversi meningkat seiring shift anggaran ke Google Ads. SEO organik tumbuh 8,1% tanpa tambahan budget.', headlineColor: '', bodyColor: '' }];
 
-  const highlightNums = (text) => {
-    if (!text) return '';
-    const parts = text.split(/(\d[\d.,]*(?:[%x])?)/g);
-    return parts.map((p, i) => /^\d[\d.,]*(?:[%x])?$/.test(p)
-      ? <span key={i} style={{ color: '#F8B400' }}>{p}</span>
-      : p
-    );
+  const startEdit = (bi, field, value) => {
+    if (!isEditing) return;
+    setEditCell({ bi, field });
+    setDraft(value || '');
   };
 
-  const renderBody = (block) => {
-    if (!block.body) return null;
-    const bStyle = { fontFamily: T.body, fontSize: bodyPx, color: block.bodyColor || sec, lineHeight: 1.7, margin: '8px 0 0', padding: 0 };
-    if (block.listType === 'bullet' || block.listType === 'numbered') {
-      const Tag = block.listType === 'numbered' ? 'ol' : 'ul';
-      const items = block.body.split('\n').filter(l => l.trim());
-      return <Tag style={{ ...bStyle, paddingLeft: 20, marginBottom: 0 }}>{items.map((item, j) => <li key={j}>{item}</li>)}</Tag>;
-    }
-    return <p style={bStyle}>{block.body}</p>;
+  const commit = () => {
+    if (!editCell || !onConfigChange) { setEditCell(null); return; }
+    const next = blocks.map((b, i) => i === editCell.bi ? { ...b, [editCell.field]: draft } : b);
+    onConfigChange(widgetId, { blocks: next });
+    setEditCell(null);
+  };
+
+  const highlightNums = (text) => {
+    if (!text) return '';
+    return text.split(/(\d[\d.,]*(?:[%x])?)/).map((p, i) =>
+      /^\d[\d.,]*(?:[%x])?$/.test(p) ? <span key={i} style={{ color: '#F8B400' }}>{p}</span> : p
+    );
   };
 
   return (
@@ -1559,12 +1587,41 @@ function NarrativeHeroWidget({ cfg }) {
       <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 0 }}>
         {blocks.map((block, i) => {
           const accentColor = block.headlineColor || '#00C2B8';
+          const isEditH = editCell?.bi === i && editCell?.field === 'headline';
+          const isEditB = editCell?.bi === i && editCell?.field === 'body';
+          const bodyStyle = { fontFamily: T.body, fontSize: bodyPx, color: block.bodyColor || sec, lineHeight: 1.7 };
           return (
             <React.Fragment key={i}>
               {i > 0 && <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '16px 0' }}/>}
               <div style={{ borderLeft: `3px solid ${accentColor}`, paddingLeft: 14 }}>
-                <div style={{ fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2 }}>{highlightNums(block.headline || '')}</div>
-                {renderBody(block)}
+                {isEditH ? (
+                  <input autoFocus value={draft}
+                    onChange={e => setDraft(e.target.value)}
+                    onBlur={commit}
+                    onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditCell(null); }}
+                    style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.25)', outline: 'none', padding: '0 0 2px', fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2, boxSizing: 'border-box' }}
+                  />
+                ) : (
+                  <div onDoubleClick={e => { e.stopPropagation(); startEdit(i, 'headline', block.headline); }}
+                    style={{ fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2, cursor: isEditing ? 'text' : 'default' }}>
+                    {highlightNums(block.headline || '')}
+                  </div>
+                )}
+                {isEditB ? (
+                  <textarea autoFocus value={draft}
+                    onChange={e => setDraft(e.target.value)}
+                    onBlur={commit}
+                    onKeyDown={e => { if (e.key === 'Escape') setEditCell(null); }}
+                    placeholder={'- Poin pertama\n- Poin kedua\n\nAtau tulis paragraf biasa.'}
+                    style={{ width: '100%', minHeight: 100, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, outline: 'none', padding: '8px 10px', marginTop: 8, fontFamily: T.body, fontSize: bodyPx, color: block.bodyColor || sec, lineHeight: 1.7, resize: 'vertical', boxSizing: 'border-box' }}
+                  />
+                ) : (
+                  <div onDoubleClick={e => { e.stopPropagation(); startEdit(i, 'body', block.body); }}
+                    style={{ cursor: isEditing ? 'text' : 'default', minHeight: isEditing && !block.body ? 28 : 0 }}>
+                    {renderMarkdownBody(block.body, bodyStyle)}
+                    {!block.body && isEditing && <p style={{ ...bodyStyle, margin: '8px 0 0', opacity: 0.3, fontStyle: 'italic', padding: 0 }}>Double-click to add body…</p>}
+                  </div>
+                )}
               </div>
             </React.Fragment>
           );
@@ -1658,7 +1715,7 @@ function UniversalWidget({ instance, p, widgetConfig, editState }) {
       case 'chart-heatmap':return <ChartHeatmapWidget instance={instance} p={p} cfg={cfg}/>;
       case 'table':             return <UniversalTableWidget  instance={instance} p={p} cfg={cfg}/>;
       case 'text':              return <TextWidget            cfg={cfg}/>;
-      case 'narrative-hero':    return <NarrativeHeroWidget   cfg={cfg}/>;
+      case 'narrative-hero':    return <NarrativeHeroWidget   cfg={cfg} widgetId={instance.id} isEditing={editState?.selected?.includes(instance.id)} onConfigChange={editState?.onConfigChange}/>;
       case 'narrative-note':    return <NarrativeNoteWidget   cfg={cfg}/>;
       case 'narrative-callout': return <NarrativeCalloutWidget cfg={cfg}/>;
       case 'narrative-quote':   return <NarrativeQuoteWidget  cfg={cfg}/>;
@@ -4326,6 +4383,7 @@ function ScreenReport({ clientId, onBack }) {
     onDelete: handleDeleteWidget,
     onDeselect: () => setSelectedWidgets([]),
     onMultiSelect: (ids) => setSelectedWidgets(ids),
+    onConfigChange: handleWidgetConfigChange,
   } : null;
 
   // Count how many widgets in the current layout share the same widget type as the selected widget
