@@ -918,7 +918,12 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <ELabel>{heroBlocks.length > 1 ? `Block ${i + 1}` : 'Content'}</ELabel>
               {heroBlocks.length > 1 && (
-                <button onMouseDown={e => { e.preventDefault(); removeBlock(i); }} style={{ background: 'transparent', border: 'none', color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, padding: '2px 6px' }}>× Remove</button>
+                <button onMouseDown={e => { e.preventDefault(); removeBlock(i); }}
+                  title="Hapus block ini"
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 5, color: '#F87171', cursor: 'pointer', padding: '4px 8px', transition: 'background .12s' }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6M14,11v6"/><path d="M9,6V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1v2"/></svg>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700 }}>Remove</span>
+                </button>
               )}
             </div>
             <ESection label="Headline">
@@ -931,11 +936,6 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
                     style={{ width: 22, height: 22, borderRadius: '50%', cursor: 'pointer', background: c || 'rgba(255,255,255,0.85)', border: block.headlineColor === c ? `2px solid ${EP.fg}` : '2px solid transparent', boxShadow: block.headlineColor === c ? `0 0 0 2px ${c || EP.fg}` : 'none', flexShrink: 0 }}/>
                 ))}
               </div>
-            </ESection>
-            <ESection label="Body text">
-              <textarea value={block.body} onChange={e => upBlock(i, { body: e.target.value })}
-                placeholder={"- Bullet list\n1. Numbered list\n\nAtau paragraf biasa"}
-                rows={4} style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}/>
             </ESection>
             <ESection label="Body color">
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
