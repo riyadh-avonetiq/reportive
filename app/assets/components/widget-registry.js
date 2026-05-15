@@ -68,13 +68,13 @@ window.DIM_REGISTRY = {
     { key: 'date',          label: 'Date' },
     { key: 'gender',        label: 'Gender' },
     { key: 'country',       label: 'Country' },
+    { key: 'region',        label: 'Region' },
+    { key: 'city',          label: 'City' },
     { key: 'page_path',     label: 'Page Path' },
     { key: 'device',        label: 'Device' },
     { key: 'channel_group', label: 'Channel Group' },
     { key: 'medium',        label: 'Medium' },
     { key: 'source',        label: 'Source' },
-    { key: 'region',        label: 'Region' },
-    { key: 'city',          label: 'City' },
   ],
   search: [
     { key: 'query',   label: 'Query' },
@@ -195,19 +195,18 @@ window.DIM_VALUES_EXTRACTOR = {
   },
   ga4: p => {
     const uniq = (rows, key) => [...new Set((rows || []).map(r => r[key]).filter(v => v != null && v !== ''))].sort();
-    const rows = p?.ga4Rows || [];
     return {
-      property_name:  uniq(rows, 'property_name'),
-      date:           uniq(rows, 'date'),
-      gender:         uniq(rows, 'gender'),
-      country:        uniq(rows, 'country'),
-      page_path:      uniq(rows, 'page_path'),
-      device:         uniq(rows, 'device'),
-      channel_group:  uniq(rows, 'channel_group'),
-      medium:         uniq(rows, 'medium'),
-      source:         uniq(rows, 'source'),
-      region:         uniq(rows, 'region'),
-      city:           uniq(rows, 'city'),
+      property_name:  uniq(p?.ga4Rows,        'property_name'),
+      date:           uniq(p?.ga4Rows,        'date'),
+      gender:         uniq(p?.ga4DemoRows,    'gender'),
+      country:        uniq(p?.ga4SessionRows, 'country'),
+      region:         uniq(p?.ga4SessionRows, 'region'),
+      city:           uniq(p?.ga4SessionRows, 'city'),
+      page_path:      uniq(p?.ga4PageRows,    'page_path'),
+      device:         uniq(p?.ga4SessionRows, 'device'),
+      channel_group:  uniq(p?.ga4SessionRows, 'channel_group'),
+      medium:         uniq(p?.ga4SessionRows, 'medium'),
+      source:         uniq(p?.ga4SessionRows, 'source'),
     };
   },
   search: p => {
@@ -223,28 +222,12 @@ window.DIM_VALUES_EXTRACTOR = {
 };
 
 // FILTER_DIM_REGISTRY: source → (selectedDims) → [valid filter dim keys]
-// Restricts filter dropdown to dims that exist in the routed row source.
+// Returns dims that actually exist in the routed row source for the given display dims.
 window.FILTER_DIM_REGISTRY = {
-  google: (selectedDims) => {
-    const dims = selectedDims || [];
-    if (dims.includes('keyword') || dims.includes('match_type'))
-      // keywordDeviceRows or keywords: has name, type, ad_group, keyword, match_type, device
-      return ['name', 'type', 'ad_group', 'keyword', 'match_type', 'device'];
-    if (dims.includes('ad_group'))
-      // adGroupDeviceRows or adGroups: has name, type, ad_group, device
-      return ['name', 'type', 'ad_group', 'device'];
-    if (dims.includes('device'))
-      // deviceRows: has name, type, device
-      return ['name', 'type', 'device'];
-    if (dims.includes('segment_value'))
-      // genderRows: has name, segment_value
-      return ['name', 'segment_value'];
-    // Default campaign level: has name, type + can pivot to device or gender
-    return ['name', 'type', 'device', 'segment_value'];
-  },
+  google: (_dims) => ['name', 'type', 'ad_group', 'keyword', 'match_type', 'device', 'segment_value'],
   meta:   (_dims) => ['campaign_name', 'adset_name', 'ad_name', 'date'],
-  ga4:    (_dims) => ['property_name', 'date'],
-  search: (_dims) => ['query', 'page', 'date', 'country', 'device'],
+  ga4:    (_dims) => ['property_name', 'date', 'gender', 'country', 'region', 'city', 'page_path', 'device', 'channel_group', 'medium', 'source'],
+  search: (_dims) => ['query', 'page', 'country', 'device', 'date'],
 };
 
 window.WIDGET_DEFAULTS = {
