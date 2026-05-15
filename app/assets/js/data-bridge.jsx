@@ -93,10 +93,7 @@ function aggregateAds(rows) {
   t.cpc  = t.clicks > 0 ? t.spend / t.clicks : 0;
   t.cvr  = t.clicks > 0 ? (t.conversions / t.clicks) * 100 : 0;
   t.cpa  = t.conversions > 0 ? t.spend / t.conversions : 0;
-  const roasFromRows = rows.reduce((s, r) => s + (+r.roas || 0), 0);
-  t.roas = roasFromRows > 0
-    ? roasFromRows / rows.filter(r => +r.roas > 0).length
-    : (t.spend > 0 && t.conversions > 0 ? (t.conversions * t.cpa * 0.0000001) : 3.82);
+  t.roas = 0;
   return t;
 }
 
@@ -338,8 +335,24 @@ function aggregatePsi(rows) {
   };
 }
 
+// ── Normalize GA4 dimension row: handle camelCase or snake_case column names ──
+function _normalizeGa4DimRow(r) {
+  const sessions             = +(r.sessions             ?? 0);
+  const total_users          = +(r.total_users          ?? r.totalUsers          ?? r.users             ?? 0);
+  const new_users            = +(r.new_users            ?? r.newUsers            ?? 0);
+  const engaged_sessions     = +(r.engaged_sessions     ?? r.engagedSessions     ?? 0);
+  const event_count          = +(r.event_count          ?? r.eventCount          ?? r.events            ?? 0);
+  const avg_session_duration = +(r.avg_session_duration ?? r.avgSessionDuration  ?? r.averageSessionDuration ?? 0);
+  const bounce_rate_raw      = +(r.bounce_rate          ?? r.bounceRate          ?? 0);
+  const engagement_rate_raw  = +(r.engagement_rate      ?? r.engagementRate      ?? 0);
+  // GA4 API stores bounce_rate and engagement_rate as decimal (0–1); multiply by 100 for display
+  const bounce_rate          = bounce_rate_raw > 1 ? bounce_rate_raw : bounce_rate_raw * 100;
+  const engagement_rate      = engagement_rate_raw > 1 ? engagement_rate_raw : engagement_rate_raw * 100;
+  return { ...r, sessions, total_users, new_users, engaged_sessions, event_count, avg_session_duration, bounce_rate, engagement_rate };
+}
+
 // ── Build aggregated data object ────────────────────────────────────
-function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRows, prevGa4Rows, prevGscSummary, prevGscQueries, from, to, prevFrom, prevTo, metaRows, prevMetaRows, gscPages, prevGscPages, adsDetailRows, adsSegRows, adsSheetRows, gscCountries, gscDevices, metaInsightsRows) {
+function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRows, prevGa4Rows, prevGscSummary, prevGscQueries, from, to, prevFrom, prevTo, metaRows, prevMetaRows, gscPages, prevGscPages, adsDetailRows, adsSegRows, adsSheetRows, gscCountries, gscDevices, metaInsightsRows, ga4DemoRows, ga4PageRows, ga4SessionRows) {
   // Use ads_data (sheet-synced, matches google_ads_daily) when available; fall back to google_ads
   const detailRows = adsSheetRows && adsSheetRows.length ? adsSheetRows : adsDetailRows;
   console.log('[Reportive] detail source:', adsSheetRows && adsSheetRows.length ? 'ads_data (' + adsSheetRows.length + ' rows)' : 'google_ads (' + adsDetailRows.length + ' rows)');
@@ -425,7 +438,7 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
     dailyMeta[d].spend       += +r.spend       || 0;
     dailyMeta[d].clicks      += +r.link_clicks || 0;
     dailyMeta[d].impressions += +r.impressions || 0;
-    dailyMeta[d].conversions += +r.purchases   || +r.leads || 0;
+    dailyMeta[d].conversions += (+r.purchases || 0) + (+r.leads || 0);
   });
   const dailyMetaKeys = Object.keys(dailyMeta).sort();
   const metaSeries = {
@@ -452,7 +465,7 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
     metaByType[k].contacts               += +r.contacts                || 0;
     metaByType[k].ig_profile_visits      += +r.ig_profile_visits       || 0;
     metaByType[k].post_engagements       += +r.post_engagements        || 0;
-    metaByType[k].conversions            += (+r.leads || 0) + (+r.contacts || 0) + (+r.messaging_conv_started || 0) + (+r.complete_registrations || 0);
+    metaByType[k].conversions            += (+r.leads || 0) + (+r.contacts || 0) + (+r.complete_registrations || 0);
     metaByType[k].purchases              += +r.purchases               || 0;
     metaByType[k].purchase_value         += +r.purchase_value          || 0;
     metaByType[k].add_to_carts           += +r.add_to_carts            || 0;
@@ -519,7 +532,14 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
     _byKeywordDevice[key].clicks      += +r.clicks      || 0;
     _byKeywordDevice[key].conversions += +r.conversions || 0;
   });
-  const keywordDeviceRows = Object.values(_byKeywordDevice).sort((a, b) => b.spend - a.spend).slice(0, 2000);
+  const _addAdMetrics = r => ({
+    ...r,
+    ctr: r.impressions > 0 ? (r.clicks / r.impressions) * 100 : 0,
+    cpc: r.clicks > 0 ? r.spend / r.clicks : 0,
+    cvr: r.clicks > 0 ? (r.conversions / r.clicks) * 100 : 0,
+    cpa: r.conversions > 0 ? r.spend / r.conversions : 0,
+  });
+  const keywordDeviceRows = Object.values(_byKeywordDevice).sort((a, b) => b.spend - a.spend).slice(0, 2000).map(_addAdMetrics);
 
   // Ad groups × device (from google_ads which has device column)
   const _byAdGroupDevice = {};
@@ -532,7 +552,7 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
     _byAdGroupDevice[key].clicks      += +r.clicks      || 0;
     _byAdGroupDevice[key].conversions += +r.conversions || 0;
   });
-  const adGroupDeviceRows = Object.values(_byAdGroupDevice).sort((a, b) => b.spend - a.spend).slice(0, 1000);
+  const adGroupDeviceRows = Object.values(_byAdGroupDevice).sort((a, b) => b.spend - a.spend).slice(0, 1000).map(_addAdMetrics);
 
   // Device breakdown (from google_ads which has device column)
   const _byDevice = {};
@@ -545,7 +565,7 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
     _byDevice[key].clicks      += +r.clicks      || 0;
     _byDevice[key].conversions += +r.conversions || 0;
   });
-  const deviceRows = Object.values(_byDevice).sort((a, b) => b.spend - a.spend).slice(0, 1000);
+  const deviceRows = Object.values(_byDevice).sort((a, b) => b.spend - a.spend).slice(0, 1000).map(_addAdMetrics);
 
   // Gender breakdown (from google_ads_seg where segment_type = 'gender')
   const _byGender = {};
@@ -557,7 +577,7 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
     _byGender[key].clicks      += +r.clicks      || 0;
     _byGender[key].conversions += +r.conversions || 0;
   });
-  const genderRows = Object.values(_byGender).sort((a, b) => b.conversions - a.conversions);
+  const genderRows = Object.values(_byGender).sort((a, b) => b.conversions - a.conversions).map(_addAdMetrics);
 
   // Conversion actions (from google_ads_seg where segment_type = 'conversion_action')
   const _byConvAction = {};
@@ -580,6 +600,9 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
     adGroups, keywords, keywordDeviceRows, adGroupDeviceRows, deviceRows, genderRows, conversionActions,
     ga4Rows, metaRows,
     metaInsightsRows: (metaInsightsRows || []).map(r => ({ ...r, clicks: +r.link_clicks || 0 })),
+    ga4DemoRows:    (ga4DemoRows    || []).map(_normalizeGa4DimRow),
+    ga4PageRows:    (ga4PageRows    || []).map(_normalizeGa4DimRow),
+    ga4SessionRows: (ga4SessionRows || []).map(_normalizeGa4DimRow),
   };
 }
 
@@ -794,7 +817,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     const metaQ = (_metaSupa && metaAccount !== null)
       ? (() => {
           let q = _metaSupa.from('meta_ads_daily')
-            .select('date, account_name, campaign_name, spend, impressions, reach, link_clicks, landing_page_views, leads, complete_registrations, messaging_conv_started, contacts, ig_profile_visits, post_engagements, purchases, purchase_value, add_to_carts, add_to_cart_value, currency')
+            .select('date, account_name, campaign_name, spend, impressions, reach, link_clicks, landing_page_views, leads, complete_registrations, messaging_conv_started, contacts, ig_profile_visits, post_engagements, content_views, purchases, purchase_value, add_to_carts, add_to_cart_value, currency')
             .order('date', { ascending: true })
             .limit(20000);
           if (metaAccount) q = q.eq('account_name', metaAccount);
@@ -818,13 +841,56 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
         })()
       : Promise.resolve({ data: [] });
 
-    // ── GA4 ─────────────────────────────────────────────────────
+    // ── GA4 Totals (date-level aggregates for KPI cards + chart) ──
     const ga4Q = (_ga4Supa && ga4Property !== null)
       ? (() => {
           let q = _ga4Supa.from('ga4_totals')
             .select('date, property_name, sessions, total_users, new_users, bounce_rate, engaged_sessions, engagement_rate, avg_session_duration, event_count')
             .order('date', { ascending: true })
             .limit(10000);
+          if (ga4Property) q = q.eq('property_name', ga4Property);
+          if (from) q = q.gte('date', from);
+          if (to)   q = q.lte('date', to);
+          return q;
+        })()
+      : Promise.resolve({ data: [] });
+
+    // ── GA4 Demographics (gender, country) ────────────────────────
+    const ga4DemoQ = (_ga4Supa && ga4Property !== null)
+      ? (() => {
+          let q = _ga4Supa.from('ga4_demographics')
+            .select('*')
+            .order('date', { ascending: false })
+            .limit(5000);
+          if (ga4Property) q = q.eq('property_name', ga4Property);
+          if (from) q = q.gte('date', from);
+          if (to)   q = q.lte('date', to);
+          return q;
+        })()
+      : Promise.resolve({ data: [] });
+
+    // ── GA4 Pages (page_path) ──────────────────────────────────────
+    const ga4PageQ = (_ga4Supa && ga4Property !== null)
+      ? (() => {
+          let q = _ga4Supa.from('ga4_pages')
+            .select('property_name,date,page_path,device,total_users,new_users,sessions,engaged_sessions,bounce_rate,engagement_rate,avg_session_duration,event_count')
+            .order('date', { ascending: false })
+            .limit(2000);
+          if (ga4Property) q = q.eq('property_name', ga4Property);
+          if (from) q = q.gte('date', from);
+          if (to)   q = q.lte('date', to);
+          return q;
+        })()
+      : Promise.resolve({ data: [] });
+
+    // ── GA4 Sessions (device, channel_group, medium, source) ──────
+    // No ORDER BY — requires index: CREATE INDEX ON ga4_sessions (property_name, date DESC)
+    const GA4_SESSION_COLS = 'property_name,date,country,region,city,device,channel_group,medium,source,sessions,total_users,returning_users,new_users,engaged_sessions,event_count,bounce_rate,engagement_rate,avg_session_duration';
+    const ga4SessionQ = (_ga4Supa && ga4Property !== null)
+      ? (() => {
+          let q = _ga4Supa.from('ga4_sessions')
+            .select(GA4_SESSION_COLS)
+            .limit(2000);
           if (ga4Property) q = q.eq('property_name', ga4Property);
           if (from) q = q.gte('date', from);
           if (to)   q = q.lte('date', to);
@@ -915,7 +981,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
         })()
       : Promise.resolve({ data: [] });
 
-    const [adsR, adsSheetR, adsDetailRows, adsSegR, metaR, metaInsightsR, ga4R, gscSumR, gscQryR, gscPgsR, gscCtyR, gscDevR, psiR] = await Promise.all([adsQ, adsSheetQ, fetchPaged(adsDetailQ), adsSegQ, metaQ, metaInsightsQ, ga4Q, gscSummaryQ, gscQueryQ, gscPagesQ, gscCountryQ, gscDeviceQ, psiQ]);
+    const [adsR, adsSheetR, adsDetailRows, adsSegR, metaR, metaInsightsR, ga4R, ga4DemoR, ga4PageR, ga4SessionR, gscSumR, gscQryR, gscPgsR, gscCtyR, gscDevR, psiR] = await Promise.all([adsQ, adsSheetQ, fetchPaged(adsDetailQ), adsSegQ, metaQ, metaInsightsQ, ga4Q, ga4DemoQ, ga4PageQ, ga4SessionQ, gscSummaryQ, gscQueryQ, gscPagesQ, gscCountryQ, gscDeviceQ, psiQ]);
 
     // search_console_summary: accurate daily totals from GSC API (dimensions: date, searchType: web)
     // Do NOT fall back to search_console_daily — per-query rows inflate impressions 5-10x
@@ -930,8 +996,11 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     if (metaR.error)         console.warn('[Reportive] Meta error:',         metaR.error.message);
     if (metaInsightsR.error) console.warn('[Reportive] Meta insights error:', metaInsightsR.error.message);
     if (ga4R.error)          console.warn('[Reportive] GA4 error:',           ga4R.error.message);
+    if (ga4DemoR.error)      console.warn('[Reportive] GA4 demographics error:', ga4DemoR.error.message);
+    if (ga4PageR.error)      console.warn('[Reportive] GA4 pages error:',        ga4PageR.error.message);
+    if (ga4SessionR.error)   console.warn('[Reportive] GA4 sessions error:',     ga4SessionR.error.message);
     const metaData = metaR.error ? [] : (metaR.data || []);
-    console.log('[Reportive] rows — meta:', metaData.length, '| meta insights:', (metaInsightsR.data || []).length, '| ga4:', (ga4R.data || []).length);
+    console.log('[Reportive] rows — meta:', metaData.length, '| meta insights:', (metaInsightsR.data || []).length, '| ga4:', (ga4R.data || []).length, '| ga4Demo:', (ga4DemoR.data || []).length, '| ga4Page:', (ga4PageR.data || []).length, '| ga4Session:', (ga4SessionR.data || []).length);
 
     // PSI fallback: date-range returned nothing → get latest available
     let psiData = psiR.error ? [] : (psiR.data || []);
@@ -973,6 +1042,9 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
       meta:         metaData,
       metaInsights: metaInsightsR.error ? [] : (metaInsightsR.data || []),
       ga4:        ga4R.error       ? [] : (ga4R.data       || []),
+      ga4Demo:    ga4DemoR.error    ? [] : (ga4DemoR.data    || []),
+      ga4Page:    ga4PageR.error    ? [] : (ga4PageR.data    || []),
+      ga4Session: ga4SessionR.error ? [] : (ga4SessionR.data || []),
       gscSummary:   gscSummaryData,
       gscQueries:   gscQryR.error ? [] : (gscQryR.data || []),
       gscPages:     gscPgsR.error ? [] : (gscPgsR.data || []),
@@ -1042,6 +1114,7 @@ function LiveProvider({ children }) {
           raw.adsSheet || null,
           raw.gscCountries || [], raw.gscDevices || [],
           raw.metaInsights || [],
+          raw.ga4Demo || [], raw.ga4Page || [], raw.ga4Session || [],
         );
       }
       setState({ loading: false, error: null, data, _isMock: isMock });
