@@ -45,9 +45,9 @@ function _rowToUser(r) {
 }
 
 const ACCESS_USERS = [
-  { id: 'u1', name: 'Avonetiq Owner', email: 'optimize@avonetiq.com', role: 'owner', avatar: 'AO', grad: 'linear-gradient(135deg,#00C2B8,#7000FF)', joined: '28 Apr 2026', lastActive: 'Just now', clients: ['kopi-senja','batik-nusa','tekno-pintar','properti-indah','herbal-nusa','resto-archipelago'], status: 'active' },
-  { id: 'u2', name: 'Riyadh Nasrin', email: 'riyadh@avonetiq.id', role: 'editor', avatar: 'RN', grad: 'linear-gradient(135deg,#4285F4,#00C2B8)', joined: '28 Apr 2026', lastActive: 'Just now', clients: [], status: 'active' },
-  { id: 'u3', name: 'Riyadh Nasrin', email: 'riyadhnasrin96@gmail.com', role: 'viewer', avatar: 'RN', grad: 'linear-gradient(135deg,#7000FF,#4285F4)', joined: '28 Apr 2026', lastActive: 'Never', clients: [], status: 'active' },
+  { id: 'u1', name: 'Workspace Owner', email: 'owner@example.com', role: 'owner', avatar: 'WO', grad: 'linear-gradient(135deg,#00C2B8,#7000FF)', joined: '28 Apr 2026', lastActive: 'Just now', clients: [], status: 'active' },
+  { id: 'u2', name: 'Editor User', email: 'editor@example.com', role: 'editor', avatar: 'EU', grad: 'linear-gradient(135deg,#4285F4,#00C2B8)', joined: '28 Apr 2026', lastActive: 'Just now', clients: [], status: 'active' },
+  { id: 'u3', name: 'Viewer User', email: 'viewer@example.com', role: 'viewer', avatar: 'VU', grad: 'linear-gradient(135deg,#7000FF,#4285F4)', joined: '28 Apr 2026', lastActive: 'Never', clients: [], status: 'active' },
 ];
 
 const ROLES = {
