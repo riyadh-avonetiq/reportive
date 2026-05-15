@@ -849,6 +849,17 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
   const isNarrCall  = widgetType === 'narrative-callout';
   const isNarrQuote = widgetType === 'narrative-quote';
   const isNarrative = isNarrHero || isNarrNote || isNarrCall || isNarrQuote;
+
+  // Track which field (headline/body) is active in NarrativeHeroWidget via custom event.
+  // Must be at top level (Rules of Hooks — not inside if-block).
+  const [activeField, setActiveField] = React.useState(null);
+  React.useEffect(() => { setActiveField(null); }, [widgetId]);
+  React.useEffect(() => {
+    if (!isNarrHero) return;
+    const handler = e => setActiveField(e.detail);
+    window.addEventListener('narrativeHeroFocus', handler);
+    return () => window.removeEventListener('narrativeHeroFocus', handler);
+  }, [isNarrHero]);
   const DESIGN_ONLY_TYPES = ['carousel-highlights','kpi-compare','kpi-stacked','chart-sparks',
     'progress-psi','progress-score','progress-goals','progress-pacing','progress-grid',
     'list-keywords','list-pages','list-countries','list-devices'];
@@ -961,17 +972,6 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     const hColors = ['', '#FCFCFC', '#00C2B8', '#F8B400', '#F87171'];
     const bColors = ['', '#9BABBF', '#FCFCFC', '#00C2B8', '#F8B400'];
     const colorSwatch = { '': 'Default', '#FCFCFC': 'White', '#00C2B8': 'Teal', '#F8B400': 'Gold', '#F87171': 'Red', '#9BABBF': 'Muted' };
-
-    // Listen to which field is active in the widget (broadcast via custom event from NarrativeHeroWidget)
-    const [activeField, setActiveField] = React.useState(null); // { bi, field } | null
-    React.useEffect(() => {
-      setActiveField(null);
-    }, [widgetId]);
-    React.useEffect(() => {
-      const handler = e => setActiveField(e.detail);
-      window.addEventListener('narrativeHeroFocus', handler);
-      return () => window.removeEventListener('narrativeHeroFocus', handler);
-    }, []);
 
     // Derive the color config from whatever field is currently active
     const af = activeField;
