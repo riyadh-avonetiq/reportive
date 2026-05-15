@@ -790,8 +790,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     // gives accurate totals. Fallback: google_ads (direct API, may miss DSA spend).
     let adsSheetQ = _supa.from('ads_data')
       .select('day, campaign_name, campaign_type, ad_group, keyword, match_type, spend, impressions, clicks, conversions')
-      .order('day', { ascending: true })
-      .limit(100000);
+      .order('day', { ascending: true });
     if (from) adsSheetQ = adsSheetQ.gte('day', from);
     if (to)   adsSheetQ = adsSheetQ.lte('day', to);
 
@@ -981,7 +980,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
         })()
       : Promise.resolve({ data: [] });
 
-    const [adsR, adsSheetR, adsDetailRows, adsSegR, metaR, metaInsightsR, ga4R, ga4DemoR, ga4PageR, ga4SessionR, gscSumR, gscQryR, gscPgsR, gscCtyR, gscDevR, psiR] = await Promise.all([adsQ, adsSheetQ, fetchPaged(adsDetailQ), adsSegQ, metaQ, metaInsightsQ, ga4Q, ga4DemoQ, ga4PageQ, ga4SessionQ, gscSummaryQ, gscQueryQ, gscPagesQ, gscCountryQ, gscDeviceQ, psiQ]);
+    const [adsR, adsSheetRaw, adsDetailRows, adsSegR, metaR, metaInsightsR, ga4R, ga4DemoR, ga4PageR, ga4SessionR, gscSumR, gscQryR, gscPgsR, gscCtyR, gscDevR, psiR] = await Promise.all([adsQ, fetchPaged(adsSheetQ), fetchPaged(adsDetailQ), adsSegQ, metaQ, metaInsightsQ, ga4Q, ga4DemoQ, ga4PageQ, ga4SessionQ, gscSummaryQ, gscQueryQ, gscPagesQ, gscCountryQ, gscDeviceQ, psiQ]);
 
     // search_console_summary: accurate daily totals from GSC API (dimensions: date, searchType: web)
     // Do NOT fall back to search_console_daily — per-query rows inflate impressions 5-10x
@@ -1033,7 +1032,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
       }
     }
 
-    const adsSheetRows = (!adsSheetR.error && adsSheetR.data && adsSheetR.data.length) ? adsSheetR.data : null;
+    const adsSheetRows = (adsSheetRaw && adsSheetRaw.length) ? adsSheetRaw : null;
     return {
       ads:        adsR.error       ? [] : (adsR.data    || []),
       adsSheet:   adsSheetRows,
