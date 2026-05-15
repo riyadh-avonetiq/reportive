@@ -1574,12 +1574,14 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
   const cleanBodyHTML = (html) =>
     html.replace(/(<(div|p|li)[^>]*>\s*(<br\s*\/?>\s*)?<\/(div|p|li)>\s*)+$/, '').trim();
 
+  // Strip block-level browser wrappers from headline (div, p, br) but keep inline formatting
+  const cleanHeadlineHTML = (html) =>
+    html.replace(/<\/?div[^>]*>/gi, '').replace(/<\/?p[^>]*>/gi, '').replace(/<br\s*\/?>/gi, ' ').trim();
+
   const readValue = () => {
     if (!editCell) return '';
-    const ref = editCell.field === 'body' ? editorRef : headlineRef;
-    return editCell.field === 'body'
-      ? cleanBodyHTML(ref.current?.innerHTML || '')
-      : (ref.current?.innerHTML || '');
+    if (editCell.field === 'body') return cleanBodyHTML(editorRef.current?.innerHTML || '');
+    return cleanHeadlineHTML(headlineRef.current?.innerHTML || '');
   };
 
   const startEdit = (bi, field) => {
@@ -1624,7 +1626,8 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
     );
   };
 
-  // If headline contains HTML formatting tags, render as HTML; else use number highlight
+  // Render headline: use dangerouslySetInnerHTML only when it contains inline HTML (b/i/u/strong/em)
+  // Block-level wrappers (div/p) are stripped at commit time so will never appear here
   const renderHeadline = (block) => {
     if (!block.headline) return null;
     return /<(b|i|u|strong|em)\b/i.test(block.headline)
@@ -1636,6 +1639,9 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
   const editClick = (bi, field) => editCell
     ? { onClick: e => { e.stopPropagation(); startEdit(bi, field); } }
     : { onDoubleClick: e => { e.stopPropagation(); startEdit(bi, field); } };
+
+  // Stop drag-canvas from consuming pointer events inside widget content areas
+  const stopDrag = isEditing ? { onPointerDown: e => e.stopPropagation() } : {};
 
   return (
     <RCard padding={24} style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg,rgba(0,194,184,.06),rgba(248,180,0,.04))' }}>
@@ -1652,6 +1658,7 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
               <div style={{ borderLeft: `3px solid ${accentColor}`, paddingLeft: 14 }}>
                 {isEditH ? (
                   <div
+                    key={`edit-h-${i}`}
                     ref={headlineRef}
                     contentEditable
                     suppressContentEditableWarning
@@ -1662,7 +1669,9 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
                   />
                 ) : (
                   <div
+                    key={`display-h-${i}`}
                     {...editClick(i, 'headline')}
+                    {...stopDrag}
                     style={{ fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2, cursor: isEditing ? 'text' : 'default', minHeight: headlinePx * 1.4 }}>
                     {block.headline
                       ? renderHeadline(block)
@@ -1672,6 +1681,7 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
                 )}
                 {isEditB ? (
                   <div
+                    key={`edit-b-${i}`}
                     ref={editorRef}
                     contentEditable
                     suppressContentEditableWarning
@@ -1682,7 +1692,9 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
                   />
                 ) : (
                   <div
+                    key={`display-b-${i}`}
                     {...editClick(i, 'body')}
+                    {...stopDrag}
                     style={{ cursor: isEditing ? 'text' : 'default' }}>
                     {block.body
                       ? <div style={bodyStyle} dangerouslySetInnerHTML={{ __html: block.body }}/>
