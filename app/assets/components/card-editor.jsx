@@ -911,6 +911,33 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
       <>
         {sharedBanner}
         <ESizeButtons label="Font size" value={cfg.fontSize || 'M'} onChange={v => up({ fontSize: v })}/>
+        <ESection label="Body formatting">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {[
+              { cmd: 'bold',                label: <strong>B</strong>,  title: 'Bold (Ctrl+B)' },
+              { cmd: 'italic',              label: <em>I</em>,          title: 'Italic (Ctrl+I)' },
+              { cmd: 'underline',           label: <u>U</u>,            title: 'Underline (Ctrl+U)' },
+            ].map(({ cmd, label, title }) => (
+              <button key={cmd} title={title}
+                onMouseDown={e => { e.preventDefault(); document.execCommand(cmd); }}
+                style={{ minWidth: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 13 }}>
+                {label}
+              </button>
+            ))}
+            <div style={{ width: 1, height: 20, background: EP.edge, margin: '0 2px' }}/>
+            {[
+              { cmd: 'insertUnorderedList', label: '•¶', title: 'Bullet list' },
+              { cmd: 'insertOrderedList',   label: '1.', title: 'Numbered list' },
+            ].map(({ cmd, label, title }) => (
+              <button key={cmd} title={title}
+                onMouseDown={e => { e.preventDefault(); document.execCommand(cmd); }}
+                style={{ minWidth: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 700 }}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-body)', fontSize: 10, color: EP.muted, lineHeight: 1.4 }}>Double-click body text on the widget to start editing, then apply formatting.</p>
+        </ESection>
         <EDivider/>
         {heroBlocks.map((block, i) => (
           <React.Fragment key={i}>
