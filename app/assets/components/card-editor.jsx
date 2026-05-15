@@ -988,27 +988,25 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
         <ESection label="Formatting">
           <FormattingToolbar/>
         </ESection>
-        <ESection label={afLabel}>
-          {af && afBlock ? (
-            <div>
-              {afSublabel && heroBlocks.length > 1 && (
-                <p style={{ margin: '0 0 6px', fontFamily: 'var(--font-body)', fontSize: 10, color: EP.muted }}>{afSublabel}</p>
-              )}
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                {afColors.map(c => (
-                  <div key={c} title={colorSwatch[c]}
-                    onMouseDown={e => e.preventDefault()}
-                    onClick={() => upBlock(af.bi, { [afColorKey]: c })}
-                    style={{ width: 22, height: 22, borderRadius: '50%', cursor: 'pointer',
-                      background: c || afDefaultBg,
-                      border: afCurrentColor === c ? `2px solid ${EP.fg}` : '2px solid transparent',
-                      boxShadow: afCurrentColor === c ? `0 0 0 2px ${c || EP.fg}` : 'none',
-                      flexShrink: 0 }}/>
-                ))}
-              </div>
+        {af && afBlock && (
+          <ESection label={afLabel}>
+            {afSublabel && heroBlocks.length > 1 && (
+              <p style={{ margin: '0 0 6px', fontFamily: 'var(--font-body)', fontSize: 10, color: EP.muted }}>{afSublabel}</p>
+            )}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              {afColors.map(c => (
+                <div key={c} title={colorSwatch[c]}
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => upBlock(af.bi, { [afColorKey]: c })}
+                  style={{ width: 22, height: 22, borderRadius: '50%', cursor: 'pointer',
+                    background: c || afDefaultBg,
+                    border: afCurrentColor === c ? `2px solid ${EP.fg}` : '2px solid transparent',
+                    boxShadow: afCurrentColor === c ? `0 0 0 2px ${c || EP.fg}` : 'none',
+                    flexShrink: 0 }}/>
+              ))}
             </div>
-          ) : null}
-        </ESection>
+          </ESection>
+        )}
         <EDivider/>
         {heroBlocks.map((block, i) => (
           <React.Fragment key={i}>
