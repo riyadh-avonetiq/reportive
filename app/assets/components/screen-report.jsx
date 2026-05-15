@@ -2088,7 +2088,7 @@ function buildUniversalMap(p, widgetConfigs, layouts, editState) {
 }
 
 // ─── Drag canvas ───────────────────────────────────────────────────
-function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutChange }) {
+function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutChange, widgetElemRefs }) {
   const [dragId,           setDragId]           = React.useState(null);
   const [hintDismissed,    setHintDismissed]    = React.useState(false);
   const [dropTarget,       setDropTarget]        = React.useState(null);
@@ -2488,7 +2488,10 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
 
                 return (
                   <div key={id}
-                    ref={el => el ? (widgetEls.current[id] = { el, rowIdx }) : delete widgetEls.current[id]}
+                    ref={el => {
+                      if (el) { widgetEls.current[id] = { el, rowIdx }; if (widgetElemRefs) widgetElemRefs.current[id] = el; }
+                      else { delete widgetEls.current[id]; if (widgetElemRefs) delete widgetElemRefs.current[id]; }
+                    }}
                     style={{
                       gridColumn: `span ${entrySpan}`, position: 'relative',
                       display: 'flex', flexDirection: 'column',
@@ -4091,6 +4094,11 @@ function ScreenReport({ clientId, onBack }) {
   const [selectedWidgets, setSelectedWidgets] = useState([]);
   const [clipboard, setClipboard] = useState(null);
   // clipboard: null | Array<{ layout: Widget, config: {} }>
+  const [marquee, setMarquee] = useState(null);
+  // marquee: null | { startX: number, startY: number, x: number, y: number, w: number, h: number }
+  // coordinates are relative to the canvas scroll container
+  const canvasRef = useRef(null);
+  const widgetElemRefs = useRef({});
   const [widgetConfigs, setWidgetConfigs] = useState({});
   const [widgetLayouts, setWidgetLayouts] = useState(null);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -4437,7 +4445,54 @@ function ScreenReport({ clientId, onBack }) {
       {/* Main area: report + optional editor panel */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Report content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: loading || !p ? 0 : '28px 36px 56px' }}>
+        <div
+          ref={canvasRef}
+          style={{ flex: 1, overflowY: 'auto', padding: loading || !p ? 0 : '28px 36px 56px', position: 'relative' }}
+          onPointerDown={editState ? (e) => {
+            if (e.button !== 0) return;
+            const isOnWidget = Object.values(widgetElemRefs.current).some(el => el && el.contains(e.target));
+            if (isOnWidget) return;
+            const rect = canvasRef.current.getBoundingClientRect();
+            const scrollTop = canvasRef.current.scrollTop;
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top + scrollTop;
+            setMarquee({ startX: x, startY: y, x, y, w: 0, h: 0 });
+            canvasRef.current.setPointerCapture(e.pointerId);
+            e.preventDefault();
+          } : undefined}
+          onPointerMove={editState ? (e) => {
+            if (!marquee) return;
+            const rect = canvasRef.current.getBoundingClientRect();
+            const scrollTop = canvasRef.current.scrollTop;
+            const curX = e.clientX - rect.left;
+            const curY = e.clientY - rect.top + scrollTop;
+            const x = Math.min(curX, marquee.startX);
+            const y = Math.min(curY, marquee.startY);
+            const w = Math.abs(curX - marquee.startX);
+            const h = Math.abs(curY - marquee.startY);
+            setMarquee(prev => ({ ...prev, x, y, w, h }));
+          } : undefined}
+          onPointerUp={editState ? (e) => {
+            if (!marquee) return;
+            const canvasRect = canvasRef.current.getBoundingClientRect();
+            const scrollTop = canvasRef.current.scrollTop;
+            const sel = { x: marquee.x, y: marquee.y, w: marquee.w, h: marquee.h };
+            const hit = [];
+            Object.entries(widgetElemRefs.current).forEach(([id, el]) => {
+              if (!el) return;
+              const r = el.getBoundingClientRect();
+              const ex = r.left - canvasRect.left;
+              const ey = r.top - canvasRect.top + scrollTop;
+              const ew = r.width;
+              const eh = r.height;
+              const overlaps = ex < sel.x + sel.w && ex + ew > sel.x && ey < sel.y + sel.h && ey + eh > sel.y;
+              if (overlaps) hit.push(id);
+            });
+            if (hit.length > 0) editState.onMultiSelect(hit);
+            else editState.onDeselect();
+            setMarquee(null);
+          } : undefined}
+        >
 
           {loading && (
             <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
@@ -4488,6 +4543,7 @@ function ScreenReport({ clientId, onBack }) {
                     editState={editState}
                     layouts={_layouts}
                     onLayoutChange={updateWidgetLayouts}
+                    widgetElemRefs={widgetElemRefs}
                   />
                   {connected && connected.pagespeed && (
                     <PageSpeedSection psi={p && p.psi} psiUrl={psiUrl}/>
@@ -4495,6 +4551,22 @@ function ScreenReport({ clientId, onBack }) {
                 </>
               ) : null}
             </>
+          )}
+
+          {/* Marquee selection overlay */}
+          {marquee && marquee.w > 4 && marquee.h > 4 && (
+            <div style={{
+              position: 'absolute',
+              left: marquee.x,
+              top: marquee.y,
+              width: marquee.w,
+              height: marquee.h,
+              border: '1.5px solid #00C2B8',
+              background: 'rgba(0,194,184,0.08)',
+              borderRadius: 4,
+              pointerEvents: 'none',
+              zIndex: 9999,
+            }} />
           )}
         </div>
 
