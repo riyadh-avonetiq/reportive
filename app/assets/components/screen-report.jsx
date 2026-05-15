@@ -1529,23 +1529,46 @@ function NarrativeHeroWidget({ cfg }) {
   const fs = cfg.fontSize || 'M';
   const headlinePx = { S: 16, M: 22, L: 30 }[fs] || 22;
   const bodyPx     = { S: 11, M: 12.5, L: 14 }[fs] || 12.5;
-  // Migrate legacy single-block format to blocks array
   const blocks = cfg.blocks && cfg.blocks.length
     ? cfg.blocks
     : [{ headline: cfg.title || 'Performa marketing naik 19,7%', body: cfg.body || 'Konversi meningkat seiring shift anggaran ke Google Ads. SEO organik tumbuh 8,1% tanpa tambahan budget.', headlineColor: '', bodyColor: '' }];
+
+  const highlightNums = (text) => {
+    if (!text) return '';
+    const parts = text.split(/(\d[\d.,]*(?:[%x])?)/g);
+    return parts.map((p, i) => /^\d[\d.,]*(?:[%x])?$/.test(p)
+      ? <span key={i} style={{ color: '#F8B400' }}>{p}</span>
+      : p
+    );
+  };
+
+  const renderBody = (block) => {
+    if (!block.body) return null;
+    const bStyle = { fontFamily: T.body, fontSize: bodyPx, color: block.bodyColor || sec, lineHeight: 1.7, margin: '8px 0 0', padding: 0 };
+    if (block.listType === 'bullet' || block.listType === 'numbered') {
+      const Tag = block.listType === 'numbered' ? 'ol' : 'ul';
+      const items = block.body.split('\n').filter(l => l.trim());
+      return <Tag style={{ ...bStyle, paddingLeft: 20, marginBottom: 0 }}>{items.map((item, j) => <li key={j}>{item}</li>)}</Tag>;
+    }
+    return <p style={bStyle}>{block.body}</p>;
+  };
+
   return (
     <RCard padding={24} style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg,rgba(0,194,184,.06),rgba(248,180,0,.04))' }}>
       <div style={{ position: 'absolute', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle,rgba(248,180,0,.18),transparent 70%)', filter: 'blur(60px)', top: -120, right: -60 }}/>
       <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 0 }}>
-        {blocks.map((block, i) => (
-          <React.Fragment key={i}>
-            {i > 0 && <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '16px 0' }}/>}
-            <div>
-              <div style={{ fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2 }}>{block.headline || ''}</div>
-              {block.body && <p style={{ fontFamily: T.body, fontSize: bodyPx, color: block.bodyColor || sec, margin: '8px 0 0', lineHeight: 1.6 }}>{block.body}</p>}
-            </div>
-          </React.Fragment>
-        ))}
+        {blocks.map((block, i) => {
+          const accentColor = block.headlineColor || '#00C2B8';
+          return (
+            <React.Fragment key={i}>
+              {i > 0 && <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '16px 0' }}/>}
+              <div style={{ borderLeft: `3px solid ${accentColor}`, paddingLeft: 14 }}>
+                <div style={{ fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2 }}>{highlightNums(block.headline || '')}</div>
+                {renderBody(block)}
+              </div>
+            </React.Fragment>
+          );
+        })}
       </div>
     </RCard>
   );
