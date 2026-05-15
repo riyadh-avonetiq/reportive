@@ -960,14 +960,59 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     const removeBlock = (i) => { if (heroBlocks.length > 1) up({ blocks: heroBlocks.filter((_, idx) => idx !== i) }); };
     const hColors = ['', '#FCFCFC', '#00C2B8', '#F8B400', '#F87171'];
     const bColors = ['', '#9BABBF', '#FCFCFC', '#00C2B8', '#F8B400'];
-    const colorLabel = { '': 'Default', '#FCFCFC': 'White', '#00C2B8': 'Teal', '#F8B400': 'Gold', '#F87171': 'Red', '#9BABBF': 'Muted' };
+    const colorSwatch = { '': 'Default', '#FCFCFC': 'White', '#00C2B8': 'Teal', '#F8B400': 'Gold', '#F87171': 'Red', '#9BABBF': 'Muted' };
+
+    // Listen to which field is active in the widget (broadcast via custom event from NarrativeHeroWidget)
+    const [activeField, setActiveField] = React.useState(null); // { bi, field } | null
+    React.useEffect(() => {
+      setActiveField(null);
+    }, [widgetId]);
+    React.useEffect(() => {
+      const handler = e => setActiveField(e.detail);
+      window.addEventListener('narrativeHeroFocus', handler);
+      return () => window.removeEventListener('narrativeHeroFocus', handler);
+    }, []);
+
+    // Derive the color config from whatever field is currently active
+    const af = activeField;
+    const afBlock = af ? heroBlocks[af.bi] : null;
+    const afColors = af?.field === 'body' ? bColors : hColors;
+    const afColorKey = af?.field === 'body' ? 'bodyColor' : 'headlineColor';
+    const afCurrentColor = afBlock ? afBlock[afColorKey] : null;
+    const afDefaultBg = af?.field === 'body' ? 'rgba(155,171,191,0.6)' : 'rgba(255,255,255,0.85)';
+    const afLabel = af ? (af.field === 'body' ? 'Body color' : 'Headline color') : 'Text color';
+    const afSublabel = af ? `Block ${af.bi + 1}` : null;
+
     return (
       <>
         {sharedBanner}
         <ESizeButtons label="Font size" value={cfg.fontSize || 'M'} onChange={v => up({ fontSize: v })}/>
         <ESection label="Formatting">
           <FormattingToolbar/>
-          <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-body)', fontSize: 10, color: EP.muted, lineHeight: 1.4 }}>Double-click headline atau body teks pada widget, lalu terapkan format di sini atau gunakan Ctrl+B/I/U.</p>
+          <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-body)', fontSize: 10, color: EP.muted, lineHeight: 1.4 }}>Klik pada teks headline atau body di widget, lalu terapkan format di sini atau gunakan Ctrl+B/I/U.</p>
+        </ESection>
+        <ESection label={afLabel}>
+          {af && afBlock ? (
+            <div>
+              {afSublabel && heroBlocks.length > 1 && (
+                <p style={{ margin: '0 0 6px', fontFamily: 'var(--font-body)', fontSize: 10, color: EP.muted }}>{afSublabel}</p>
+              )}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                {afColors.map(c => (
+                  <div key={c} title={colorSwatch[c]} onClick={() => upBlock(af.bi, { [afColorKey]: c })}
+                    style={{ width: 22, height: 22, borderRadius: '50%', cursor: 'pointer',
+                      background: c || afDefaultBg,
+                      border: afCurrentColor === c ? `2px solid ${EP.fg}` : '2px solid transparent',
+                      boxShadow: afCurrentColor === c ? `0 0 0 2px ${c || EP.fg}` : 'none',
+                      flexShrink: 0 }}/>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 10, color: EP.muted, lineHeight: 1.5 }}>
+              Klik pada teks headline atau body di widget untuk mengubah warnanya.
+            </p>
+          )}
         </ESection>
         <EDivider/>
         {heroBlocks.map((block, i) => (
@@ -984,22 +1029,6 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
                 </button>
               )}
             </div>
-            <ESection label="Headline color">
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                {hColors.map(c => (
-                  <div key={c} title={colorLabel[c]} onClick={() => upBlock(i, { headlineColor: c })}
-                    style={{ width: 22, height: 22, borderRadius: '50%', cursor: 'pointer', background: c || 'rgba(255,255,255,0.85)', border: block.headlineColor === c ? `2px solid ${EP.fg}` : '2px solid transparent', boxShadow: block.headlineColor === c ? `0 0 0 2px ${c || EP.fg}` : 'none', flexShrink: 0 }}/>
-                ))}
-              </div>
-            </ESection>
-            <ESection label="Body color">
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                {bColors.map(c => (
-                  <div key={c} title={colorLabel[c]} onClick={() => upBlock(i, { bodyColor: c })}
-                    style={{ width: 22, height: 22, borderRadius: '50%', cursor: 'pointer', background: c || 'rgba(155,171,191,0.6)', border: block.bodyColor === c ? `2px solid ${EP.fg}` : '2px solid transparent', boxShadow: block.bodyColor === c ? `0 0 0 2px ${c || '#9BABBF'}` : 'none', flexShrink: 0 }}/>
-                ))}
-              </div>
-            </ESection>
           </React.Fragment>
         ))}
         {heroBlocks.length < 4 && (

@@ -1540,6 +1540,13 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
 
   React.useEffect(() => { if (!isEditing) setEditCell(null); }, [isEditing]);
 
+  // Broadcast active field to card-editor.jsx via custom event (no prop drilling needed)
+  React.useEffect(() => {
+    window.dispatchEvent(new CustomEvent('narrativeHeroFocus', {
+      detail: (isEditing && editCell) ? { bi: editCell.bi, field: editCell.field } : null,
+    }));
+  }, [editCell?.bi, editCell?.field, isEditing]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Enter key: when widget is selected but not yet in edit mode, start editing block 0 headline
   React.useEffect(() => {
     if (!isEditing || editCell) return;
@@ -1635,9 +1642,9 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
       : highlightNums(block.headline);
   };
 
-  // Use onMouseDown (fires before blur) so startEdit runs before commit() can clear editCell
+  // onClick fires after React re-renders from first click (isEditing flush), enabling double-click entry
   const editClick = (bi, field) => isEditing
-    ? { onMouseDown: e => { e.stopPropagation(); startEdit(bi, field); } }
+    ? { onClick: e => { e.stopPropagation(); startEdit(bi, field); } }
     : {};
 
   // Stop drag-canvas from consuming pointer events inside widget content areas
@@ -1659,7 +1666,7 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
                 style={{ borderLeft: `3px solid ${accentColor}`, paddingLeft: 14, cursor: isEditing ? 'text' : 'default' }}
                 {...(isEditing ? {
                   onPointerDown: e => e.stopPropagation(),
-                  onMouseDown: e => { e.stopPropagation(); startEdit(i, isEditB ? 'body' : 'headline'); },
+                  onClick: e => { e.stopPropagation(); startEdit(i, isEditB ? 'body' : 'headline'); },
                 } : {})}
               >
                 {isEditH ? (
@@ -1671,6 +1678,7 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
                     onBlur={() => { if (!document.hasFocus()) return; commit(); }}
                     onKeyDown={handleKeyDown('headline')}
                     onPointerDown={e => e.stopPropagation()}
+                    onClick={e => e.stopPropagation()}
                     style={{ outline: 'none', fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2, borderBottom: '1px solid rgba(255,255,255,0.25)', paddingBottom: 2, minHeight: headlinePx * 1.4, wordBreak: 'break-word' }}
                   />
                 ) : (
@@ -1694,6 +1702,7 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
                     onBlur={() => { if (!document.hasFocus()) return; commit(); }}
                     onKeyDown={handleKeyDown('body')}
                     onPointerDown={e => e.stopPropagation()}
+                    onClick={e => e.stopPropagation()}
                     style={{ minHeight: 80, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, outline: 'none', padding: '8px 10px', marginTop: 8, fontFamily: T.body, fontSize: bodyPx, color: block.bodyColor || sec, lineHeight: 1.7, wordBreak: 'break-word' }}
                   />
                 ) : (
