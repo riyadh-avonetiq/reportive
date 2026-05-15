@@ -1540,11 +1540,19 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
 
   React.useEffect(() => { if (!isEditing) setEditCell(null); }, [isEditing]);
 
-  // Broadcast active field to card-editor.jsx via custom event (no prop drilling needed)
+  // Broadcast active field to card-editor.jsx via custom event (no prop drilling needed).
+  // Only clear activeField when widget is deselected (isEditing=false). When editCell=null but
+  // isEditing=true (e.g. user clicked away from a contenteditable), keep the last activeField
+  // so color swatches stay visible long enough for the swatch click to register.
   React.useEffect(() => {
-    window.dispatchEvent(new CustomEvent('narrativeHeroFocus', {
-      detail: (isEditing && editCell) ? { bi: editCell.bi, field: editCell.field } : null,
-    }));
+    if (!isEditing) {
+      window.dispatchEvent(new CustomEvent('narrativeHeroFocus', { detail: null }));
+    } else if (editCell) {
+      window.dispatchEvent(new CustomEvent('narrativeHeroFocus', {
+        detail: { bi: editCell.bi, field: editCell.field },
+      }));
+    }
+    // editCell=null but isEditing=true: don't dispatch — keep last activeField in card-editor
   }, [editCell?.bi, editCell?.field, isEditing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Enter key: when widget is selected but not yet in edit mode, start editing block 0 headline
