@@ -2310,7 +2310,6 @@ const CardEditorPanel = ({
   const TABS = [
     { id: 'browse', label: 'Browse' },
     { id: 'setup',  label: 'Setup' },
-    { id: 'style',  label: 'Style' },
   ];
 
   return (
@@ -2368,7 +2367,6 @@ const CardEditorPanel = ({
             pageData={pageData}
           />
         )}
-        {tab === 'style' && <StyleTab state={styleState} setState={setStyleState} widgetConfig={widgetConfig} widgetId={widgetId} cardId={activeCardId} onConfigChange={onConfigChange}/>}
       </div>
 
       {/* Footer */}
