@@ -93,7 +93,7 @@ function aggregateAds(rows) {
   t.cpc  = t.clicks > 0 ? t.spend / t.clicks : 0;
   t.cvr  = t.clicks > 0 ? (t.conversions / t.clicks) * 100 : 0;
   t.cpa  = t.conversions > 0 ? t.spend / t.conversions : 0;
-  t.roas = 0;
+  t.roas = null;
   return t;
 }
 
