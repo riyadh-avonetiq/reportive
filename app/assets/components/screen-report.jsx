@@ -1527,8 +1527,9 @@ function TextWidget({ cfg }) {
 // ─── Editable narrative widget renderers ──────────────────────────
 function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
   const [editCell, setEditCell] = React.useState(null);
-  const [draft,    setDraft]    = React.useState('');
-  const editorRef  = React.useRef(null);
+  const editorRef     = React.useRef(null); // body contenteditable
+  const headlineRef   = React.useRef(null); // headline contenteditable
+  const switchingRef  = React.useRef(false); // suppress onBlur commit when switching fields
 
   const fs = cfg.fontSize || 'M';
   const headlinePx = { S: 16, M: 22, L: 30 }[fs] || 22;
@@ -1539,7 +1540,7 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
 
   React.useEffect(() => { if (!isEditing) setEditCell(null); }, [isEditing]);
 
-  // Enter key starts editing block 0 headline when widget is selected but nothing is being edited
+  // Enter key: when widget is selected but not yet in edit mode, start editing block 0 headline
   React.useEffect(() => {
     if (!isEditing || editCell) return;
     const handleKey = (e) => {
@@ -1547,49 +1548,73 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
       const tag = document.activeElement?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.contentEditable === 'true') return;
       e.preventDefault();
-      startEdit(0, 'headline', blocks[0]?.headline || '');
+      startEdit(0, 'headline');
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, [isEditing, editCell]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Initialise contenteditable with stored HTML whenever body editing starts
+  // Initialize the active field's contenteditable whenever editCell changes
   React.useEffect(() => {
-    if (editCell?.field === 'body' && editorRef.current) {
-      const body = blocks[editCell.bi]?.body || '';
-      editorRef.current.innerHTML = body;
-      editorRef.current.focus();
-      const sel = window.getSelection();
-      if (sel) {
-        const range = document.createRange();
-        range.selectNodeContents(editorRef.current);
-        range.collapse(false);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
+    if (!editCell) return;
+    const ref = editCell.field === 'body' ? editorRef : headlineRef;
+    if (!ref.current) return;
+    ref.current.innerHTML = blocks[editCell.bi]?.[editCell.field] || '';
+    ref.current.focus();
+    const sel = window.getSelection();
+    if (sel) {
+      const range = document.createRange();
+      range.selectNodeContents(ref.current);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
     }
   }, [editCell?.bi, editCell?.field]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const startEdit = (bi, field, value) => {
-    if (!isEditing) return;
-    setEditCell({ bi, field });
-    if (field === 'headline') setDraft(value || '');
-    // body: initialised by useEffect above
+  const cleanBodyHTML = (html) =>
+    html.replace(/(<(div|p|li)[^>]*>\s*(<br\s*\/?>\s*)?<\/(div|p|li)>\s*)+$/, '').trim();
+
+  const readValue = () => {
+    if (!editCell) return '';
+    const ref = editCell.field === 'body' ? editorRef : headlineRef;
+    return editCell.field === 'body'
+      ? cleanBodyHTML(ref.current?.innerHTML || '')
+      : (ref.current?.innerHTML || '');
   };
 
-  const cleanBodyHTML = (html) => {
-    // Strip trailing empty block elements that browsers insert (e.g. <div><br></div>)
-    return html.replace(/(<(div|p|li)[^>]*>\s*(<br\s*\/?>\s*)?<\/(div|p|li)>\s*)+$/, '').trim();
+  const startEdit = (bi, field) => {
+    if (!isEditing) return;
+    // If switching fields: save current content first, suppress the onBlur commit
+    if (editCell && !(editCell.bi === bi && editCell.field === field)) {
+      switchingRef.current = true;
+      if (onConfigChange) {
+        const curValue = readValue();
+        const next = blocks.map((b, j) => j === editCell.bi ? { ...b, [editCell.field]: curValue } : b);
+        onConfigChange(widgetId, { blocks: next });
+      }
+    }
+    setEditCell({ bi, field });
   };
 
   const commit = () => {
+    if (switchingRef.current) { switchingRef.current = false; return; }
     if (!editCell || !onConfigChange) { setEditCell(null); return; }
-    const value = editCell.field === 'body'
-      ? cleanBodyHTML(editorRef.current?.innerHTML || '')
-      : draft;
+    const value = readValue();
     const next = blocks.map((b, i) => i === editCell.bi ? { ...b, [editCell.field]: value } : b);
     onConfigChange(widgetId, { blocks: next });
     setEditCell(null);
+  };
+
+  const handleKeyDown = (field) => (e) => {
+    e.stopPropagation();
+    if (e.key === 'Escape') { setEditCell(null); return; }
+    if (field === 'headline' && e.key === 'Enter') { e.preventDefault(); commit(); return; }
+    if (field === 'headline' && e.key === 'Tab') { e.preventDefault(); startEdit(editCell.bi, 'body'); return; }
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === 'b') { e.preventDefault(); document.execCommand('bold'); }
+      if (e.key === 'i') { e.preventDefault(); document.execCommand('italic'); }
+      if (e.key === 'u') { e.preventDefault(); document.execCommand('underline'); }
+    }
   };
 
   const highlightNums = (text) => {
@@ -1598,6 +1623,19 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
       /^\d[\d.,]*(?:[%x])?$/.test(p) ? <span key={i} style={{ color: '#F8B400' }}>{p}</span> : p
     );
   };
+
+  // If headline contains HTML formatting tags, render as HTML; else use number highlight
+  const renderHeadline = (block) => {
+    if (!block.headline) return null;
+    return /<(b|i|u|strong|em)\b/i.test(block.headline)
+      ? <span dangerouslySetInnerHTML={{ __html: block.headline }}/>
+      : highlightNums(block.headline);
+  };
+
+  // Single-click to switch when already editing; double-click for initial entry
+  const editClick = (bi, field) => editCell
+    ? { onClick: e => { e.stopPropagation(); startEdit(bi, field); } }
+    : { onDoubleClick: e => { e.stopPropagation(); startEdit(bi, field); } };
 
   return (
     <RCard padding={24} style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg,rgba(0,194,184,.06),rgba(248,180,0,.04))' }}>
@@ -1613,19 +1651,22 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
               {i > 0 && <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '16px 0' }}/>}
               <div style={{ borderLeft: `3px solid ${accentColor}`, paddingLeft: 14 }}>
                 {isEditH ? (
-                  <input autoFocus value={draft}
-                    onChange={e => setDraft(e.target.value)}
-                    onBlur={e => { if (!document.hasFocus()) return; commit(); }}
-                    onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditCell(null); }}
+                  <div
+                    ref={headlineRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={() => { if (!document.hasFocus()) return; commit(); }}
+                    onKeyDown={handleKeyDown('headline')}
                     onPointerDown={e => e.stopPropagation()}
-                    style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.25)', outline: 'none', padding: '0 0 2px', fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2, boxSizing: 'border-box' }}
+                    style={{ outline: 'none', fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2, borderBottom: '1px solid rgba(255,255,255,0.25)', paddingBottom: 2, minHeight: headlinePx * 1.4, wordBreak: 'break-word' }}
                   />
                 ) : (
-                  <div onDoubleClick={e => { e.stopPropagation(); startEdit(i, 'headline', block.headline); }}
+                  <div
+                    {...editClick(i, 'headline')}
                     style={{ fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2, cursor: isEditing ? 'text' : 'default', minHeight: headlinePx * 1.4 }}>
                     {block.headline
-                      ? highlightNums(block.headline)
-                      : isEditing && <span style={{ opacity: 0.28, fontStyle: 'italic', fontWeight: 400, fontSize: headlinePx * 0.65 }}>Double-click to add headline…</span>
+                      ? renderHeadline(block)
+                      : isEditing && <span style={{ opacity: 0.28, fontStyle: 'italic', fontWeight: 400, fontSize: headlinePx * 0.65 }}>Click to add headline…</span>
                     }
                   </div>
                 )}
@@ -1634,25 +1675,18 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
                     ref={editorRef}
                     contentEditable
                     suppressContentEditableWarning
-                    onBlur={e => { if (!document.hasFocus()) return; commit(); }}
-                    onKeyDown={e => {
-                      e.stopPropagation();
-                      if (e.key === 'Escape') { setEditCell(null); return; }
-                      if (e.ctrlKey || e.metaKey) {
-                        if (e.key === 'b') { e.preventDefault(); document.execCommand('bold'); }
-                        if (e.key === 'i') { e.preventDefault(); document.execCommand('italic'); }
-                        if (e.key === 'u') { e.preventDefault(); document.execCommand('underline'); }
-                      }
-                    }}
+                    onBlur={() => { if (!document.hasFocus()) return; commit(); }}
+                    onKeyDown={handleKeyDown('body')}
                     onPointerDown={e => e.stopPropagation()}
                     style={{ minHeight: 80, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, outline: 'none', padding: '8px 10px', marginTop: 8, fontFamily: T.body, fontSize: bodyPx, color: block.bodyColor || sec, lineHeight: 1.7, wordBreak: 'break-word' }}
                   />
                 ) : (
-                  <div onDoubleClick={e => { e.stopPropagation(); startEdit(i, 'body', block.body); }}
+                  <div
+                    {...editClick(i, 'body')}
                     style={{ cursor: isEditing ? 'text' : 'default' }}>
                     {block.body
                       ? <div style={bodyStyle} dangerouslySetInnerHTML={{ __html: block.body }}/>
-                      : isEditing && <p style={{ ...bodyStyle, margin: '8px 0 0', opacity: 0.3, fontStyle: 'italic', padding: 0 }}>Double-click to add body…</p>
+                      : isEditing && <p style={{ ...bodyStyle, margin: '8px 0 0', opacity: 0.3, fontStyle: 'italic', padding: 0 }}>Click to add body…</p>
                     }
                   </div>
                 )}

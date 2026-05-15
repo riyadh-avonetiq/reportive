@@ -174,8 +174,26 @@ const FormattingToolbar = () => {
       <button onMouseDown={e => { e.preventDefault(); document.execCommand('italic'); }} title="Italic (Ctrl+I)" style={btnStyle(fmt.italic)}><em>I</em></button>
       <button onMouseDown={e => { e.preventDefault(); document.execCommand('underline'); }} title="Underline (Ctrl+U)" style={btnStyle(fmt.underline)}><u>U</u></button>
       <div style={{ width: 1, height: 20, background: EP.edge, margin: '0 2px' }}/>
-      <button onMouseDown={e => { e.preventDefault(); document.execCommand('insertUnorderedList'); }} title="Bullet list" style={btnStyle(fmt.ul, 11)}><span style={{ fontWeight: 700 }}>• ¶</span></button>
-      <button onMouseDown={e => { e.preventDefault(); document.execCommand('insertOrderedList'); }} title="Numbered list" style={btnStyle(fmt.ol, 11)}><span style={{ fontWeight: 700 }}>1.</span></button>
+      <button onMouseDown={e => { e.preventDefault(); document.execCommand('insertUnorderedList'); }} title="Bullet list" style={btnStyle(fmt.ul, 11)}>
+        <svg width="15" height="12" viewBox="0 0 15 12" fill="currentColor">
+          <circle cx="1.5" cy="2" r="1.5"/>
+          <rect x="4.5" y="1" width="10.5" height="2" rx="1"/>
+          <circle cx="1.5" cy="6" r="1.5"/>
+          <rect x="4.5" y="5" width="10.5" height="2" rx="1"/>
+          <circle cx="1.5" cy="10" r="1.5"/>
+          <rect x="4.5" y="9" width="10.5" height="2" rx="1"/>
+        </svg>
+      </button>
+      <button onMouseDown={e => { e.preventDefault(); document.execCommand('insertOrderedList'); }} title="Numbered list" style={btnStyle(fmt.ol, 11)}>
+        <svg width="15" height="13" viewBox="0 0 15 13" fill="currentColor" fontFamily="monospace" fontWeight="800" fontSize="4.5">
+          <text x="0.5" y="4.5">1</text>
+          <rect x="5" y="2.5" width="10" height="2" rx="1"/>
+          <text x="0.5" y="9">2</text>
+          <rect x="5" y="7" width="10" height="2" rx="1"/>
+          <text x="0.5" y="13.5">3</text>
+          <rect x="5" y="11.5" width="10" height="2" rx="1"/>
+        </svg>
+      </button>
     </div>
   );
 };
