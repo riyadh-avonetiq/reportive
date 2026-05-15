@@ -893,7 +893,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
       ? (() => {
           let q = _ga4Supa.from('ga4_sessions')
             .select(GA4_SESSION_COLS)
-            .limit(2000);
+            .limit(10000);
           if (ga4Property) q = q.eq('property_name', ga4Property);
           if (from) q = q.gte('date', from);
           if (to)   q = q.lte('date', to);
