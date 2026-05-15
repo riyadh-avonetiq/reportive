@@ -647,7 +647,7 @@ function SortTh({ label, sortKey, active, dir, onSort, align = 'right' }) {
 // ─── Selectable widget wrapper ─────────────────────────────────────
 function SelectableWidget({ id, cardId, editState, children }) {
   if (!editState) return children;
-  const isSelected = editState.selected === id;
+  const isSelected = Array.isArray(editState.selected) ? editState.selected.includes(id) : editState.selected === id;
   return (
     <div
       onClick={e => {
@@ -2515,7 +2515,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
                     )}
 
                     {/* Floating action toolbar — visible when this widget is selected */}
-                    {editState && editState.selected === id && !dragId && !browseDragActive && (
+                    {editState && editState.selected.length === 1 && editState.selected[0] === id && !dragId && !browseDragActive && (
                       <div
                         onPointerDown={e => e.stopPropagation()}
                         style={{
@@ -4088,7 +4088,7 @@ function ScreenReport({ clientId, onBack }) {
   const [showPresent, setShowPresent] = useState(false);
   const [showEditor,  setShowEditor]  = useState(false);
   const [editorCardId, setEditorCardId] = useState('kpi-single');
-  const [selectedWidget, setSelectedWidget] = useState(null);
+  const [selectedWidgets, setSelectedWidgets] = useState([]);
   const [widgetConfigs, setWidgetConfigs] = useState({});
   const [widgetLayouts, setWidgetLayouts] = useState(null);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -4176,17 +4176,17 @@ function ScreenReport({ clientId, onBack }) {
   }, [undoWidgetConfig, undoLayout, historyLen]);
 
   const handleSelectWidget = useCallback((id, cardId) => {
-    setSelectedWidget(id);
+    setSelectedWidgets([id]);
     setEditorCardId(cardId);
   }, []);
 
-  const handleDeleteWidget = useCallback((id) => {
+  const handleDeleteWidgets = useCallback((ids) => {
     updateWidgetLayouts(prev => {
       const rows = prev.rows
         .map(row => {
-          const filtered = row.filter(w => w.id !== id);
-          if (filtered.length === row.length) return row; // widget not in this row
-          if (filtered.length === 0) return filtered;     // row will be removed
+          const filtered = row.filter(w => !ids.includes(w.id));
+          if (filtered.length === row.length) return row;
+          if (filtered.length === 0) return [];
           const count = filtered.length;
           const base = Math.floor(12 / count);
           const rem = 12 - base * count;
@@ -4195,22 +4195,26 @@ function ScreenReport({ clientId, onBack }) {
         .filter(row => row.length > 0);
       return { ...prev, rows };
     });
-    setSelectedWidget(prev => prev === id ? null : prev);
+    setSelectedWidgets([]);
   }, [updateWidgetLayouts]);
 
-  // Delete/Backspace removes selected widget when editor is open
+  const handleDeleteWidget = useCallback((id) => {
+    handleDeleteWidgets([id]);
+  }, [handleDeleteWidgets]);
+
+  // Delete/Backspace removes selected widget(s) when editor is open
   useEffect(() => {
     const handler = (e) => {
-      if (!selectedWidget || !showEditor || _IS_VIEWER) return;
+      if (!selectedWidgets.length || !showEditor || _IS_VIEWER) return;
       if (e.key !== 'Delete' && e.key !== 'Backspace') return;
       const tag = e.target.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
       e.preventDefault();
-      handleDeleteWidget(selectedWidget);
+      handleDeleteWidgets(selectedWidgets);
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectedWidget, showEditor, handleDeleteWidget]);
+  }, [selectedWidgets, showEditor, handleDeleteWidgets]);
 
   const handleWidgetConfigChange = useCallback((widgetId, changes) => {
     updateWidgetConfig(widgetId, changes);
@@ -4231,19 +4235,21 @@ function ScreenReport({ clientId, onBack }) {
     setHistoryLen(l => l + 1);
   }, [updateWidgetLayouts, widgetLayouts, editorCardId]);
   const editState = showEditor && !_IS_VIEWER ? {
-    selected: selectedWidget,
+    selected: selectedWidgets,
     onSelect: handleSelectWidget,
     onDelete: handleDeleteWidget,
-    onDeselect: () => setSelectedWidget(null),
+    onDeselect: () => setSelectedWidgets([]),
+    onMultiSelect: (ids) => setSelectedWidgets(ids),
   } : null;
 
   // Count how many widgets in the current layout share the same widget type as the selected widget
   const _layouts = widgetLayouts || getSmartDefaultLayout(client?.connected);
-  const sharedWidgetCount = (selectedWidget && editorCardId && _layouts)
+  const _primarySelected = selectedWidgets[0] || null;
+  const sharedWidgetCount = (_primarySelected && editorCardId && _layouts)
     ? _layouts.rows.flat().filter(w => w.type === editorCardId || WIDGET_CARD_TYPES[w.id] === editorCardId).length
     : 0;
-  const _selectedInstance = selectedWidget && _layouts
-    ? _layouts.rows.flat().find(w => w.id === selectedWidget)
+  const _selectedInstance = _primarySelected && _layouts
+    ? _layouts.rows.flat().find(w => w.id === _primarySelected)
     : null;
   const instanceSource = _selectedInstance?.source || null;
 
@@ -4448,8 +4454,8 @@ function ScreenReport({ clientId, onBack }) {
         {showEditor && window.CardEditorPanel && (
           <window.CardEditorPanel
             cardId={editorCardId}
-            widgetId={selectedWidget}
-            widgetConfig={selectedWidget ? (widgetConfigs[selectedWidget] || {}) : {}}
+            widgetId={_primarySelected}
+            widgetConfig={_primarySelected ? (widgetConfigs[_primarySelected] || {}) : {}}
             onConfigChange={handleWidgetConfigChange}
             onUndo={historyLen > 0 ? undoWidgetConfig : null}
             connectedSources={client?.connected || {}}
