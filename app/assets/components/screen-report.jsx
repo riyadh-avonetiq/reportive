@@ -1457,17 +1457,32 @@ function UniversalTableWidget({ instance, p, cfg }) {
   let rows;
   if (src === 'google') {
     const filterKeys = new Set((cfg.filters || []).map(f => f.dim).filter(Boolean));
-    if (filterKeys.has('device')) {
-      if (selectedDims.includes('keyword'))       rows = p?.keywordDeviceRows || [];
-      else if (selectedDims.includes('ad_group')) rows = p?.adGroupDeviceRows || [];
-      else                                        rows = p?.deviceRows        || [];
-    } else if (filterKeys.has('segment_value')) {
-      rows = p?.genderRows || [];
-    } else if (selectedDims.includes('device'))        rows = p?.deviceRows   || [];
-    else if (selectedDims.includes('segment_value'))   rows = p?.genderRows   || [];
-    else if (selectedDims.includes('keyword'))         rows = p?.keywords     || [];
-    else if (selectedDims.includes('ad_group'))        rows = p?.adGroups     || [];
-    else                                               rows = p?.campaigns    || [];
+    const fKeyword   = filterKeys.has('keyword') || filterKeys.has('match_type');
+    const fAdGroup   = filterKeys.has('ad_group');
+    const fDevice    = filterKeys.has('device');
+    const fGender    = filterKeys.has('segment_value');
+    if (fDevice) {
+      if (selectedDims.includes('keyword') || fKeyword) rows = p?.keywordDeviceRows || [];
+      else if (selectedDims.includes('ad_group') || fAdGroup) rows = p?.adGroupDeviceRows || [];
+      else                                              rows = p?.deviceRows        || [];
+    } else if (fGender)                                rows = p?.genderRows        || [];
+    else if (fKeyword)                                 rows = p?.keywords          || [];
+    else if (fAdGroup)                                 rows = p?.adGroups          || [];
+    else if (selectedDims.includes('device'))          rows = p?.deviceRows        || [];
+    else if (selectedDims.includes('segment_value'))   rows = p?.genderRows        || [];
+    else if (selectedDims.includes('keyword'))         rows = p?.keywords          || [];
+    else if (selectedDims.includes('ad_group'))        rows = p?.adGroups          || [];
+    else                                               rows = p?.campaigns         || [];
+  } else if (src === 'ga4') {
+    const ga4FilterKeys = new Set((cfg.filters || []).map(f => f.dim).filter(Boolean));
+    const sessionKeys = new Set(['country', 'region', 'city', 'device', 'channel_group', 'medium', 'source']);
+    const fGa4Gender   = selectedDims.includes('gender')    || ga4FilterKeys.has('gender');
+    const fGa4Page     = selectedDims.includes('page_path') || ga4FilterKeys.has('page_path');
+    const fGa4Session  = selectedDims.some(d => sessionKeys.has(d)) || [...ga4FilterKeys].some(k => sessionKeys.has(k));
+    if      (fGa4Gender)   rows = p?.ga4DemoRows    || [];
+    else if (fGa4Page)     rows = p?.ga4PageRows    || [];
+    else if (fGa4Session)  rows = p?.ga4SessionRows || [];
+    else                   rows = p?.ga4Rows        || [];
   } else {
     rows = (window.TABLE_DATA_REGISTRY?.[src] || (() => []))(p) || [];
   }
@@ -1857,20 +1872,20 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
       : [ga4.sessions];
     const safeB = (series.clicks || []).length >= 2
       ? series.clicks.map(v => Math.round(v * 1.3))
-      : [ga4.users];
+      : [ga4.total_users];
     const safeConv = (series.conversions || []).length >= 2 ? series.conversions : [0, 0];
     const safeA7 = safeA.slice(-7);
 
-    const pagesPerSession = ga4.sessions > 0 ? (ga4.pageviews / ga4.sessions) : 0;
-    const engageRate      = ga4.sessions > 0 ? (ga4.engaged / ga4.sessions) * 100 : 0;
+    const pagesPerSession = ga4.sessions > 0 ? (ga4.event_count / ga4.sessions) : 0;
+    const engageRate      = ga4.sessions > 0 ? (ga4.engaged_sessions / ga4.sessions) * 100 : 0;
 
     map['ga4-kpi'] = (
       <SelectableWidget id="ga4-kpi" cardId="kpi-strip" editState={editState}>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
           <Kpi label="Sessions"          value={fmt.num(ga4.sessions)}  delta={d(ga4.sessions, ga4Prev.sessions)}   accent={gold} spark={safeA7} scale={kpiScale}/>
-          <Kpi label="Users"             value={fmt.num(ga4.users)}     delta={d(ga4.users, ga4Prev.users)}         accent={gold} scale={kpiScale}/>
-          <Kpi label="Pageviews"         value={fmt.num(ga4.pageviews)} delta={d(ga4.pageviews, ga4Prev.pageviews)} accent={gold} scale={kpiScale}/>
-          <Kpi label="Engaged Sessions"  value={fmt.num(ga4.engaged)}   delta={d(ga4.engaged, ga4Prev.engaged)}     accent={teal} scale={kpiScale}/>
+          <Kpi label="Users"             value={fmt.num(ga4.total_users)}     delta={d(ga4.total_users, ga4Prev.total_users)}         accent={gold} scale={kpiScale}/>
+          <Kpi label="Pageviews"         value={fmt.num(ga4.event_count)} delta={d(ga4.event_count, ga4Prev.event_count)} accent={gold} scale={kpiScale}/>
+          <Kpi label="Engaged Sessions"  value={fmt.num(ga4.engaged_sessions)}   delta={d(ga4.engaged_sessions, ga4Prev.engaged_sessions)}     accent={teal} scale={kpiScale}/>
           <Kpi label="Bounce Rate"       value={fmt.pct(ga4.bounce_rate)}
             delta={d(ga4.bounce_rate, ga4Prev.bounce_rate) != null ? -d(ga4.bounce_rate, ga4Prev.bounce_rate) : null}
             scale={kpiScale}/>
@@ -1916,7 +1931,7 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
       <SelectableWidget id="ga4-conversion" cardId="chart-bar" editState={editState}>
         <ChartCard title={wn('ga4-conversion') || "Volume Konversi Harian"}>
           <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 700, color: fg, marginBottom: 8 }}>
-            {fmt.num(ga4.engaged)}{' '}
+            {fmt.num(ga4.engaged_sessions)}{' '}
             <span style={{ fontFamily: T.mono, fontSize: 10, color: muted, fontWeight: 400 }}>engaged sessions</span>
           </div>
           <MiniBar data={safeConv.length >= 2 ? safeConv : [1, 2]} w={800} h={56} color={teal} gap={3}/>
@@ -3029,11 +3044,11 @@ function GA4Section({ p, editState, widgetConfigs }) {
     : [ga4.sessions];
   const safeB = series.clicks.length >= 2
     ? series.clicks.map(v => Math.round(v * 1.3))
-    : [ga4.users];
+    : [ga4.total_users];
   const safeConv = series.conversions.length >= 2 ? series.conversions : [0, 0];
 
-  const pagesPerSession = ga4.sessions > 0 ? (ga4.pageviews / ga4.sessions) : 0;
-  const engageRate      = ga4.sessions > 0 ? (ga4.engaged / ga4.sessions) * 100 : 0;
+  const pagesPerSession = ga4.sessions > 0 ? (ga4.event_count / ga4.sessions) : 0;
+  const engageRate      = ga4.sessions > 0 ? (ga4.engaged_sessions / ga4.sessions) * 100 : 0;
   const safeA7 = safeA.slice(-7);
 
   return (
@@ -3043,9 +3058,9 @@ function GA4Section({ p, editState, widgetConfigs }) {
       <SelectableWidget id="ga4-kpi" cardId="kpi-strip" editState={editState}>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
           <Kpi label="Sessions"          value={fmt.num(ga4.sessions)}  delta={d(ga4.sessions, ga4Prev.sessions)}   accent={gold} spark={safeA7} scale={kpiScale}/>
-          <Kpi label="Users"             value={fmt.num(ga4.users)}     delta={d(ga4.users, ga4Prev.users)}         accent={gold} scale={kpiScale}/>
-          <Kpi label="Pageviews"         value={fmt.num(ga4.pageviews)} delta={d(ga4.pageviews, ga4Prev.pageviews)} accent={gold} scale={kpiScale}/>
-          <Kpi label="Engaged Sessions"  value={fmt.num(ga4.engaged)}   delta={d(ga4.engaged, ga4Prev.engaged)}     accent={teal} scale={kpiScale}/>
+          <Kpi label="Users"             value={fmt.num(ga4.total_users)}     delta={d(ga4.total_users, ga4Prev.total_users)}         accent={gold} scale={kpiScale}/>
+          <Kpi label="Pageviews"         value={fmt.num(ga4.event_count)} delta={d(ga4.event_count, ga4Prev.event_count)} accent={gold} scale={kpiScale}/>
+          <Kpi label="Engaged Sessions"  value={fmt.num(ga4.engaged_sessions)}   delta={d(ga4.engaged_sessions, ga4Prev.engaged_sessions)}     accent={teal} scale={kpiScale}/>
           <Kpi label="Bounce Rate"       value={fmt.pct(ga4.bounce_rate)}
             delta={d(ga4.bounce_rate, ga4Prev.bounce_rate) != null ? -d(ga4.bounce_rate, ga4Prev.bounce_rate) : null}
             scale={kpiScale}/>
@@ -3087,7 +3102,7 @@ function GA4Section({ p, editState, widgetConfigs }) {
       <SelectableWidget id="ga4-conversion" cardId="chart-bar" editState={editState}>
         <ChartCard title={wn('ga4-conversion') || "Volume Konversi Harian"}>
           <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 700, color: fg, marginBottom: 8 }}>
-            {fmt.num(ga4.engaged)}{' '}
+            {fmt.num(ga4.engaged_sessions)}{' '}
             <span style={{ fontFamily: T.mono, fontSize: 10, color: muted, fontWeight: 400 }}>engaged sessions</span>
           </div>
           <MiniBar data={safeConv.length >= 2 ? safeConv : [1, 2]} w={800} h={56} color={teal} gap={3}/>
@@ -3883,7 +3898,7 @@ function PresentMode({ client, p, isMock, onExit }) {
 
     if (cur.id === 'ga4') {
       const safeA = p.series.impressions.length >= 2 ? p.series.impressions.map(v => Math.round(v / 25)) : [ga4.sessions];
-      const safeB = p.series.clicks.length >= 2 ? p.series.clicks.map(v => Math.round(v * 1.3)) : [ga4.users];
+      const safeB = p.series.clicks.length >= 2 ? p.series.clicks.map(v => Math.round(v * 1.3)) : [ga4.total_users];
       return (
         <div>
           <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
@@ -3891,9 +3906,9 @@ function PresentMode({ client, p, isMock, onExit }) {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
             <KpiCard acc={gold} label="Sessions" value={fmt.num(ga4.sessions)} delta={d(ga4.sessions, ga4Prev.sessions) != null ? Math.abs(d(ga4.sessions, ga4Prev.sessions)).toFixed(1) + '%' : '—'} deltaUp={(d(ga4.sessions, ga4Prev.sessions) || 0) >= 0} comparison="vs prev"/>
-            <KpiCard acc={gold} label="Users" value={fmt.num(ga4.users)} delta={d(ga4.users, ga4Prev.users) != null ? Math.abs(d(ga4.users, ga4Prev.users)).toFixed(1) + '%' : '—'} deltaUp={(d(ga4.users, ga4Prev.users) || 0) >= 0} comparison="vs prev"/>
-            <KpiCard acc={teal} label="Pageviews" value={fmt.num(ga4.pageviews)} delta={d(ga4.pageviews, ga4Prev.pageviews) != null ? Math.abs(d(ga4.pageviews, ga4Prev.pageviews)).toFixed(1) + '%' : '—'} deltaUp={(d(ga4.pageviews, ga4Prev.pageviews) || 0) >= 0} comparison="vs prev"/>
-            <KpiCard acc={teal} label="Engaged Sessions" value={fmt.num(ga4.engaged)} delta={d(ga4.engaged, ga4Prev.engaged) != null ? Math.abs(d(ga4.engaged, ga4Prev.engaged)).toFixed(1) + '%' : '—'} deltaUp={(d(ga4.engaged, ga4Prev.engaged) || 0) >= 0} comparison="vs prev"/>
+            <KpiCard acc={gold} label="Users" value={fmt.num(ga4.total_users)} delta={d(ga4.total_users, ga4Prev.total_users) != null ? Math.abs(d(ga4.total_users, ga4Prev.total_users)).toFixed(1) + '%' : '—'} deltaUp={(d(ga4.total_users, ga4Prev.total_users) || 0) >= 0} comparison="vs prev"/>
+            <KpiCard acc={teal} label="Pageviews" value={fmt.num(ga4.event_count)} delta={d(ga4.event_count, ga4Prev.event_count) != null ? Math.abs(d(ga4.event_count, ga4Prev.event_count)).toFixed(1) + '%' : '—'} deltaUp={(d(ga4.event_count, ga4Prev.event_count) || 0) >= 0} comparison="vs prev"/>
+            <KpiCard acc={teal} label="Engaged Sessions" value={fmt.num(ga4.engaged_sessions)} delta={d(ga4.engaged_sessions, ga4Prev.engaged_sessions) != null ? Math.abs(d(ga4.engaged_sessions, ga4Prev.engaged_sessions)).toFixed(1) + '%' : '—'} deltaUp={(d(ga4.engaged_sessions, ga4Prev.engaged_sessions) || 0) >= 0} comparison="vs prev"/>
           </div>
           <div style={{ background: 'var(--navy-surface)', border: '1px solid var(--navy-edge)', borderRadius: 14, padding: '18px 20px' }}>
             <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg, marginBottom: 12 }}>Sessions vs Users</div>
@@ -4206,7 +4221,15 @@ function ScreenReport({ clientId, onBack }) {
       ...prev,
       rows: prev.rows.map(row => row.map(w => w.id === widgetId ? { ...w, source: newSource } : w)),
     }));
-  }, [updateWidgetLayouts]);
+    const widget = widgetLayouts?.rows?.flat()?.find(w => w.id === widgetId);
+    const widgetType = widget?.type || editorCardId;
+    const defaults = window.WIDGET_DEFAULTS?.[widgetType]?.[newSource] || {};
+    setWidgetConfigs(prev => {
+      undoHistory.current = [...undoHistory.current.slice(-19), prev];
+      return { ...prev, [widgetId]: defaults };
+    });
+    setHistoryLen(l => l + 1);
+  }, [updateWidgetLayouts, widgetLayouts, editorCardId]);
   const editState = showEditor && !_IS_VIEWER ? {
     selected: selectedWidget,
     onSelect: handleSelectWidget,
