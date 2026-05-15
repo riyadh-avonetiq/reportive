@@ -4089,6 +4089,8 @@ function ScreenReport({ clientId, onBack }) {
   const [showEditor,  setShowEditor]  = useState(false);
   const [editorCardId, setEditorCardId] = useState('kpi-single');
   const [selectedWidgets, setSelectedWidgets] = useState([]);
+  const [clipboard, setClipboard] = useState(null);
+  // clipboard: null | Array<{ layout: Widget, config: {} }>
   const [widgetConfigs, setWidgetConfigs] = useState({});
   const [widgetLayouts, setWidgetLayouts] = useState(null);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -4215,6 +4217,52 @@ function ScreenReport({ clientId, onBack }) {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [selectedWidgets, showEditor, handleDeleteWidgets]);
+
+  // Ctrl+C / Cmd+C copy selected widgets; Ctrl+V / Cmd+V paste as new row
+  useEffect(() => {
+    const handler = (e) => {
+      if (!showEditor || _IS_VIEWER) return;
+      const tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
+      if (!e.ctrlKey && !e.metaKey) return;
+
+      if (e.key === 'c' || e.key === 'C') {
+        if (!selectedWidgets.length) return;
+        e.preventDefault();
+        const allWidgets = (_layouts?.rows || []).flat();
+        const copied = selectedWidgets
+          .map(id => allWidgets.find(w => w.id === id))
+          .filter(Boolean)
+          .map(w => ({ layout: { ...w }, config: { ...(widgetConfigs[w.id] || {}) } }));
+        if (copied.length) setClipboard(copied);
+      }
+
+      if (e.key === 'v' || e.key === 'V') {
+        if (!clipboard?.length) return;
+        e.preventDefault();
+        const count = clipboard.length;
+        const base = Math.floor(12 / count);
+        const rem = 12 - base * count;
+        const newWidgets = clipboard.map((entry, i) => ({
+          ...entry.layout,
+          id: 'w_' + Math.random().toString(36).slice(2, 9),
+          span: base + (i < rem ? 1 : 0),
+        }));
+        const newConfigs = {};
+        clipboard.forEach((entry, i) => {
+          newConfigs[newWidgets[i].id] = { ...entry.config };
+        });
+        updateWidgetLayouts(prev => ({
+          ...prev,
+          rows: [...prev.rows, newWidgets],
+        }));
+        setWidgetConfigs(prev => ({ ...prev, ...newConfigs }));
+        setSelectedWidgets(newWidgets.map(w => w.id));
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [showEditor, selectedWidgets, clipboard, _layouts, widgetConfigs, updateWidgetLayouts]);
 
   const handleWidgetConfigChange = useCallback((widgetId, changes) => {
     updateWidgetConfig(widgetId, changes);
