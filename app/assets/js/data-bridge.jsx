@@ -48,7 +48,11 @@ const pctChange = (cur, prev) => {
 };
 
 // ── Date utilities ──────────────────────────────────────────────────
-function _ds(d) { return d.toISOString().slice(0, 10); }
+function _ds(d) {
+  return d.getFullYear() + '-'
+    + String(d.getMonth() + 1).padStart(2, '0') + '-'
+    + String(d.getDate()).padStart(2, '0');
+}
 function _pd(s) { return new Date(s + 'T00:00:00'); }
 
 function computePrevRange(from, to) {
