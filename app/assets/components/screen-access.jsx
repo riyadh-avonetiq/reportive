@@ -245,6 +245,7 @@ const InviteModal = ({ onClose, onInvite, clientList = [] }) => {
   const [saving, setSaving]     = React.useState(false);
   const [done, setDone]         = React.useState(false);
   const [errMsg, setErrMsg]     = React.useState('');
+  const savedPasswordRef = React.useRef('');
 
   const canSubmit = email.trim() && name.trim() && password.length >= 6;
 
@@ -260,6 +261,8 @@ const InviteModal = ({ onClose, onInvite, clientList = [] }) => {
         setSaving(false);
         return;
       }
+      savedPasswordRef.current = password;
+      setPassword('');
       setDone(true);
     } catch (e) {
       setErrMsg('Error: ' + (e.message || 'Terjadi kesalahan tidak terduga'));
@@ -288,14 +291,14 @@ const InviteModal = ({ onClose, onInvite, clientList = [] }) => {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontFamily: AS.mono, fontSize: 10.5, color: 'var(--text-muted)' }}>Password</span>
-              <span style={{ fontFamily: AS.mono, fontSize: 11, color: '#00C2B8', fontWeight: 600 }}>{password}</span>
+              <span style={{ fontFamily: AS.mono, fontSize: 11, color: '#00C2B8', fontWeight: 600 }}>{savedPasswordRef.current}</span>
             </div>
           </div>
         </div>
         <div style={{ padding: '9px 12px', background: 'rgba(248,180,0,.08)', border: '1px solid rgba(248,180,0,.2)', borderRadius: 8, fontFamily: AS.body, fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 16 }}>
           💡 Bagikan info login di atas kepada member secara langsung atau via pesan.
         </div>
-        <button onClick={onClose} style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 9, color: '#0C182C', fontFamily: AS.display, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Selesai</button>
+        <button onClick={() => { savedPasswordRef.current = ''; onClose(); }} style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 9, color: '#0C182C', fontFamily: AS.display, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Selesai</button>
       </div>
     </div>
   );
