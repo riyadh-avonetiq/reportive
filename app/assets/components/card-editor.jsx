@@ -168,13 +168,26 @@ const FormattingToolbar = () => {
     borderRadius: 5, color: active ? EP.bg : EP.fg,
     cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: fs,
   });
+  // If no text is selected, select all content in the active contenteditable before applying the command.
+  // This lets users apply formatting with just a cursor click — no drag-select required.
+  const applyCmd = (cmd) => {
+    const sel = window.getSelection();
+    const el = document.activeElement;
+    if (sel && sel.isCollapsed && el && el.isContentEditable) {
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+    document.execCommand(cmd);
+  };
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-      <button onMouseDown={e => { e.preventDefault(); document.execCommand('bold'); }} title="Bold (Ctrl+B)" style={btnStyle(fmt.bold)}><strong>B</strong></button>
-      <button onMouseDown={e => { e.preventDefault(); document.execCommand('italic'); }} title="Italic (Ctrl+I)" style={btnStyle(fmt.italic)}><em>I</em></button>
-      <button onMouseDown={e => { e.preventDefault(); document.execCommand('underline'); }} title="Underline (Ctrl+U)" style={btnStyle(fmt.underline)}><u>U</u></button>
+      <button onMouseDown={e => { e.preventDefault(); applyCmd('bold'); }} title="Bold (Ctrl+B)" style={btnStyle(fmt.bold)}><strong>B</strong></button>
+      <button onMouseDown={e => { e.preventDefault(); applyCmd('italic'); }} title="Italic (Ctrl+I)" style={btnStyle(fmt.italic)}><em>I</em></button>
+      <button onMouseDown={e => { e.preventDefault(); applyCmd('underline'); }} title="Underline (Ctrl+U)" style={btnStyle(fmt.underline)}><u>U</u></button>
       <div style={{ width: 1, height: 20, background: EP.edge, margin: '0 2px' }}/>
-      <button onMouseDown={e => { e.preventDefault(); document.execCommand('insertUnorderedList'); }} title="Bullet list" style={btnStyle(fmt.ul, 11)}>
+      <button onMouseDown={e => { e.preventDefault(); applyCmd('insertUnorderedList'); }} title="Bullet list" style={btnStyle(fmt.ul, 11)}>
         <svg width="15" height="12" viewBox="0 0 15 12" fill="currentColor">
           <circle cx="1.5" cy="2" r="1.5"/>
           <rect x="4.5" y="1" width="10.5" height="2" rx="1"/>
@@ -184,7 +197,7 @@ const FormattingToolbar = () => {
           <rect x="4.5" y="9" width="10.5" height="2" rx="1"/>
         </svg>
       </button>
-      <button onMouseDown={e => { e.preventDefault(); document.execCommand('insertOrderedList'); }} title="Numbered list" style={btnStyle(fmt.ol, 11)}>
+      <button onMouseDown={e => { e.preventDefault(); applyCmd('insertOrderedList'); }} title="Numbered list" style={btnStyle(fmt.ol, 11)}>
         <svg width="15" height="13" viewBox="0 0 15 13" fill="currentColor" fontFamily="monospace" fontWeight="800" fontSize="4.5">
           <text x="0.5" y="4.5">1</text>
           <rect x="5" y="2.5" width="10" height="2" rx="1"/>
@@ -999,7 +1012,9 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
               )}
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 {afColors.map(c => (
-                  <div key={c} title={colorSwatch[c]} onClick={() => upBlock(af.bi, { [afColorKey]: c })}
+                  <div key={c} title={colorSwatch[c]}
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => upBlock(af.bi, { [afColorKey]: c })}
                     style={{ width: 22, height: 22, borderRadius: '50%', cursor: 'pointer',
                       background: c || afDefaultBg,
                       border: afCurrentColor === c ? `2px solid ${EP.fg}` : '2px solid transparent',

@@ -1574,7 +1574,8 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
     if (!editCell) return;
     const ref = editCell.field === 'body' ? editorRef : headlineRef;
     if (!ref.current) return;
-    ref.current.innerHTML = blocks[editCell.bi]?.[editCell.field] || '';
+    const raw = blocks[editCell.bi]?.[editCell.field] || '';
+    ref.current.innerHTML = editCell.field === 'headline' ? highlightNumsHtml(raw) : raw;
     ref.current.focus();
     const sel = window.getSelection();
     if (sel) {
@@ -1641,11 +1642,18 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
     );
   };
 
-  // Render headline: use dangerouslySetInnerHTML only when it contains inline HTML (b/i/u/strong/em)
+  // HTML-string version of highlightNums — used to init the contenteditable so numbers show gold while typing.
+  // Skipped if text already contains HTML tags (bold/italic spans) to avoid nesting issues.
+  const highlightNumsHtml = (text) => {
+    if (!text || /<[a-z]/i.test(text)) return text;
+    return text.replace(/(\d[\d.,]*(?:[%x])?)/g, '<span style="color:#F8B400">$1</span>');
+  };
+
+  // Render headline: use dangerouslySetInnerHTML when it contains inline HTML (b/i/u/strong/em/span)
   // Block-level wrappers (div/p) are stripped at commit time so will never appear here
   const renderHeadline = (block) => {
     if (!block.headline) return null;
-    return /<(b|i|u|strong|em)\b/i.test(block.headline)
+    return /<(b|i|u|strong|em|span)\b/i.test(block.headline)
       ? <span dangerouslySetInnerHTML={{ __html: block.headline }}/>
       : highlightNums(block.headline);
   };
