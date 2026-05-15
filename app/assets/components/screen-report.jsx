@@ -1635,9 +1635,9 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
       : highlightNums(block.headline);
   };
 
-  // Single click always enters edit mode when widget is selected
+  // Use onMouseDown (fires before blur) so startEdit runs before commit() can clear editCell
   const editClick = (bi, field) => isEditing
-    ? { onClick: e => { e.stopPropagation(); startEdit(bi, field); } }
+    ? { onMouseDown: e => { e.stopPropagation(); startEdit(bi, field); } }
     : {};
 
   // Stop drag-canvas from consuming pointer events inside widget content areas
@@ -1655,7 +1655,13 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
           return (
             <React.Fragment key={i}>
               {i > 0 && <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '16px 0' }}/>}
-              <div style={{ borderLeft: `3px solid ${accentColor}`, paddingLeft: 14 }}>
+              <div
+                style={{ borderLeft: `3px solid ${accentColor}`, paddingLeft: 14, cursor: isEditing ? 'text' : 'default' }}
+                {...(isEditing ? {
+                  onPointerDown: e => e.stopPropagation(),
+                  onMouseDown: e => { e.stopPropagation(); startEdit(i, isEditB ? 'body' : 'headline'); },
+                } : {})}
+              >
                 {isEditH ? (
                   <div
                     key={`edit-h-${i}`}
@@ -1695,7 +1701,7 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
                     key={`display-b-${i}`}
                     {...editClick(i, 'body')}
                     {...stopDrag}
-                    style={{ cursor: isEditing ? 'text' : 'default' }}>
+                    style={{ cursor: isEditing ? 'text' : 'default', minHeight: isEditing ? 40 : undefined, paddingBottom: isEditing ? 8 : undefined }}>
                     {block.body
                       ? <div style={bodyStyle} dangerouslySetInnerHTML={{ __html: block.body }}/>
                       : isEditing && <p style={{ ...bodyStyle, margin: '8px 0 0', opacity: 0.3, fontStyle: 'italic', padding: 0 }}>Click to add body…</p>
