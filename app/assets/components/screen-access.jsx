@@ -328,7 +328,7 @@ const InviteModal = ({ onClose, onInvite, clientList = [] }) => {
             </div>
             <div>
               <div style={{ fontFamily: AS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 6 }}>Email *</div>
-              <input value={email} onChange={e => setEmail(e.target.value)} placeholder="budi@avonetiq.id" type="email"
+              <input value={email} onChange={e => setEmail(e.target.value)} placeholder="name@example.com" type="email"
                 style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: '#FCFCFC', fontFamily: AS.body, fontSize: 12.5, outline: 'none' }}/>
             </div>
           </div>
