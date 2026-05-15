@@ -910,6 +910,8 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     return (
       <>
         {sharedBanner}
+        <ESizeButtons label="Font size" value={cfg.fontSize || 'M'} onChange={v => up({ fontSize: v })}/>
+        <EDivider/>
         {heroBlocks.map((block, i) => (
           <React.Fragment key={i}>
             {i > 0 && <EDivider/>}

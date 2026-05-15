@@ -1526,8 +1526,9 @@ function TextWidget({ cfg }) {
 
 // ─── Editable narrative widget renderers ──────────────────────────
 function NarrativeHeroWidget({ cfg }) {
-  const fsSizeMap = { S: 16, M: 22, L: 30 };
-  const headlinePx = fsSizeMap[cfg.fontSize] || 22;
+  const fs = cfg.fontSize || 'M';
+  const headlinePx = { S: 16, M: 22, L: 30 }[fs] || 22;
+  const bodyPx     = { S: 11, M: 12.5, L: 14 }[fs] || 12.5;
   // Migrate legacy single-block format to blocks array
   const blocks = cfg.blocks && cfg.blocks.length
     ? cfg.blocks
@@ -1541,7 +1542,7 @@ function NarrativeHeroWidget({ cfg }) {
             {i > 0 && <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '16px 0' }}/>}
             <div>
               <div style={{ fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2 }}>{block.headline || ''}</div>
-              {block.body && <p style={{ fontFamily: T.body, fontSize: 12.5, color: block.bodyColor || sec, margin: '8px 0 0', maxWidth: 620, lineHeight: 1.6 }}>{block.body}</p>}
+              {block.body && <p style={{ fontFamily: T.body, fontSize: bodyPx, color: block.bodyColor || sec, margin: '8px 0 0', lineHeight: 1.6 }}>{block.body}</p>}
             </div>
           </React.Fragment>
         ))}
