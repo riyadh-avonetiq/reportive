@@ -1597,7 +1597,7 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
                 {isEditH ? (
                   <input autoFocus value={draft}
                     onChange={e => setDraft(e.target.value)}
-                    onBlur={commit}
+                    onBlur={e => { if (!document.hasFocus()) return; commit(); }}
                     onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditCell(null); }}
                     style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.25)', outline: 'none', padding: '0 0 2px', fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2, boxSizing: 'border-box' }}
                   />
@@ -1610,7 +1610,7 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
                 {isEditB ? (
                   <textarea autoFocus value={draft}
                     onChange={e => setDraft(e.target.value)}
-                    onBlur={commit}
+                    onBlur={e => { if (!document.hasFocus()) return; commit(); }}
                     onKeyDown={e => { if (e.key === 'Escape') setEditCell(null); }}
                     placeholder={'- Poin pertama\n- Poin kedua\n\nAtau tulis paragraf biasa.'}
                     style={{ width: '100%', minHeight: 100, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, outline: 'none', padding: '8px 10px', marginTop: 8, fontFamily: T.body, fontSize: bodyPx, color: block.bodyColor || sec, lineHeight: 1.7, resize: 'vertical', boxSizing: 'border-box' }}

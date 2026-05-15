@@ -918,7 +918,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <ELabel>{heroBlocks.length > 1 ? `Block ${i + 1}` : 'Content'}</ELabel>
               {heroBlocks.length > 1 && (
-                <button onClick={() => removeBlock(i)} style={{ background: 'transparent', border: 'none', color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, padding: '2px 6px' }}>× Remove</button>
+                <button onMouseDown={e => { e.preventDefault(); removeBlock(i); }} style={{ background: 'transparent', border: 'none', color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, padding: '2px 6px' }}>× Remove</button>
               )}
             </div>
             <ESection label="Headline">
@@ -934,8 +934,8 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
             </ESection>
             <ESection label="Body text">
               <textarea value={block.body} onChange={e => upBlock(i, { body: e.target.value })}
-                placeholder="Narasi ringkasan..."
-                rows={3} style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}/>
+                placeholder={"- Bullet list\n1. Numbered list\n\nAtau paragraf biasa"}
+                rows={4} style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}/>
             </ESection>
             <ESection label="Body color">
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
