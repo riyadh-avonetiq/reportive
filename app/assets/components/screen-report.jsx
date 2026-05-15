@@ -4141,6 +4141,9 @@ function ScreenReport({ clientId, onBack }) {
 
   // Load persisted configs + layouts when switching clients
   useEffect(() => {
+    setSelectedWidgets([]);
+    setClipboard(null);
+    setMarquee(null);
     try {
       const saved = localStorage.getItem('widgetConfigs_' + clientId);
       setWidgetConfigs(saved ? JSON.parse(saved) : {});
@@ -4492,6 +4495,7 @@ function ScreenReport({ clientId, onBack }) {
             else editState.onDeselect();
             setMarquee(null);
           } : undefined}
+          onPointerCancel={editState ? () => setMarquee(null) : undefined}
         >
 
           {loading && (
