@@ -832,21 +832,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     );
   }
 
-  const sharedBanner = sharedWidgetCount > 1 ? (
-    <div style={{
-      display: 'flex', alignItems: 'flex-start', gap: 8,
-      padding: '8px 10px', marginBottom: 14,
-      background: 'rgba(248,180,0,.07)', border: '1px solid rgba(248,180,0,.25)',
-      borderRadius: 7, lineHeight: 1.5,
-    }}>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F8B400" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}>
-        <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
-      </svg>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: '#F8B400', letterSpacing: '0.04em' }}>
-        Perubahan ini memengaruhi {sharedWidgetCount} widget bertipe sama
-      </span>
-    </div>
-  ) : null;
+  const sharedBanner = null;
 
   const isTable     = widgetType === 'table' || (widgetType || '').startsWith('table-');
 
@@ -994,15 +980,13 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     const afCurrentColor = afBlock ? afBlock[afColorKey] : null;
     const afDefaultBg = af?.field === 'body' ? 'rgba(155,171,191,0.6)' : 'rgba(255,255,255,0.85)';
     const afLabel = af ? (af.field === 'body' ? 'Body color' : 'Headline color') : 'Text color';
-    const afSublabel = af ? `Block ${af.bi + 1}` : null;
+    const afSublabel = af ? `Section ${af.bi + 1}` : null;
 
     return (
       <>
-        {sharedBanner}
         <ESizeButtons label="Font size" value={cfg.fontSize || 'M'} onChange={v => up({ fontSize: v })}/>
         <ESection label="Formatting">
           <FormattingToolbar/>
-          <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-body)', fontSize: 10, color: EP.muted, lineHeight: 1.4 }}>Klik pada teks headline atau body di widget, lalu terapkan format di sini atau gunakan Ctrl+B/I/U.</p>
         </ESection>
         <ESection label={afLabel}>
           {af && afBlock ? (
@@ -1023,21 +1007,17 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
                 ))}
               </div>
             </div>
-          ) : (
-            <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 10, color: EP.muted, lineHeight: 1.5 }}>
-              Klik pada teks headline atau body di widget untuk mengubah warnanya.
-            </p>
-          )}
+          ) : null}
         </ESection>
         <EDivider/>
         {heroBlocks.map((block, i) => (
           <React.Fragment key={i}>
             {i > 0 && <EDivider/>}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <ELabel>{heroBlocks.length > 1 ? `Block ${i + 1}` : 'Content'}</ELabel>
+              <ELabel>{heroBlocks.length > 1 ? `Section ${i + 1}` : 'Content'}</ELabel>
               {heroBlocks.length > 1 && (
                 <button onMouseDown={e => { e.preventDefault(); removeBlock(i); }}
-                  title="Hapus block ini"
+                  title="Hapus section ini"
                   style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 5, color: '#F87171', cursor: 'pointer', padding: '4px 8px', transition: 'background .12s' }}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6M14,11v6"/><path d="M9,6V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1v2"/></svg>
                   <span style={{ fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700 }}>Remove</span>
@@ -1050,7 +1030,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
           <>
             <EDivider/>
             <button onClick={addBlock} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px 0', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 6, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 600 }}>
-              + Add block
+              + Add section
             </button>
           </>
         )}
