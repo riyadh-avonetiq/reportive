@@ -133,7 +133,7 @@ const ScreenLogin = () => {
                 <div style={{ fontFamily: LS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>Enter 6-digit code</div>
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between' }}>
                   {[0,1,2,3,4,5].map(i => (
-                    <input key={i} type="text" maxLength={1} defaultValue={i < 3 ? ['4','7','2'][i] : ''}
+                    <input key={i} type="text" maxLength={1} defaultValue=""
                       style={{
                         width: 48, height: 56, textAlign: 'center', boxSizing: 'border-box',
                         background: 'var(--navy-elevated)',
