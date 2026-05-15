@@ -4097,8 +4097,8 @@ function ScreenReport({ clientId, onBack }) {
   const [marquee, setMarquee] = useState(null);
   // marquee: null | { startX: number, startY: number, x: number, y: number, w: number, h: number }
   // coordinates are relative to the canvas scroll container
-  const canvasRef = useRef(null);
-  const widgetElemRefs = useRef({});
+  const canvasRef = React.useRef(null);
+  const widgetElemRefs = React.useRef({});
   const [widgetConfigs, setWidgetConfigs] = useState({});
   const [widgetLayouts, setWidgetLayouts] = useState(null);
   const [savedFlash, setSavedFlash] = useState(false);
