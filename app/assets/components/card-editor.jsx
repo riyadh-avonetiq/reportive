@@ -144,6 +144,42 @@ const EDivider = () => (
   <div style={{ height: 1, background: EP.edge, margin: '14px -16px', opacity: 0.7 }}/>
 );
 
+const FormattingToolbar = () => {
+  const [fmt, setFmt] = React.useState({ bold: false, italic: false, underline: false, ul: false, ol: false });
+  React.useEffect(() => {
+    const update = () => {
+      try {
+        setFmt({
+          bold:      document.queryCommandState('bold'),
+          italic:    document.queryCommandState('italic'),
+          underline: document.queryCommandState('underline'),
+          ul:        document.queryCommandState('insertUnorderedList'),
+          ol:        document.queryCommandState('insertOrderedList'),
+        });
+      } catch (_) {}
+    };
+    document.addEventListener('selectionchange', update);
+    return () => document.removeEventListener('selectionchange', update);
+  }, []);
+  const btnStyle = (active, fs = 13) => ({
+    minWidth: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: active ? EP.fg : EP.elevated,
+    border: `1px solid ${active ? EP.fg : EP.edge}`,
+    borderRadius: 5, color: active ? EP.bg : EP.fg,
+    cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: fs,
+  });
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      <button onMouseDown={e => { e.preventDefault(); document.execCommand('bold'); }} title="Bold (Ctrl+B)" style={btnStyle(fmt.bold)}><strong>B</strong></button>
+      <button onMouseDown={e => { e.preventDefault(); document.execCommand('italic'); }} title="Italic (Ctrl+I)" style={btnStyle(fmt.italic)}><em>I</em></button>
+      <button onMouseDown={e => { e.preventDefault(); document.execCommand('underline'); }} title="Underline (Ctrl+U)" style={btnStyle(fmt.underline)}><u>U</u></button>
+      <div style={{ width: 1, height: 20, background: EP.edge, margin: '0 2px' }}/>
+      <button onMouseDown={e => { e.preventDefault(); document.execCommand('insertUnorderedList'); }} title="Bullet list" style={btnStyle(fmt.ul, 11)}><span style={{ fontWeight: 700 }}>• ¶</span></button>
+      <button onMouseDown={e => { e.preventDefault(); document.execCommand('insertOrderedList'); }} title="Numbered list" style={btnStyle(fmt.ol, 11)}><span style={{ fontWeight: 700 }}>1.</span></button>
+    </div>
+  );
+};
+
 // ─── Drag-and-drop column/metric editor ──────────────────────────
 const ColumnsEditor = ({ columns, metrics, maxCols = 6, addLabel = 'Add column', onColumnsChange }) => {
   const [dragIdx,  setDragIdx]  = React.useState(null);
@@ -911,32 +947,9 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
       <>
         {sharedBanner}
         <ESizeButtons label="Font size" value={cfg.fontSize || 'M'} onChange={v => up({ fontSize: v })}/>
-        <ESection label="Body formatting">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            {[
-              { cmd: 'bold',                label: <strong>B</strong>,  title: 'Bold (Ctrl+B)' },
-              { cmd: 'italic',              label: <em>I</em>,          title: 'Italic (Ctrl+I)' },
-              { cmd: 'underline',           label: <u>U</u>,            title: 'Underline (Ctrl+U)' },
-            ].map(({ cmd, label, title }) => (
-              <button key={cmd} title={title}
-                onMouseDown={e => { e.preventDefault(); document.execCommand(cmd); }}
-                style={{ minWidth: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 13 }}>
-                {label}
-              </button>
-            ))}
-            <div style={{ width: 1, height: 20, background: EP.edge, margin: '0 2px' }}/>
-            {[
-              { cmd: 'insertUnorderedList', label: '•¶', title: 'Bullet list' },
-              { cmd: 'insertOrderedList',   label: '1.', title: 'Numbered list' },
-            ].map(({ cmd, label, title }) => (
-              <button key={cmd} title={title}
-                onMouseDown={e => { e.preventDefault(); document.execCommand(cmd); }}
-                style={{ minWidth: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 700 }}>
-                {label}
-              </button>
-            ))}
-          </div>
-          <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-body)', fontSize: 10, color: EP.muted, lineHeight: 1.4 }}>Double-click body text on the widget to start editing, then apply formatting.</p>
+        <ESection label="Formatting">
+          <FormattingToolbar/>
+          <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-body)', fontSize: 10, color: EP.muted, lineHeight: 1.4 }}>Double-click headline atau body teks pada widget, lalu terapkan format di sini atau gunakan Ctrl+B/I/U.</p>
         </ESection>
         <EDivider/>
         {heroBlocks.map((block, i) => (

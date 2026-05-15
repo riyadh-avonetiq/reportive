@@ -1539,6 +1539,20 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
 
   React.useEffect(() => { if (!isEditing) setEditCell(null); }, [isEditing]);
 
+  // Enter key starts editing block 0 headline when widget is selected but nothing is being edited
+  React.useEffect(() => {
+    if (!isEditing || editCell) return;
+    const handleKey = (e) => {
+      if (e.key !== 'Enter') return;
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.contentEditable === 'true') return;
+      e.preventDefault();
+      startEdit(0, 'headline', blocks[0]?.headline || '');
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [isEditing, editCell]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Initialise contenteditable with stored HTML whenever body editing starts
   React.useEffect(() => {
     if (editCell?.field === 'body' && editorRef.current) {
@@ -1563,10 +1577,15 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
     // body: initialised by useEffect above
   };
 
+  const cleanBodyHTML = (html) => {
+    // Strip trailing empty block elements that browsers insert (e.g. <div><br></div>)
+    return html.replace(/(<(div|p|li)[^>]*>\s*(<br\s*\/?>\s*)?<\/(div|p|li)>\s*)+$/, '').trim();
+  };
+
   const commit = () => {
     if (!editCell || !onConfigChange) { setEditCell(null); return; }
     const value = editCell.field === 'body'
-      ? (editorRef.current?.innerHTML || '')
+      ? cleanBodyHTML(editorRef.current?.innerHTML || '')
       : draft;
     const next = blocks.map((b, i) => i === editCell.bi ? { ...b, [editCell.field]: value } : b);
     onConfigChange(widgetId, { blocks: next });
@@ -1603,8 +1622,11 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
                   />
                 ) : (
                   <div onDoubleClick={e => { e.stopPropagation(); startEdit(i, 'headline', block.headline); }}
-                    style={{ fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2, cursor: isEditing ? 'text' : 'default' }}>
-                    {highlightNums(block.headline || '')}
+                    style={{ fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2, cursor: isEditing ? 'text' : 'default', minHeight: headlinePx * 1.4 }}>
+                    {block.headline
+                      ? highlightNums(block.headline)
+                      : isEditing && <span style={{ opacity: 0.28, fontStyle: 'italic', fontWeight: 400, fontSize: headlinePx * 0.65 }}>Double-click to add headline…</span>
+                    }
                   </div>
                 )}
                 {isEditB ? (
