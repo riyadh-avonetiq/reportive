@@ -1525,6 +1525,21 @@ function TextWidget({ cfg }) {
 }
 
 // ─── Editable narrative widget renderers ──────────────────────────
+function parseInline(text) {
+  const result = [];
+  const re = /\*\*(.+?)\*\*|__(.+?)__|_(.+?)_/g;
+  let last = 0, m, k = 0;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) result.push(text.slice(last, m.index));
+    if (m[1] !== undefined) result.push(<strong key={k++}>{m[1]}</strong>);
+    else if (m[2] !== undefined) result.push(<u key={k++}>{m[2]}</u>);
+    else result.push(<em key={k++}>{m[3]}</em>);
+    last = re.lastIndex;
+  }
+  if (last < text.length) result.push(text.slice(last));
+  return result;
+}
+
 function renderMarkdownBody(text, style) {
   if (!text) return null;
   const lines = text.split('\n');
@@ -1534,14 +1549,14 @@ function renderMarkdownBody(text, style) {
   const flushList = () => {
     if (!listItems.length) return;
     const Tag = listKind === 'ol' ? 'ol' : 'ul';
-    out.push(<Tag key={out.length} style={{ ...style, paddingLeft: 20, margin: out.length === 0 ? '8px 0 0' : '4px 0 0', marginBottom: 0 }}>{listItems.map((t, j) => <li key={j}>{t}</li>)}</Tag>);
+    out.push(<Tag key={out.length} style={{ ...style, paddingLeft: 20, margin: out.length === 0 ? '8px 0 0' : '4px 0 0', marginBottom: 0 }}>{listItems.map((t, j) => <li key={j}>{parseInline(t)}</li>)}</Tag>);
     listItems = []; listKind = null;
   };
   lines.forEach(line => {
     const b = line.match(/^[-*]\s+(.*)/), n = line.match(/^\d+\.\s+(.*)/);
     if (b) { if (listKind !== 'ul') flushList(); listKind = 'ul'; listItems.push(b[1]); }
     else if (n) { if (listKind !== 'ol') flushList(); listKind = 'ol'; listItems.push(n[1]); }
-    else if (line.trim()) { flushList(); out.push(<p key={out.length} style={{ ...style, margin: out.length === 0 ? '8px 0 0' : '4px 0 0', padding: 0 }}>{line}</p>); }
+    else if (line.trim()) { flushList(); out.push(<p key={out.length} style={{ ...style, margin: out.length === 0 ? '8px 0 0' : '4px 0 0', padding: 0 }}>{parseInline(line)}</p>); }
     else flushList();
   });
   flushList();
@@ -1549,8 +1564,9 @@ function renderMarkdownBody(text, style) {
 }
 
 function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
-  const [editCell, setEditCell] = React.useState(null); // { bi, field }
+  const [editCell, setEditCell] = React.useState(null);
   const [draft,    setDraft]    = React.useState('');
+  const textareaRef = React.useRef(null);
 
   React.useEffect(() => { if (!isEditing) setEditCell(null); }, [isEditing]);
 
@@ -1574,12 +1590,44 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
     setEditCell(null);
   };
 
+  const applyFormat = (type) => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const s = el.selectionStart, e = el.selectionEnd, v = draft;
+    const sel = v.slice(s, e);
+    let newText, cursorPos;
+    if (type === 'bold') {
+      newText = v.slice(0, s) + `**${sel}**` + v.slice(e);
+      cursorPos = sel ? e + 4 : s + 2;
+    } else if (type === 'italic') {
+      newText = v.slice(0, s) + `_${sel}_` + v.slice(e);
+      cursorPos = sel ? e + 2 : s + 1;
+    } else if (type === 'underline') {
+      newText = v.slice(0, s) + `__${sel}__` + v.slice(e);
+      cursorPos = sel ? e + 4 : s + 2;
+    } else if (type === 'bullet') {
+      const chunk = sel || v.slice(s);
+      const prefixed = chunk.split('\n').map(l => `- ${l}`).join('\n');
+      newText = v.slice(0, s) + prefixed + (sel ? v.slice(e) : '');
+      cursorPos = s + prefixed.length;
+    } else if (type === 'numbered') {
+      const chunk = sel || v.slice(s);
+      const prefixed = chunk.split('\n').map((l, i) => `${i + 1}. ${l}`).join('\n');
+      newText = v.slice(0, s) + prefixed + (sel ? v.slice(e) : '');
+      cursorPos = s + prefixed.length;
+    }
+    setDraft(newText);
+    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(cursorPos, cursorPos); });
+  };
+
   const highlightNums = (text) => {
     if (!text) return '';
     return text.split(/(\d[\d.,]*(?:[%x])?)/).map((p, i) =>
       /^\d[\d.,]*(?:[%x])?$/.test(p) ? <span key={i} style={{ color: '#F8B400' }}>{p}</span> : p
     );
   };
+
+  const fmtBtnBase = { width: 26, height: 22, border: 'none', borderRadius: 4, cursor: 'pointer', background: 'transparent', color: sec, fontSize: 11, fontFamily: T.display, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 };
 
   return (
     <RCard padding={24} style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg,rgba(0,194,184,.06),rgba(248,180,0,.04))' }}>
@@ -1609,14 +1657,29 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
                   </div>
                 )}
                 {isEditB ? (
-                  <textarea autoFocus value={draft}
-                    onChange={e => setDraft(e.target.value)}
-                    onBlur={e => { if (!document.hasFocus()) return; commit(); }}
-                    onKeyDown={e => { if (e.key === 'Escape') setEditCell(null); }}
-                    onPointerDown={e => e.stopPropagation()}
-                    placeholder={'- Poin pertama\n- Poin kedua\n\nAtau tulis paragraf biasa.'}
-                    style={{ width: '100%', minHeight: 100, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, outline: 'none', padding: '8px 10px', marginTop: 8, fontFamily: T.body, fontSize: bodyPx, color: block.bodyColor || sec, lineHeight: 1.7, resize: 'vertical', boxSizing: 'border-box' }}
-                  />
+                  <>
+                    <div onPointerDown={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 2, marginTop: 8, padding: '3px 5px', background: 'rgba(10,18,44,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, width: 'fit-content' }}>
+                      {[
+                        { t: 'bold',      label: 'B',  s: { fontWeight: 900 } },
+                        { t: 'italic',    label: 'I',  s: { fontStyle: 'italic' } },
+                        { t: 'underline', label: 'U',  s: { textDecoration: 'underline' } },
+                        { t: null },
+                        { t: 'bullet',    label: '•—', s: {} },
+                        { t: 'numbered',  label: '1.', s: {} },
+                      ].map((btn, k) => btn.t === null
+                        ? <div key={k} style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.15)', margin: '0 3px' }}/>
+                        : <button key={k} onMouseDown={e => { e.preventDefault(); applyFormat(btn.t); }} style={{ ...fmtBtnBase, ...btn.s }}>{btn.label}</button>
+                      )}
+                    </div>
+                    <textarea ref={el => { textareaRef.current = el; }} autoFocus value={draft}
+                      onChange={e => setDraft(e.target.value)}
+                      onBlur={e => { if (!document.hasFocus()) return; commit(); }}
+                      onKeyDown={e => { if (e.key === 'Escape') setEditCell(null); }}
+                      onPointerDown={e => e.stopPropagation()}
+                      placeholder={'- Poin pertama\n- Poin kedua\n\nAtau tulis paragraf biasa.'}
+                      style={{ width: '100%', minHeight: 100, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, outline: 'none', padding: '8px 10px', marginTop: 4, fontFamily: T.body, fontSize: bodyPx, color: block.bodyColor || sec, lineHeight: 1.7, resize: 'vertical', boxSizing: 'border-box' }}
+                    />
+                  </>
                 ) : (
                   <div onDoubleClick={e => { e.stopPropagation(); startEdit(i, 'body', block.body); }}
                     style={{ cursor: isEditing ? 'text' : 'default', minHeight: isEditing && !block.body ? 28 : 0 }}>

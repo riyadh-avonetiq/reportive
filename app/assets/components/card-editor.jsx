@@ -926,9 +926,6 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
                 </button>
               )}
             </div>
-            <ESection label="Headline">
-              <EInput value={block.headline} onChange={v => upBlock(i, { headline: v })} placeholder="Tulis headline..."/>
-            </ESection>
             <ESection label="Headline color">
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 {hColors.map(c => (
