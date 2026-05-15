@@ -1002,6 +1002,13 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     if (ga4DemoR.error)      console.warn('[Reportive] GA4 demographics error:', ga4DemoR.error.message);
     if (ga4PageR.error)      console.warn('[Reportive] GA4 pages error:',        ga4PageR.error.message);
     if (ga4SessionR.error)   console.warn('[Reportive] GA4 sessions error:',     ga4SessionR.error.message);
+
+    const fetchErrors = [];
+    if (metaR && metaR.error)       fetchErrors.push('Meta Ads: ' + metaR.error.message);
+    if (ga4R && ga4R.error)         fetchErrors.push('GA4: ' + ga4R.error.message);
+    if (gscSumR && gscSumR.error)   fetchErrors.push('Search Console: ' + gscSumR.error.message);
+    if (adsR && adsR.error)         fetchErrors.push('Google Ads: ' + adsR.error.message);
+
     const metaData = metaR.error ? [] : (metaR.data || []);
     console.log('[Reportive] rows — meta:', metaData.length, '| meta insights:', (metaInsightsR.data || []).length, '| ga4:', (ga4R.data || []).length, '| ga4Demo:', (ga4DemoR.data || []).length, '| ga4Page:', (ga4PageR.data || []).length, '| ga4Session:', (ga4SessionR.data || []).length);
 
@@ -1054,6 +1061,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
       gscCountries: gscCtyR.error ? [] : (gscCtyR.data || []),
       gscDevices:   gscDevR.error ? [] : (gscDevR.data || []),
       psi:          psiData,
+      _errors:      fetchErrors,
     };
   } catch (e) {
     console.warn('[Reportive] Fetch failed:', e.message);
@@ -1066,7 +1074,7 @@ const DataCtx = React.createContext(null);
 
 function LiveProvider({ children }) {
   const [state, setState] = React.useState({
-    loading: true, error: null, data: null, _isMock: false,
+    loading: true, error: null, data: null, _isMock: false, fetchError: null,
   });
   const [account,             setAccount]             = React.useState(localStorage.getItem('avo_account') || '');
   const [metaAccount,         setMetaAccount]         = React.useState(null);
@@ -1120,7 +1128,8 @@ function LiveProvider({ children }) {
           raw.ga4Demo || [], raw.ga4Page || [], raw.ga4Session || [],
         );
       }
-      setState({ loading: false, error: null, data, _isMock: isMock });
+      const fetchError = (raw && raw._errors && raw._errors.length) ? raw._errors : null;
+      setState({ loading: false, error: null, data, _isMock: isMock, fetchError });
     })();
     return () => { cancelled = true; };
   }, [account, metaAccount, ga4Property, gscProperty, psiUrl, dateRange, _anySourceConnected]);

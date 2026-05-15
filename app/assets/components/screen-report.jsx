@@ -4266,7 +4266,7 @@ function ScreenReport({ clientId, onBack }) {
     );
   }
 
-  const { currentPeriod, dateRange, setDateRange, loading, _isMock, setAccount, setMetaAccount, setGa4Property, setGscProperty, psiUrl, setPsiUrl, _setAnySourceConnected } = live;
+  const { currentPeriod, dateRange, setDateRange, loading, _isMock, fetchError, setAccount, setMetaAccount, setGa4Property, setGscProperty, psiUrl, setPsiUrl, _setAnySourceConnected } = live;
   const allClients = [...(window._avo_clients || []), ...(window.HOME_CLIENTS || [])];
   const client = allClients.find(c => c.id === clientId);
 
@@ -4400,6 +4400,18 @@ function ScreenReport({ clientId, onBack }) {
 
           {!loading && p && (
             <>
+              {fetchError && fetchError.length > 0 && (
+                <div style={{
+                  margin: '8px 16px 0', padding: '8px 14px',
+                  background: 'rgba(220,38,38,.1)', border: '1px solid rgba(220,38,38,.3)',
+                  borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11,
+                  color: '#F87171', display: 'flex', gap: 8, alignItems: 'flex-start',
+                }}>
+                  <span>⚠</span>
+                  <span>Data source error: {fetchError.join(' · ')} — showing partial data.</span>
+                </div>
+              )}
+
               {/* Page title */}
               <div style={{ marginBottom: 28 }}>
                 <h1 style={{ margin: 0, fontFamily: T.display, fontSize: 24, fontWeight: 800, color: fg, letterSpacing: '-0.02em' }}>
