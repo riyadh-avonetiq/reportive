@@ -11,8 +11,9 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
     def log_message(self, format, *args):
-        pass  # suppress logs
+        if args and len(args) > 1 and not str(args[1]).startswith('2'):
+            super().log_message(format, *args)
 
-with socketserver.TCPServer(("", PORT), NoCacheHandler) as httpd:
+with socketserver.TCPServer(("127.0.0.1", PORT), NoCacheHandler) as httpd:
     print(f"Serving at http://localhost:{PORT}")
     httpd.serve_forever()
