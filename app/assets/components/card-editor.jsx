@@ -801,6 +801,16 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     [srcKey, pageData]
   );
 
+  // Must be before any early return (Rules of Hooks).
+  const [activeField, setActiveField] = React.useState(null);
+  React.useEffect(() => { setActiveField(null); }, [widgetId]);
+  React.useEffect(() => {
+    if (widgetType !== 'narrative-hero') return;
+    const handler = e => setActiveField(e.detail);
+    window.addEventListener('narrativeHeroFocus', handler);
+    return () => window.removeEventListener('narrativeHeroFocus', handler);
+  }, [widgetType]);
+
   if (!widgetId) {
     return (
       <div style={{ padding: '24px 0', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted, lineHeight: 1.7 }}>
@@ -850,16 +860,6 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
   const isNarrQuote = widgetType === 'narrative-quote';
   const isNarrative = isNarrHero || isNarrNote || isNarrCall || isNarrQuote;
 
-  // Track which field (headline/body) is active in NarrativeHeroWidget via custom event.
-  // Must be at top level (Rules of Hooks — not inside if-block).
-  const [activeField, setActiveField] = React.useState(null);
-  React.useEffect(() => { setActiveField(null); }, [widgetId]);
-  React.useEffect(() => {
-    if (!isNarrHero) return;
-    const handler = e => setActiveField(e.detail);
-    window.addEventListener('narrativeHeroFocus', handler);
-    return () => window.removeEventListener('narrativeHeroFocus', handler);
-  }, [isNarrHero]);
   const DESIGN_ONLY_TYPES = ['carousel-highlights','kpi-compare','kpi-stacked','chart-sparks',
     'progress-psi','progress-score','progress-goals','progress-pacing','progress-grid',
     'list-keywords','list-pages','list-countries','list-devices'];
