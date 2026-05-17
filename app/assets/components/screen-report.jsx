@@ -4297,24 +4297,28 @@ function ScreenReport({ clientId, onBack }) {
   const [widgetConfigs, setWidgetConfigs] = useState({});
   const [widgetLayouts, setWidgetLayouts] = useState(null);
   const [savedFlash, setSavedFlash] = useState(false);
-  const undoHistory       = React.useRef([]);
-  const layoutUndoHistory = React.useRef([]);
+  // Unified undo stack — each entry: { configs: snapshot|null, layout: snapshot|null }
+  // null means "this operation did not change that field".
+  // Paste and source-change store both; config edits store only configs; layout-only ops store only layout.
+  const undoHistory = React.useRef([]);
   const [historyLen, setHistoryLen] = useState(0);
 
   const updateWidgetConfig = useCallback((id, changes) => {
     setWidgetConfigs(prev => {
-      undoHistory.current = [...undoHistory.current.slice(-19), prev];
+      undoHistory.current = [...undoHistory.current.slice(-19), { configs: prev, layout: null }];
       return { ...prev, [id]: { ...(prev[id] || {}), ...changes } };
     });
     setHistoryLen(l => l + 1);
   }, []);
 
-  const undoWidgetConfig = useCallback(() => {
+  // Single undo function that restores whichever fields the entry changed.
+  const undoLast = useCallback(() => {
     if (undoHistory.current.length === 0) return;
-    const prev = undoHistory.current[undoHistory.current.length - 1];
+    const entry = undoHistory.current[undoHistory.current.length - 1];
     undoHistory.current = undoHistory.current.slice(0, -1);
     setHistoryLen(undoHistory.current.length);
-    setWidgetConfigs(prev);
+    if (entry.configs !== null) setWidgetConfigs(entry.configs);
+    if (entry.layout !== null) setWidgetLayouts(entry.layout);
   }, []);
 
   const updateWidgetLayouts = useCallback((updater) => {
@@ -4322,17 +4326,11 @@ function ScreenReport({ clientId, onBack }) {
       const allClients = [...(window._avo_clients || []), ...(window.HOME_CLIENTS || [])];
       const _client = allClients.find(c => c.id === clientId);
       const current = prev || getSmartDefaultLayout(_client?.connected);
-      layoutUndoHistory.current = [...layoutUndoHistory.current.slice(-19), current];
+      undoHistory.current = [...undoHistory.current.slice(-19), { configs: null, layout: current }];
       return typeof updater === 'function' ? updater(current) : updater;
     });
+    setHistoryLen(l => l + 1);
   }, [clientId]);
-
-  const undoLayout = useCallback(() => {
-    if (layoutUndoHistory.current.length === 0) return;
-    const prev = layoutUndoHistory.current[layoutUndoHistory.current.length - 1];
-    layoutUndoHistory.current = layoutUndoHistory.current.slice(0, -1);
-    setWidgetLayouts(prev);
-  }, []);
 
   // Load persisted configs + layouts when switching clients
   useEffect(() => {
@@ -4370,18 +4368,17 @@ function ScreenReport({ clientId, onBack }) {
     } catch {}
   }, [widgetLayouts, clientId]);
 
-  // Ctrl+Z / Cmd+Z undo when editor is open (widget config first, then layout)
+  // Ctrl+Z / Cmd+Z — unified undo (config, layout, or both for atomic ops like paste)
   useEffect(() => {
     const handler = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
-        if (historyLen > 0) undoWidgetConfig();
-        else undoLayout();
+        undoLast();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [undoWidgetConfig, undoLayout, historyLen]);
+  }, [undoLast]);
 
   const handleSelectWidget = useCallback((id, cardId) => {
     setSelectedWidgets([id]);
@@ -4458,10 +4455,15 @@ function ScreenReport({ clientId, onBack }) {
         clipboard.forEach((entry, i) => {
           newConfigs[newWidgets[i].id] = { ...entry.config };
         });
-        updateWidgetLayouts(prev => ({
-          ...prev,
-          rows: [...prev.rows, newWidgets],
-        }));
+        // Push ONE combined undo entry covering both layout and config so a single Ctrl+Z
+        // reverts the entire paste (bypassing updateWidgetLayouts/updateWidgetConfig to
+        // avoid pushing two separate entries).
+        undoHistory.current = [...undoHistory.current.slice(-19), { configs: widgetConfigs, layout: _layouts }];
+        setHistoryLen(l => l + 1);
+        setWidgetLayouts(prev => {
+          const cur = prev || _layouts;
+          return { ...cur, rows: [...cur.rows, newWidgets] };
+        });
         setWidgetConfigs(prev => ({ ...prev, ...newConfigs }));
         setSelectedWidgets(newWidgets.map(w => w.id));
       }
@@ -4475,19 +4477,18 @@ function ScreenReport({ clientId, onBack }) {
   }, [updateWidgetConfig]);
 
   const handleSourceChange = useCallback((widgetId, newSource) => {
-    updateWidgetLayouts(prev => ({
-      ...prev,
-      rows: prev.rows.map(row => row.map(w => w.id === widgetId ? { ...w, source: newSource } : w)),
-    }));
     const widget = widgetLayouts?.rows?.flat()?.find(w => w.id === widgetId);
     const widgetType = widget?.type || editorCardId;
     const defaults = window.WIDGET_DEFAULTS?.[widgetType]?.[newSource] || {};
-    setWidgetConfigs(prev => {
-      undoHistory.current = [...undoHistory.current.slice(-19), prev];
-      return { ...prev, [widgetId]: defaults };
-    });
+    // Push ONE combined entry so Ctrl+Z reverts both the layout source and the config together.
+    undoHistory.current = [...undoHistory.current.slice(-19), { configs: widgetConfigs, layout: widgetLayouts }];
     setHistoryLen(l => l + 1);
-  }, [updateWidgetLayouts, widgetLayouts, editorCardId]);
+    setWidgetLayouts(prev => ({
+      ...(prev || widgetLayouts),
+      rows: (prev || widgetLayouts).rows.map(row => row.map(w => w.id === widgetId ? { ...w, source: newSource } : w)),
+    }));
+    setWidgetConfigs(prev => ({ ...prev, [widgetId]: defaults }));
+  }, [widgetLayouts, editorCardId, widgetConfigs]);
   const editState = showEditor && !_IS_VIEWER ? {
     selected: selectedWidgets,
     onSelect: handleSelectWidget,
@@ -4777,7 +4778,7 @@ function ScreenReport({ clientId, onBack }) {
             widgetId={_primarySelected}
             widgetConfig={_primarySelected ? (widgetConfigs[_primarySelected] || {}) : {}}
             onConfigChange={handleWidgetConfigChange}
-            onUndo={historyLen > 0 ? undoWidgetConfig : null}
+            onUndo={historyLen > 0 ? undoLast : null}
             connectedSources={client?.connected || {}}
             onClose={() => setShowEditor(false)}
             sharedWidgetCount={sharedWidgetCount}
