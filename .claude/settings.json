@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat > *)",
+      "Bash(awk 'NR>=4229 && NR<=4310' /Users/sleepanatomy/Documents/GitHub/reportive-dashboard/app/assets/components/screen-report.jsx)",
+      "Bash(grep -n \"^const { \\\\|^const {$\\\\|React\\\\.\\\\|useState\\\\|useEffect\\\\|useCallback\\\\|function CardEditor\\\\|const CardEditor\" /Users/sleepanatomy/Documents/GitHub/reportive-dashboard/app/assets/components/card-editor.jsx)",
+      "Bash(awk -F: '$2 < 870')",
+      "Bash(awk -F: '{print $1, $2}')",
+      "Bash(awk 'NR>=769 && NR<=1490' /Users/sleepanatomy/Documents/GitHub/reportive-dashboard/app/assets/components/card-editor.jsx)",
+      "Bash(awk 'NR>=827 && NR<=1490' /Users/sleepanatomy/Documents/GitHub/reportive-dashboard/app/assets/components/card-editor.jsx)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  }
+}

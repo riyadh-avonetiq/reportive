@@ -2460,10 +2460,6 @@ const CardEditorPanel = ({
             Undo
           </button>
         )}
-        <div style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '8px 0', background: 'rgba(0,194,184,.06)', border: '1px solid rgba(0,194,184,.2)', borderRadius: 7 }}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00C2B8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#00C2B8', letterSpacing: '0.06em' }}>Auto-saved</span>
-        </div>
       </div>
     </div>
   );
