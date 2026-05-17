@@ -168,16 +168,21 @@ const FormattingToolbar = () => {
     borderRadius: 5, color: active ? EP.bg : EP.fg,
     cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: fs,
   });
-  // If no text is selected, select all content in the active contenteditable before applying the command.
-  // This lets users apply formatting with just a cursor click — no drag-select required.
+  // For inline formatting (bold/italic/underline): if no text is selected, select all first
+  // so the format applies to the whole field without drag-selecting.
+  // For list commands: always apply at cursor position only — pre-selecting all would convert
+  // every paragraph to a list item instead of just the current one.
   const applyCmd = (cmd) => {
-    const sel = window.getSelection();
-    const el = document.activeElement;
-    if (sel && sel.isCollapsed && el && el.isContentEditable) {
-      const r = document.createRange();
-      r.selectNodeContents(el);
-      sel.removeAllRanges();
-      sel.addRange(r);
+    const isListCmd = cmd === 'insertUnorderedList' || cmd === 'insertOrderedList';
+    if (!isListCmd) {
+      const sel = window.getSelection();
+      const el = document.activeElement;
+      if (sel && sel.isCollapsed && el && el.isContentEditable) {
+        const r = document.createRange();
+        r.selectNodeContents(el);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      }
     }
     document.execCommand(cmd);
   };
