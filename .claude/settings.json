@@ -29,7 +29,16 @@
       "Bash(git -C /Users/sleepanatomy/Documents/GitHub/reportive-dashboard log --oneline -3)",
       "Bash(git -C /Users/sleepanatomy/Documents/GitHub/reportive-dashboard add app/vercel.json)",
       "Bash(git -C /Users/sleepanatomy/Documents/GitHub/reportive-dashboard commit -m \"fix: use :path* wildcard in vercel.json header source\")",
-      "Bash(git -C /Users/sleepanatomy/Documents/GitHub/reportive-dashboard push origin main)"
+      "Bash(git -C /Users/sleepanatomy/Documents/GitHub/reportive-dashboard push origin main)",
+      "Bash(git push *)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(find /Users/sleepanatomy -name \"Reportive Charts*\" -o -name \"reportive charts*\" 2>/dev/null | head -10)",
+      "Read(//Users/sleepanatomy/**)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3)",
+      "Bash(git -C /Users/sleepanatomy/Documents/GitHub/reportive-dashboard status --short)",
+      "Bash(grep -n \"return { values: vs, labels: sparseLabels\" /Users/sleepanatomy/Documents/GitHub/reportive-dashboard/app/assets/components/screen-report.jsx)",
+      "Bash(grep -n \"const { values: aggVals, labels: aggLabels\" /Users/sleepanatomy/Documents/GitHub/reportive-dashboard/app/assets/components/screen-report.jsx)"
     ],
     "additionalDirectories": [
       "/tmp"
