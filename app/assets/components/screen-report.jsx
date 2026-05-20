@@ -1652,6 +1652,13 @@ function ChartAreaWidget({ instance, p, cfg }) {
   const rawLabels  = def.labels  ? (def.labels(p)  || []) : [];
   const rawSeriesB = defB && defB.series ? (defB.series(p) || []) : null;
 
+  const sharedLen = rawSeriesB
+    ? Math.min(rawSeries.length, rawSeriesB.length)
+    : rawSeries.length;
+  const alignedSeries  = rawSeries.slice(0, sharedLen);
+  const alignedLabels  = rawLabels.slice(0, sharedLen);
+  const alignedSeriesB = rawSeriesB ? rawSeriesB.slice(0, sharedLen) : null;
+
   // Size config
   const sz = (cfg.fontSize || 'm').toLowerCase();
   const titleFs  = { s: 11, m: 13, l: 15 }[sz] || 13;
@@ -1729,11 +1736,17 @@ function ChartAreaWidget({ instance, p, cfg }) {
     vals.forEach((v, i) => { const d = dates[i] || ''; const mk = d.slice(0, 7) || ('M' + i); byMonth[mk] = (byMonth[mk] || 0) + v; });
     const ks = Object.keys(byMonth).sort();
     const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return { values: ks.map(k => byMonth[k]), labels: ks.map(k => { const pts = k.split('-'); return pts[1] ? MN[+pts[1] - 1] || k : k; }) };
+    const years = new Set(ks.map(k => k.slice(0, 4)));
+    const multiYear = years.size > 1;
+    return { values: ks.map(k => byMonth[k]), labels: ks.map(k => {
+      const pts = k.split('-');
+      const mon = pts[1] ? MN[+pts[1] - 1] || k : k;
+      return multiYear ? `${mon} '${pts[0].slice(2)}` : mon;
+    }) };
   };
 
-  const { values: aggVals, labels: aggLabels } = aggregate(rawSeries, rawLabels, agg);
-  const aggB = rawSeriesB ? aggregate(rawSeriesB, rawLabels, agg) : null;
+  const { values: aggVals, labels: aggLabels } = aggregate(alignedSeries, alignedLabels, agg);
+  const aggB = alignedSeriesB ? aggregate(alignedSeriesB, alignedLabels, agg) : null;
   const safeSeries  = aggVals.length >= 2 ? aggVals.map(v => v / scaleA) : null;
   const safeSeriesB = aggB && aggB.values.length >= 2 ? aggB.values.map(v => v / scaleB) : null;
 
