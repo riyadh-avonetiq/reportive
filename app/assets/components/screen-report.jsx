@@ -5442,6 +5442,13 @@ function ScreenReport({ clientId, onBack }) {
   }, []);
 
   if (!client) {
+    if (retry < 10) {
+      return (
+        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--navy-base)' }}>
+          <div style={{ fontFamily: T.mono, fontSize: 13, color: muted }}>Memuat laporan…</div>
+        </div>
+      );
+    }
     return (
       <div style={{
         height: '100%', display: 'flex', flexDirection: 'column',
