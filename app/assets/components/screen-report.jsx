@@ -5084,10 +5084,27 @@ function ScreenReport({ clientId, onBack }) {
       if (!error) {
         setSavedFlash(true);
         setTimeout(() => setSavedFlash(false), 1800);
+      } else {
+        console.error('[Reportive] Layout save failed:', error);
       }
     }, 1500);
     return () => clearTimeout(saveTimerRef.current);
   }, [widgetConfigs, widgetLayouts]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Flush any pending save immediately when the report screen unmounts
+  useEffect(() => {
+    return () => {
+      if (!saveTimerRef.current) return;
+      clearTimeout(saveTimerRef.current);
+      if (!window._layoutSupa || !clientIdRef.current) return;
+      window._layoutSupa.from('report_layouts').upsert({
+        client_id: clientIdRef.current,
+        layouts: widgetLayoutsRef.current,
+        configs: widgetConfigsRef.current,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'client_id' });
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep current-state refs in sync so undo/redo can capture "now" without stale closures
   useEffect(() => { widgetConfigsRef.current = widgetConfigs; }, [widgetConfigs]);
