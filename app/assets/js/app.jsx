@@ -93,10 +93,6 @@ function App() {
     return <ShareView shareToken={route.shareToken} />;
   }
 
-  if (route.route === 'templates') {
-    if (ROLE === 'viewer') return <ScreenHome onOpenClient={onOpenClient} onNavigate={navigate}/>;
-  }
-
   // Default: Home
   return <ScreenHome onOpenClient={onOpenClient} onNavigate={navigate}/>;
 }
@@ -116,11 +112,14 @@ function ShareView({ shareToken }) {
 
   React.useEffect(() => {
     if (!shareToken || !_AUTH_SUPA) { setNotFound(true); return; }
+    let mounted = true;
     _AUTH_SUPA.from('clients').select('id').eq('share_token', shareToken).single()
       .then(({ data, error }) => {
+        if (!mounted) return;
         if (error || !data) { setNotFound(true); return; }
         setClientId(data.id);
       });
+    return () => { mounted = false; };
   }, [shareToken]);
 
   if (notFound) return (
