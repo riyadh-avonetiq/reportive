@@ -8,6 +8,8 @@ const { useState, useEffect, useCallback, useMemo } = React;
 const { useLive, fmt } = window.LIVE;
 
 const _IS_VIEWER = sessionStorage.getItem('avo_role') === 'viewer';
+const _IS_LOCAL  = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const _layoutKey = (id) => _IS_LOCAL ? 'local::' + id : id;
 
 // ─── Design tokens ────────────────────────────────────────────────
 const teal   = '#00C2B8';
@@ -5084,7 +5086,7 @@ function ScreenReport({ clientId, onBack, hideBack }) {
     window._layoutSupa
       .from('report_layouts')
       .select('layouts, configs')
-      .eq('client_id', capturedClientId)
+      .eq('client_id', _layoutKey(capturedClientId))
       .maybeSingle()
       .then(({ data, error }) => {
         if (error) { console.error('[Reportive] Layout load failed:', error); }
@@ -5110,7 +5112,7 @@ function ScreenReport({ clientId, onBack, hideBack }) {
       const { error } = await window._layoutSupa
         .from('report_layouts')
         .upsert({
-          client_id: clientIdRef.current,
+          client_id: _layoutKey(clientIdRef.current),
           layouts: widgetLayoutsRef.current,
           configs: widgetConfigsRef.current,
         }, { onConflict: 'client_id' });
@@ -5131,7 +5133,7 @@ function ScreenReport({ clientId, onBack, hideBack }) {
       clearTimeout(saveTimerRef.current);
       if (!window._layoutSupa || !clientIdRef.current) return;
       window._layoutSupa.from('report_layouts').upsert({
-        client_id: clientIdRef.current,
+        client_id: _layoutKey(clientIdRef.current),
         layouts: widgetLayoutsRef.current,
         configs: widgetConfigsRef.current,
       }, { onConflict: 'client_id' });
