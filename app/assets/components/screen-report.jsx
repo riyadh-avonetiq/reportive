@@ -4589,7 +4589,7 @@ function FirstTimeEmptyState({ client, onBack }) {
 }
 
 // ─── Present Mode Overlay ──────────────────────────────────────────
-function PresentMode({ client, p, isMock, onExit }) {
+function PresentMode({ client, p, isMock, onExit, layouts, widgetConfigs, psiUrl, psiApiKey }) {
   const [slide, setSlide] = useState(0);
 
   const connected = client.connected || {};
@@ -4705,65 +4705,40 @@ function PresentMode({ client, p, isMock, onExit }) {
       );
     }
 
-    if (cur.id === 'google') {
-      const safeSpend = p.series.spend.length >= 2 ? p.series.spend : [0, 0];
+    // Non-summary slides: render widgets from canvas layout filtered by source
+    const SLIDE_COLORS = {
+      google: { accent: blue,      bg: 'rgba(66,133,244,.1)'  },
+      meta:   { accent: violet,    bg: 'rgba(112,0,255,.1)'   },
+      ga4:    { accent: gold,      bg: 'rgba(248,180,0,.1)'   },
+      search: { accent: '#0EA5E9', bg: 'rgba(14,165,233,.1)'  },
+      psi:    { accent: '#16A34A', bg: 'rgba(22,163,74,.1)'   },
+    };
+    const { accent = teal, bg = 'rgba(0,194,184,.1)' } = SLIDE_COLORS[cur.id] || {};
+    const sourceId = cur.id === 'psi' ? 'pagespeed' : cur.id;
+    const slideWidgets = (layouts?.rows || []).flat().filter(w => w.source === sourceId);
+    const widgetMap = buildUniversalMap(p, widgetConfigs, layouts, null, psiUrl, psiApiKey, null);
+
+    if (slideWidgets.length === 0) {
       return (
-        <div>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
-            <span style={{ fontFamily: T.mono, fontSize: 12, color: blue, background: 'rgba(66,133,244,.1)', padding: '3px 10px', borderRadius: 4, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 600 }}>02 Google Ads</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
-            <KpiCard acc={gold} label="Total Spend" value={fmt.rupiahShort(ads.spend)} delta={d(ads.spend, adsPrev.spend) != null ? Math.abs(d(ads.spend, adsPrev.spend)).toFixed(1) + '%' : '—'} deltaUp={(d(ads.spend, adsPrev.spend) || 0) >= 0} comparison="vs prev"/>
-            <KpiCard acc={blue} label="Clicks" value={fmt.num(ads.clicks)} delta={d(ads.clicks, adsPrev.clicks) != null ? Math.abs(d(ads.clicks, adsPrev.clicks)).toFixed(1) + '%' : '—'} deltaUp={(d(ads.clicks, adsPrev.clicks) || 0) >= 0} comparison="vs prev"/>
-            <KpiCard acc={teal} label="Conversions" value={fmt.num(ads.conversions)} delta={d(ads.conversions, adsPrev.conversions) != null ? Math.abs(d(ads.conversions, adsPrev.conversions)).toFixed(1) + '%' : '—'} deltaUp={(d(ads.conversions, adsPrev.conversions) || 0) >= 0} comparison="vs prev"/>
-            <KpiCard acc={gold} label="ROAS" value={fmt.roas(ads.roas)} delta={d(ads.roas, adsPrev.roas) != null ? Math.abs(d(ads.roas, adsPrev.roas)).toFixed(1) + '%' : '—'} deltaUp={(d(ads.roas, adsPrev.roas) || 0) >= 0} comparison="vs prev"/>
-          </div>
-          <div style={{ background: 'var(--navy-surface)', border: '1px solid var(--navy-edge)', borderRadius: 14, padding: '18px 20px' }}>
-            <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: fg, marginBottom: 12 }}>Spend Trend · {p.labelShort}</div>
-            <MiniLine data={safeSpend} w={800} h={100} color={blue} fill id="pres-gads"/>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400 }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontFamily: T.display, fontSize: 18, color: fg, marginBottom: 8 }}>Belum ada widget</div>
+            <div style={{ fontFamily: T.body, fontSize: 14, color: muted }}>Tambahkan widget {cur.title} dari editor laporan.</div>
           </div>
         </div>
       );
     }
 
-    if (cur.id === 'ga4') {
-      const safeA = p.series.impressions.length >= 2 ? p.series.impressions.map(v => Math.round(v / 25)) : [ga4.sessions];
-      const safeB = p.series.clicks.length >= 2 ? p.series.clicks.map(v => Math.round(v * 1.3)) : [ga4.total_users];
-      return (
-        <div>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
-            <span style={{ fontFamily: T.mono, fontSize: 12, color: gold, background: 'rgba(248,180,0,.1)', padding: '3px 10px', borderRadius: 4, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 600 }}>GA4 Analytics</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
-            <KpiCard acc={gold} label="Sessions" value={fmt.num(ga4.sessions)} delta={d(ga4.sessions, ga4Prev.sessions) != null ? Math.abs(d(ga4.sessions, ga4Prev.sessions)).toFixed(1) + '%' : '—'} deltaUp={(d(ga4.sessions, ga4Prev.sessions) || 0) >= 0} comparison="vs prev"/>
-            <KpiCard acc={gold} label="Users" value={fmt.num(ga4.total_users)} delta={d(ga4.total_users, ga4Prev.total_users) != null ? Math.abs(d(ga4.total_users, ga4Prev.total_users)).toFixed(1) + '%' : '—'} deltaUp={(d(ga4.total_users, ga4Prev.total_users) || 0) >= 0} comparison="vs prev"/>
-            <KpiCard acc={teal} label="Pageviews" value={fmt.num(ga4.event_count)} delta={d(ga4.event_count, ga4Prev.event_count) != null ? Math.abs(d(ga4.event_count, ga4Prev.event_count)).toFixed(1) + '%' : '—'} deltaUp={(d(ga4.event_count, ga4Prev.event_count) || 0) >= 0} comparison="vs prev"/>
-            <KpiCard acc={teal} label="Engaged Sessions" value={fmt.num(ga4.engaged_sessions)} delta={d(ga4.engaged_sessions, ga4Prev.engaged_sessions) != null ? Math.abs(d(ga4.engaged_sessions, ga4Prev.engaged_sessions)).toFixed(1) + '%' : '—'} deltaUp={(d(ga4.engaged_sessions, ga4Prev.engaged_sessions) || 0) >= 0} comparison="vs prev"/>
-          </div>
-          <div style={{ background: 'var(--navy-surface)', border: '1px solid var(--navy-edge)', borderRadius: 14, padding: '18px 20px' }}>
-            <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: fg, marginBottom: 12 }}>Sessions vs Users</div>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
-              <LegendDot color={gold} label="Sessions"/>
-              <LegendDot color={teal} label="Users"/>
-            </div>
-            <MultiArea
-              seriesA={safeA.length >= 2 ? safeA : [100, 120]}
-              seriesB={safeB.length >= 2 ? safeB : [80, 95]}
-              colorA={gold} colorB={teal}
-              labelsX={safeA.length >= 4 ? ['W1', 'W2', 'W3', 'W4'] : []}
-              w={800} h={130}
-            />
-          </div>
-        </div>
-      );
-    }
-
-    // Generic slide for meta, search, psi
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400 }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontFamily: T.display, fontSize: 22, color: fg, marginBottom: 8 }}>{cur.title}</div>
-          <div style={{ fontFamily: T.body, fontSize: 15, color: muted }}>See details on the report page.</div>
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+          <span style={{ fontFamily: T.mono, fontSize: 12, color: accent, background: bg, padding: '3px 10px', borderRadius: 4, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 600 }}>{cur.title}</span>
+          <span style={{ fontFamily: T.mono, fontSize: 12, color: muted, textTransform: 'uppercase', letterSpacing: '.12em', fontWeight: 600 }}>Periode · {p.labelLong}</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+          {slideWidgets.map(w => (
+            <div key={w.id}>{widgetMap[w.id]}</div>
+          ))}
         </div>
       </div>
     );
@@ -5707,6 +5682,10 @@ function ScreenReport({ clientId, onBack }) {
           p={p}
           isMock={_isMock}
           onExit={() => setShowPresent(false)}
+          layouts={_layouts}
+          widgetConfigs={widgetConfigs}
+          psiUrl={psiUrl}
+          psiApiKey={psiApiKey}
         />
       )}
 
