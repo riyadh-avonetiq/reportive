@@ -1323,10 +1323,12 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
 
   // ── Shared filter section for all Data & KPI widgets ────────────
   const KPI_FILTER_OPS = [
-    { value: 'contains', label: 'Contains' },
-    { value: 'is',       label: 'Equals' },
-    { value: 'not',      label: 'Not equal' },
-    { value: 'starts',   label: 'Starts with' },
+    { value: 'contains',   label: 'Contains' },
+    { value: 'is',         label: 'Equals' },
+    { value: 'not',        label: 'Not equal' },
+    { value: 'starts',     label: 'Starts with' },
+    { value: 'regex',      label: 'Matches /regex/' },
+    { value: 'not_regex',  label: 'Not /regex/' },
   ];
   function renderFilterRows(filtersArr, onChange, dims) {
     const defaultDim = dims[0]?.key;
@@ -1345,7 +1347,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
             <button onClick={function() { onChange(filtersArr.filter(function(_, j) { return j !== fi; })); }}
               style={{ width: 24, height: 24, border: `1px solid ${EP.edge}`, borderRadius: 4, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16, lineHeight: 1 }}>×</button>
           </div>
-          {(dimValMap[f.dim || defaultDim] || []).length > 0 ? (
+          {(dimValMap[f.dim || defaultDim] || []).length > 0 && f.op !== 'regex' && f.op !== 'not_regex' ? (
             <select value={f.val || ''} onChange={function(e) { var nf = filtersArr.slice(); nf[fi] = Object.assign({}, f, { val: e.target.value }); onChange(nf); }}
               style={{ width: '100%', boxSizing: 'border-box', padding: '6px 10px', background: EP.surface, border: `1px solid ${EP.edge}`, borderRadius: 5, color: f.val ? EP.fg : EP.muted, fontFamily: 'var(--font-body)', fontSize: 13.5, outline: 'none' }}>
               <option value="">— pilih nilai —</option>
@@ -1353,7 +1355,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
             </select>
           ) : (
             <input value={f.val || ''} onChange={function(e) { var nf = filtersArr.slice(); nf[fi] = Object.assign({}, f, { val: e.target.value }); onChange(nf); }}
-              placeholder="nilai filter…"
+              placeholder={(f.op === 'regex' || f.op === 'not_regex') ? 'Pattern… e.g. brand|toko' : 'nilai filter…'}
               style={{ width: '100%', boxSizing: 'border-box', padding: '6px 10px', background: EP.surface, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 13.5, outline: 'none' }}/>
           )}
         </div>
