@@ -1266,7 +1266,7 @@ const ViewerProfileModal = ({ onClose }) => {
 // ─── Top bar ───────────────────────────────────────────────────────
 const HomeTopBar = ({ count, onNavigate, onProfileClick }) => {
   const user = _getSessionUser();
-  const NAV_ROUTES = { Home: 'home', Templates: 'templates', Access: 'access' };
+  const NAV_ROUTES = { Home: 'home', Access: 'access' };
   const handleLogout = () => {
     sessionStorage.removeItem('avo_role');
     sessionStorage.removeItem('avo_email');
@@ -1283,7 +1283,7 @@ const HomeTopBar = ({ count, onNavigate, onProfileClick }) => {
       </div>
       </div>
       <div style={{ width: 1, height: 20, background: 'var(--navy-edge)' }} />
-      {(_VIEWER_ROLE ? [['Home','active']] : [['Home','active'],['Templates',''],['Access','']]).map(([l,a]) =>
+      {(_VIEWER_ROLE ? [['Home','active']] : [['Home','active'],['Access','']]).map(([l,a]) =>
         <div key={l} onClick={() => onNavigate && onNavigate(NAV_ROUTES[l])} style={{ padding: '6px 12px', borderRadius: 7, cursor: 'pointer', background: a ? 'rgba(0,194,184,.1)' : 'transparent', color: a ? '#00C2B8' : 'var(--text-secondary)', fontFamily: HS.display, fontSize: 15, fontWeight: a ? 700 : 500 }}>{l}</div>
       )}
       <div style={{ flex: 1 }} />
