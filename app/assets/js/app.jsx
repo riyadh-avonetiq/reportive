@@ -103,6 +103,7 @@ const _AUTH_SUPA = (window.supabase && window.supabase.createClient)
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3a2xmb2x2ZWlpbGFqZG11ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NDEwMDAsImV4cCI6MjA5MzAxNzAwMH0.ZuxBQkHGwpY82XwA0NQzjqnvCeJH0WUIcp0Bux2K-84'
     )
   : null;
+window._layoutSupa = _AUTH_SUPA;
 
 function Root() {
   // Fetch clients globally so any route can look up a client by ID
