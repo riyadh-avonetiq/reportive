@@ -96,16 +96,20 @@ const HANDLERS = {
 };
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  if (!requireSyncKey(req, res)) return;
+  try {
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+    if (!requireSyncKey(req, res)) return;
 
-  const { client_id, table, rows } = req.body;
-  if (!client_id || !table || !Array.isArray(rows)) {
-    return res.status(400).json({ error: 'client_id, table, rows required' });
+    const { client_id, table, rows } = req.body;
+    if (!client_id || !table || !Array.isArray(rows)) {
+      return res.status(400).json({ error: 'client_id, table, rows required' });
+    }
+    if (!HANDLERS[table]) return res.status(400).json({ error: `Unknown table: ${table}` });
+
+    const tagged = rows.map(r => ({ ...r, client_id }));
+    await HANDLERS[table](tagged);
+    res.json({ ok: true, count: rows.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
-  if (!HANDLERS[table]) return res.status(400).json({ error: `Unknown table: ${table}` });
-
-  const tagged = rows.map(r => ({ ...r, client_id }));
-  await HANDLERS[table](tagged);
-  res.json({ ok: true, count: rows.length });
 }
