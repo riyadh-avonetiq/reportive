@@ -5047,12 +5047,14 @@ function ScreenReport({ clientId, onBack }) {
     setWidgetConfigs({});
     setWidgetLayouts(null);
     if (!window._layoutSupa || !clientId) return;
+    const capturedClientId = clientId;
     window._layoutSupa
       .from('report_layouts')
       .select('layouts, configs')
-      .eq('client_id', clientId)
+      .eq('client_id', capturedClientId)
       .maybeSingle()
       .then(({ data }) => {
+        if (clientIdRef.current !== capturedClientId) return;
         const layouts = data?.layouts ? migrateLegacyLayout(data.layouts) : null;
         const configs = data?.configs || {};
         initConfigRef.current = configs;
