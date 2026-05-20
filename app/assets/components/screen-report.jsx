@@ -1664,6 +1664,7 @@ function ChartAreaWidget({ instance, p, cfg }) {
   const titleFs  = { s: 11, m: 13, l: 15 }[sz] || 13;
   const statsFs  = { s: 11, m: 14, l: 16 }[sz] || 14;
   const chartH   = { s: 100, m: 140, l: 170 }[sz] || 140;
+  const chartScale = { s: 0.85, m: 1.0, l: 1.15 }[sz] || 1.0;
 
   // Number format: auto = smart abbreviation, detail = Indonesian locale (full number)
   const numFmt = cfg.numFmt || 'auto';
@@ -1810,7 +1811,7 @@ function ChartAreaWidget({ instance, p, cfg }) {
       <RichArea seriesA={safeSeries} seriesB={safeSeriesB} labelsX={aggLabels}
         tooltipLabels={fullAggLabels}
         colorA={colorA} colorB={colorB} unitA={unitA} unitB={unitB} fmtY={fmtY}
-        smooth={cfg.lineStyle === 'smooth'} w={460} h={chartH}/>
+        smooth={cfg.lineStyle === 'smooth'} scale={chartScale} w={460} h={chartH}/>
       {(totalA != null || (hasDual && totalB != null)) && (
         <div style={{ display: 'flex', gap: 20, marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,.07)' }}>
           {totalA != null && (

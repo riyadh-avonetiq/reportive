@@ -182,6 +182,7 @@ const RichAreaChart = ({
   fmtY = null,
   tooltipLabels = [],
   smooth = false,
+  scale = 1,
   w = 540, h = 220,
 }) => {
   const fmt_ = fmtY || fmtNum;
@@ -204,7 +205,7 @@ const RichAreaChart = ({
       return `C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x} ${y}`;
     }).join(' ');
   };
-  const m = { l: 40, r: 36, t: 18, b: 20 };
+  const m = { l: Math.round(40 * scale), r: Math.round(36 * scale), t: Math.round(18 * scale), b: Math.round(20 * scale) };
   const iw = w - m.l - m.r, ih = h - m.t - m.b;
 
   const mkAxis = (arr, color) => {
@@ -261,7 +262,7 @@ const RichAreaChart = ({
       {[0, 0.5, 1].map((t, i) => {
         const v = A.max * (1 - t);
         return (
-          <text key={i} x={m.l - 4} y={m.t + ih * t + 2} fontFamily="DM Mono" fontSize="6" fill={colorA} textAnchor="end" opacity="0.7">
+          <text key={i} x={m.l - 4} y={m.t + ih * t + 2} fontFamily="DM Mono" fontSize={6 * scale} fill={colorA} textAnchor="end" opacity="0.7">
             {fmt_(v)}{unitA && i === 0 ? ' ' + unitA : ''}
           </text>
         );
@@ -270,7 +271,7 @@ const RichAreaChart = ({
       {hasDual && [0, 0.5, 1].map((t, i) => {
         const v = B.max * (1 - t);
         return (
-          <text key={i} x={m.l + iw + 4} y={m.t + ih * t + 2} fontFamily="DM Mono" fontSize="6" fill={colorB} textAnchor="start" opacity="0.7">
+          <text key={i} x={m.l + iw + 4} y={m.t + ih * t + 2} fontFamily="DM Mono" fontSize={6 * scale} fill={colorB} textAnchor="start" opacity="0.7">
             {fmt_(v)}{unitB && i === 0 ? ' ' + unitB : ''}
           </text>
         );
@@ -295,7 +296,7 @@ const RichAreaChart = ({
         return (
           <g transform={`translate(${bx} ${y - 6})`}>
             <rect x={-bw / 2} y="-8" width={bw} height="9" rx="2" fill={colorA}/>
-            <text x="0" y="-1" fontFamily="DM Mono" fontWeight="600" fontSize="5.5" fill="#0C182C" textAnchor="middle">{label}</text>
+            <text x="0" y="-1" fontFamily="DM Mono" fontWeight="600" fontSize={5.5 * scale} fill="#0C182C" textAnchor="middle">{label}</text>
           </g>
         );
       })()}
@@ -303,7 +304,7 @@ const RichAreaChart = ({
       {/* x-axis labels */}
       {labelsX.length > 0 && labelsX.map((l, i) => (
         <text key={i} x={m.l + (i / Math.max(labelsX.length - 1, 1)) * iw} y={h - 8}
-          fontFamily="DM Mono" fontSize="6" fill="#64748B" textAnchor="middle">{l}</text>
+          fontFamily="DM Mono" fontSize={6 * scale} fill="#64748B" textAnchor="middle">{l}</text>
       ))}
 
       {/* hover crosshair + tooltip */}
@@ -322,17 +323,17 @@ const RichAreaChart = ({
             {hasDual && <circle cx={hx} cy={B.py(B.values[hoverIdx])} r="3.5" fill={colorB} stroke="#0C182C" strokeWidth="1.2"/>}
             <rect x={tipX} y={tipY} width={124} height={tipH} rx="4" fill="rgba(10,18,34,.92)" stroke="rgba(255,255,255,.08)" strokeWidth="0.8"/>
             <rect x={tipX + 5} y={tipY + 6} width={5} height={5} rx="1" fill={colorA}/>
-            <text x={tipX + 12} y={tipY + 13} fontFamily="DM Mono" fontSize="6" fill="#FCFCFC" style={{ fontVariantNumeric: 'tabular-nums' }}>{labelA}</text>
+            <text x={tipX + 12} y={tipY + 13} fontFamily="DM Mono" fontSize={6 * scale} fill="#FCFCFC" style={{ fontVariantNumeric: 'tabular-nums' }}>{labelA}</text>
             {hasDual && (() => {
               const vB = B.values[hoverIdx];
               const labelB = fmt_(vB) + (unitB ? ' ' + unitB : '');
               return (<>
                 <rect x={tipX + 5} y={tipY + 18} width={5} height={5} rx="1" fill={colorB}/>
-                <text x={tipX + 12} y={tipY + 25} fontFamily="DM Mono" fontSize="6" fill="#FCFCFC" style={{ fontVariantNumeric: 'tabular-nums' }}>{labelB}</text>
+                <text x={tipX + 12} y={tipY + 25} fontFamily="DM Mono" fontSize={6 * scale} fill="#FCFCFC" style={{ fontVariantNumeric: 'tabular-nums' }}>{labelB}</text>
               </>);
             })()}
             {(tooltipLabels[hoverIdx] || labelsX[hoverIdx]) && (
-              <text x={tipX + 62} y={tipY + tipH - 2} fontFamily="DM Mono" fontSize="6" fill="#64748B" textAnchor="middle">{tooltipLabels[hoverIdx] || labelsX[hoverIdx]}</text>
+              <text x={tipX + 62} y={tipY + tipH - 2} fontFamily="DM Mono" fontSize={6 * scale} fill="#64748B" textAnchor="middle">{tooltipLabels[hoverIdx] || labelsX[hoverIdx]}</text>
             )}
           </>
         );
