@@ -138,7 +138,7 @@ function ShareView({ shareToken }) {
     </div>
   );
 
-  return <ScreenReport clientId={clientId} onBack={() => {}} />;
+  return <ScreenReport clientId={clientId} onBack={() => {}} hideBack={true} />;
 }
 
 function Root() {

@@ -506,7 +506,7 @@ function DateRangePicker({ dateRange, onApply, onCancel }) {
 }
 
 // ─── Top bar ──────────────────────────────────────────────────────
-function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPresent, onEdit, showEditor, savedFlash, onPrint }) {
+function ReportTopBar({ client, dateRange, setDateRange, onBack, hideBack, isMock, onFocus, onEdit, showEditor, savedFlash, onPrint }) {
   const [showPicker, setShowPicker] = useState(false);
   const [shareLabel, setShareLabel] = useState('Share');
   const shareTimerRef = React.useRef(null);
@@ -518,8 +518,8 @@ function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPrese
     let token = shareTokenRef.current;
     if (!token) {
       token = crypto.randomUUID();
-      await supa.from('clients').update({ share_token: token }).eq('id', client.id);
-      shareTokenRef.current = token;
+      const { error } = await supa.from('clients').update({ share_token: token }).eq('id', client.id);
+      if (!error) shareTokenRef.current = token;
     }
     const url = window.location.origin + window.location.pathname + '#share/' + token;
     try { await navigator.clipboard.writeText(url); } catch {}
@@ -558,15 +558,17 @@ function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPrese
         background: 'rgba(12,24,44,.9)', backdropFilter: 'blur(12px)',
         position: 'relative',
       }}>
-        <button onClick={onBack} style={{
-          background: 'none', border: '1px solid rgba(255,255,255,.12)',
-          borderRadius: 7, color: sec, fontFamily: T.mono, fontSize: 12,
-          padding: '5px 12px', cursor: 'pointer',
-          textTransform: 'uppercase', letterSpacing: '0.1em',
-          display: 'flex', alignItems: 'center', gap: 5,
-        }}>← Home</button>
+        {!hideBack && (
+          <button onClick={onBack} style={{
+            background: 'none', border: '1px solid rgba(255,255,255,.12)',
+            borderRadius: 7, color: sec, fontFamily: T.mono, fontSize: 12,
+            padding: '5px 12px', cursor: 'pointer',
+            textTransform: 'uppercase', letterSpacing: '0.1em',
+            display: 'flex', alignItems: 'center', gap: 5,
+          }}>← Home</button>
+        )}
 
-        <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,.08)' }}/>
+        {!hideBack && <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,.08)' }}/>}
 
         <div style={{
           width: 28, height: 28, borderRadius: 8,
@@ -672,16 +674,16 @@ function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPrese
           PDF
         </button>
 
-        {/* Present */}
-        <button onClick={onPresent} style={{
+        {/* Focus mode */}
+        <button onClick={onFocus} style={{
           padding: '6px 14px', borderRadius: 7, cursor: 'pointer',
           background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none',
           color: '#0C182C', fontFamily: T.display, fontSize: 12, fontWeight: 700,
           display: 'flex', alignItems: 'center', gap: 5,
           boxShadow: '0 2px 10px rgba(0,194,184,.3)',
         }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Present
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M8 21H5a2 2 0 01-2-2v-3M21 16v3a2 2 0 01-2 2h-3"/></svg>
+          Focus
         </button>
       </div>
 
@@ -4941,9 +4943,10 @@ function getSmartDefaultLayout(connected) {
 }
 
 // ─── Main ScreenReport ─────────────────────────────────────────────
-function ScreenReport({ clientId, onBack }) {
+function ScreenReport({ clientId, onBack, hideBack }) {
   const live = useLive();
   const [showPresent, setShowPresent] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
   const [showEditor,  setShowEditor]  = useState(false);
   const [editorCardId, setEditorCardId] = useState('kpi-single');
   const [selectedWidgets, setSelectedWidgets] = useState([]);
@@ -5471,6 +5474,13 @@ function ScreenReport({ clientId, onBack }) {
   }, []);
 
   useEffect(() => {
+    if (!focusMode) return;
+    const handler = (e) => { if (e.key === 'Escape') setFocusMode(false); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [focusMode]);
+
+  useEffect(() => {
     if (!client) return;
     const flag = sessionStorage.getItem('_avo_print');
     if (flag !== client.id) return;
@@ -5519,18 +5529,34 @@ function ScreenReport({ clientId, onBack }) {
           [data-print-canvas] { overflow: visible !important; height: auto !important; padding: 0 !important; }
         }
       `}</style>
-      <ReportTopBar
-        client={client}
-        dateRange={dateRange || { from: null, to: null }}
-        setDateRange={setDateRange}
-        onBack={onBack}
-        isMock={_isMock}
-        onPresent={() => setShowPresent(true)}
-        onEdit={() => setShowEditor(v => !v)}
-        showEditor={showEditor}
-        savedFlash={savedFlash}
-        onPrint={() => window.print()}
-      />
+      {!focusMode && (
+        <ReportTopBar
+          client={client}
+          dateRange={dateRange || { from: null, to: null }}
+          setDateRange={setDateRange}
+          onBack={onBack}
+          hideBack={hideBack}
+          isMock={_isMock}
+          onFocus={() => { setFocusMode(true); setShowEditor(false); }}
+          onEdit={() => setShowEditor(v => !v)}
+          showEditor={showEditor}
+          savedFlash={savedFlash}
+          onPrint={() => window.print()}
+        />
+      )}
+      {focusMode && (
+        <div style={{
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 200, display: 'flex', alignItems: 'center', gap: 8,
+          padding: '7px 16px', background: 'rgba(8,16,34,.88)', backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255,255,255,.1)', borderRadius: 100,
+          fontFamily: T.mono, fontSize: 11, color: muted, letterSpacing: '0.1em',
+          cursor: 'pointer', userSelect: 'none',
+        }} onClick={() => setFocusMode(false)}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M8 3v3a2 2 0 01-2 2H3M21 8h-3a2 2 0 01-2-2V3M3 16h3a2 2 0 012 2v3M16 21v-3a2 2 0 012-2h3"/></svg>
+          ESC — Exit focus
+        </div>
+      )}
 
       {/* Main area: report + optional editor panel */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>

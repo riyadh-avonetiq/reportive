@@ -1075,8 +1075,8 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
     let token = shareTokenRef.current;
     if (!token) {
       token = crypto.randomUUID();
-      await supa.from('clients').update({ share_token: token }).eq('id', client.id);
-      shareTokenRef.current = token;
+      const { error } = await supa.from('clients').update({ share_token: token }).eq('id', client.id);
+      if (!error) shareTokenRef.current = token;
     }
     const url = window.location.origin + window.location.pathname + '#share/' + token;
     try { await navigator.clipboard.writeText(url); } catch {}
