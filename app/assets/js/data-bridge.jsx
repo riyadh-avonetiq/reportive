@@ -134,7 +134,7 @@ function aggregateGa4(rows) {
     t.sessions          += sess;
     t.total_users       += +r.total_users              || 0;
     t.new_users         += +r.new_users                || 0;
-    t.returning_users   += +r.returning_users          || 0;
+    t.returning_users   += r.returning_users != null ? (+r.returning_users || 0) : Math.max(0, (+r.total_users || 0) - (+r.new_users || 0));
     t.event_count       += +r.event_count              || 0;
     t.engaged_sessions  += +r.engaged_sessions         || 0;
     if (r.bounce_rate != null && sess > 0)
@@ -858,7 +858,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     const ga4Q = (_ga4Supa && ga4Property !== null)
       ? (() => {
           let q = _ga4Supa.from('ga4_totals')
-            .select('date, property_name, sessions, total_users, new_users, returning_users, bounce_rate, engaged_sessions, engagement_rate, avg_session_duration, user_engagement_duration, event_count')
+            .select('date, property_name, sessions, total_users, new_users, bounce_rate, engaged_sessions, engagement_rate, avg_session_duration, user_engagement_duration, event_count')
             .order('date', { ascending: true })
             .limit(10000);
           if (ga4Property) q = q.eq('property_name', ga4Property);
