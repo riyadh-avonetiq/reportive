@@ -243,6 +243,12 @@ window.WIDGET_DEFAULTS = {
     ga4:    { metric: 'sessions',   fontSize: 'L' },
     search: { metric: 'clicks',     fontSize: 'L' },
   },
+  'kpi-compare': {
+    google: { metric: 'conversions', fontSize: 'M' },
+    meta:   { metric: 'spend',       fontSize: 'M' },
+    ga4:    { metric: 'sessions',    fontSize: 'M' },
+    search: { metric: 'clicks',      fontSize: 'M' },
+  },
   'chart-area': {
     google: { metric: 'spend' },
     meta:   { metric: 'impressions' },

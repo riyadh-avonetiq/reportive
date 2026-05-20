@@ -65,7 +65,7 @@ function computePrevRange(from, to) {
 }
 
 function buildRangeLabel(from, to) {
-  if (!from && !to) return { labelShort: 'All Time', labelLong: 'Semua data tersedia' };
+  if (!from && !to) return { labelShort: 'All Time', labelLong: 'All available data' };
   const f = _pd(from), t = _pd(to);
   const fm = f.getMonth(), fy = f.getFullYear();
   const tm = t.getMonth(), ty = t.getFullYear();
@@ -309,15 +309,18 @@ function aggregateGsc(summaryRows, queryRows, pagesRows, countryRows, deviceRows
 // Rows arrive ordered DESC by day — row[0] is the most recent snapshot.
 // PSI API stores scores as 0.0–1.0 (Lighthouse format).
 // Normalize: if value is (0, 1], multiply by 100.
-function aggregatePsi(rows) {
+function aggregatePsi(rows, strategy) {
   if (!rows || !rows.length) return null;
+  const filtered = strategy ? rows.filter(r => !r.strategy || r.strategy === strategy) : rows;
+  if (!filtered.length) return null;
   const ns = v => {
     const n = +(v) || 0;
     return n > 0 && n <= 1 ? Math.round(n * 100) : Math.round(n);
   };
-  const latest = rows[0];
+  const nf = v => (v != null && v !== '' && !isNaN(+v)) ? +v : null;
+  const latest = filtered[0];
   const avg = key => {
-    const vals = rows.map(r => ns(r[key]));
+    const vals = filtered.map(r => ns(r[key]));
     return Math.round(vals.reduce((s, v) => s + v, 0) / vals.length);
   };
   return {
@@ -329,12 +332,18 @@ function aggregatePsi(rows) {
     avgSeo:            avg('seo_score'),
     avgAccessibility:  avg('accessibility_score'),
     avgBestPractices:  avg('best_practices_score'),
+    // Core Web Vitals from latest measurement
+    lcp_ms:  nf(latest.lcp_ms),
+    fcp_ms:  nf(latest.fcp_ms),
+    cls:     nf(latest.cls),
+    inp_ms:  nf(latest.inp_ms),
+    tbt_ms:  nf(latest.tbt_ms),
+    ttfb_ms: nf(latest.ttfb_ms),
     latestDay:   latest.day || null,
-    recordCount: rows.length,
-    history: rows.slice(0, 12).reverse().map(r => ({
+    recordCount: filtered.length,
+    history: filtered.slice(0, 8).reverse().map(r => ({
       day:         r.day,
       performance: ns(r.performance_score),
-      seo:         ns(r.seo_score),
     })),
   };
 }
@@ -373,7 +382,8 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
   const metaPrev = aggregateMeta(prevMetaRows);
   const ga4      = aggregateGa4(ga4Rows);
   const ga4Prev  = aggregateGa4(prevGa4Rows);
-  const psi      = aggregatePsi(psiRows);
+  const psi        = aggregatePsi(psiRows, 'mobile');
+  const psiDesktop = aggregatePsi(psiRows, 'desktop');
   const gsc      = aggregateGsc(gscSummary, gscQueries, gscPages, gscCountries, gscDevices);
   const gscPrev  = aggregateGsc(prevGscSummary, prevGscQueries, prevGscPages);
 
@@ -599,7 +609,7 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
     key: `${from || 'all'}:${to || 'all'}`,
     labelShort, labelLong,
     prevKey: prevLabel || null,
-    ads, adsPrev, meta, metaPrev, ga4, ga4Prev, psi, gsc, gscPrev,
+    ads, adsPrev, meta, metaPrev, ga4, ga4Prev, psi, psiDesktop, gsc, gscPrev,
     series, channels, campaigns, metaSeries, metaChannels,
     adGroups, keywords, keywordDeviceRows, adGroupDeviceRows, deviceRows, genderRows, conversionActions,
     ga4Rows, metaRows,
@@ -613,7 +623,7 @@ function buildData(adsRows, ga4Rows, psiRows, gscSummary, gscQueries, prevAdsRow
 // ── Mock fallback ────────────────────────────────────────────────────
 function mockData() {
   return {
-    key: 'mock', labelShort: 'Demo Data', labelLong: 'Demo · Hubungkan Supabase untuk data nyata', prevKey: null,
+    key: 'mock', labelShort: 'Demo Data', labelLong: 'Demo · Connect Supabase for real data', prevKey: null,
     ads:     { spend: 48_500_000, clicks: 18240, impressions: 482300, conversions: 1284, ctr: 3.78, cpc: 2658, cpa: 37772, roas: 3.82 },
     adsPrev: { spend: 43_100_000, clicks: 16500, impressions: 460000, conversions: 1073, ctr: 3.59, cpc: 2612, cpa: 40167, roas: 3.67 },
     ga4:     { sessions: 24830, total_users: 18900, new_users: 12400, returning_users: 6430, event_count: 78400, engaged_sessions: 17800, bounce_rate: 38.5, engagement_rate: 71.7, avg_session_duration: 128, user_engagement_duration: 95 },
@@ -974,10 +984,10 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     let psiQ = psiUrl
       ? (() => {
           let q = _ga4Supa.from('pagespeed')
-            .select('day, url, performance_score, seo_score, accessibility_score, best_practices_score')
+            .select('day, url, strategy, performance_score, seo_score, accessibility_score, best_practices_score, lcp_ms, fcp_ms, cls, inp_ms, tbt_ms, ttfb_ms')
             .eq('url', psiUrl)
             .order('day', { ascending: false })
-            .limit(60);
+            .limit(120);
           if (from) q = q.gte('day', from);
           if (to)   q = q.lte('day', to);
           return q;
@@ -1017,10 +1027,10 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     if (!psiData.length && psiUrl) {
       try {
         const fallbackR = await _ga4Supa.from('pagespeed')
-          .select('day, url, performance_score, seo_score, accessibility_score, best_practices_score')
+          .select('day, url, strategy, performance_score, seo_score, accessibility_score, best_practices_score, lcp_ms, fcp_ms, cls, inp_ms, tbt_ms, ttfb_ms')
           .eq('url', psiUrl)
           .order('day', { ascending: false })
-          .limit(10);
+          .limit(20);
         psiData = fallbackR.error ? [] : (fallbackR.data || []);
       } catch (_) { /* ignore */ }
     }
@@ -1034,10 +1044,10 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
         if (psiData.length) break;
         try {
           const vR = await _ga4Supa.from('pagespeed')
-            .select('day, url, performance_score, seo_score, accessibility_score, best_practices_score')
+            .select('day, url, strategy, performance_score, seo_score, accessibility_score, best_practices_score, lcp_ms, fcp_ms, cls, inp_ms, tbt_ms, ttfb_ms')
             .eq('url', variant)
             .order('day', { ascending: false })
-            .limit(10);
+            .limit(20);
           if (!vR.error && vR.data && vR.data.length) psiData = vR.data;
         } catch (_) { /* ignore */ }
       }
@@ -1069,6 +1079,36 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
   }
 }
 
+// ── App Settings (Supabase-backed key/value store) ───────────────────
+async function loadAppSetting(key) {
+  // localStorage is the primary store — always available, survives across sessions.
+  // Supabase app_settings is a secondary sync for cross-device; if the table
+  // doesn't exist yet the error is caught silently and localStorage wins.
+  const lsVal = localStorage.getItem('avo_' + key) || null;
+  if (_metaSupa) {
+    try {
+      const { data, error } = await _metaSupa.from('app_settings').select('value').eq('key', key).single();
+      if (!error && data?.value) {
+        localStorage.setItem('avo_' + key, data.value); // keep local in sync
+        return data.value;
+      }
+    } catch {}
+  }
+  return lsVal;
+}
+
+async function saveAppSetting(key, value) {
+  // Always persist locally first so the key survives even if Supabase table
+  // doesn't exist or the insert fails.
+  try { localStorage.setItem('avo_' + key, value); } catch {}
+  if (_metaSupa) {
+    try {
+      await _metaSupa.from('app_settings')
+        .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    } catch {}
+  }
+}
+
 // ── React context ────────────────────────────────────────────────────
 const DataCtx = React.createContext(null);
 
@@ -1081,6 +1121,7 @@ function LiveProvider({ children }) {
   const [ga4Property,         setGa4Property]         = React.useState(null);
   const [gscProperty,         setGscProperty]         = React.useState(null);
   const [psiUrl,              setPsiUrl]              = React.useState('');
+  const [psiApiKey,           setPsiApiKey]           = React.useState('');
   const [dateRange,           setDateRange]           = React.useState({ from: null, to: null });
   const [_anySourceConnected, _setAnySourceConnected] = React.useState(false);
 
@@ -1140,6 +1181,16 @@ function LiveProvider({ children }) {
     else         localStorage.removeItem('avo_account');
   }, [account]);
 
+  // Load PSI API key from Supabase on mount (cross-device persistence)
+  React.useEffect(() => {
+    loadAppSetting('psi_api_key').then(v => { if (v !== null) setPsiApiKey(v); });
+  }, []);
+
+  const savePsiApiKey = React.useCallback(async (newKey) => {
+    setPsiApiKey(newKey);
+    await saveAppSetting('psi_api_key', newKey);
+  }, []);
+
   const ctx = React.useMemo(() => ({
     ...state,
     currentPeriod: state.data,   // backward-compat alias for live-cards.jsx
@@ -1149,9 +1200,10 @@ function LiveProvider({ children }) {
     ga4Property,          setGa4Property,
     gscProperty,          setGscProperty,
     psiUrl,               setPsiUrl,
+    psiApiKey,            savePsiApiKey,
     dateRange,            setDateRange,
     _anySourceConnected,  _setAnySourceConnected,
-  }), [state, account, metaAccount, ga4Property, gscProperty, psiUrl, dateRange, _anySourceConnected]);
+  }), [state, account, metaAccount, ga4Property, gscProperty, psiUrl, psiApiKey, savePsiApiKey, dateRange, _anySourceConnected]);
 
   return <DataCtx.Provider value={ctx}>{children}</DataCtx.Provider>;
 }

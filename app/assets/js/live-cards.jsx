@@ -51,8 +51,8 @@
     const change   = fmt.pctChange(conv, convPrev);
     const up       = change == null ? null : change >= 0;
     const headline = change == null
-      ? `Performa marketing ${p.labelShort} siap ditinjau`
-      : `Performa marketing ${p.labelShort} ${up ? 'naik' : 'turun'} ${Math.abs(change).toFixed(1)}%`;
+      ? `Marketing performance ${p.labelShort} ready to review`
+      : `Marketing performance ${p.labelShort} ${up ? 'up' : 'down'} ${Math.abs(change).toFixed(1)}%`;
     const acctLabel = live.account ? `Account · ${live.account}` : `${live.accounts.length || 'All'} accounts · ${live._isMock ? 'mock data' : 'live'}`;
 
     return (
@@ -64,15 +64,15 @@
             <Eyebrow>{acctLabel}</Eyebrow>
           </div>
           <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: fg, lineHeight: 1.2 }}>
-            {headline.split(/( naik | turun )/).map((part, i) =>
-              /naik|turun/.test(part)
+            {headline.split(/( up | down )/).map((part, i) =>
+              /\bup\b|\bdown\b/.test(part)
                 ? <span key={i} style={{ color: up ? teal : '#DC2626' }}>{part}</span>
                 : part
             )}
           </div>
           <p style={{ fontFamily: T.body, fontSize: 12.5, color: sec, margin: '8px 0 12px', maxWidth: 560, lineHeight: 1.5 }}>
-            Total spend {fmt.rupiahShort(p.ads.spend)} dengan {fmt.num(p.ads.conversions)} konversi.
-            CTR {fmt.pct(p.ads.ctr)} · {fmt.num(p.ga4.sessions || 0)} sessions tercatat di GA4.
+            Total spend {fmt.rupiahShort(p.ads.spend)} with {fmt.num(p.ads.conversions)} conversions.
+            CTR {fmt.pct(p.ads.ctr)} · {fmt.num(p.ga4.sessions || 0)} sessions recorded in GA4.
           </p>
           <div style={{ display: 'flex', gap: 6 }}>
             <button style={{ padding: '7px 12px', background: 'transparent', color: sec, border: '1px solid var(--navy-edge)', borderRadius: 8, fontFamily: T.display, fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>Share with client</button>
@@ -264,10 +264,10 @@
     const dStr = v => v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
     const beats = [
       ['📊', 'What happened', `Spend ${dStr(dSpend)} MoM, conversions ${dStr(dConv)}.`],
-      ['💡', 'Why it matters', `CTR ${fmt.pct(p.ads.ctr)} dengan CPC ${fmt.rupiahShort(p.ads.cpc)} — ${p.channels[0] ? `kontributor utama ${p.channels[0].name}` : 'cek channel breakdown di slot bawah'}.`],
+      ['💡', 'Why it matters', `CTR ${fmt.pct(p.ads.ctr)} with CPC ${fmt.rupiahShort(p.ads.cpc)} — ${p.channels[0] ? `top contributor ${p.channels[0].name}` : 'check the channel breakdown below'}.`],
       ['🎯', 'Next action',   dConv != null && dConv >= 0
-        ? `Lanjutkan strategi current — konversi tumbuh konsisten.`
-        : `Investigate channel mix — konversi turun, butuh re-allocation budget.`],
+        ? `Continue current strategy — conversions are growing consistently.`
+        : `Investigate channel mix — conversions are down, budget re-allocation needed.`],
     ];
 
     return (

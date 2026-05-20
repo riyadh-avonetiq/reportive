@@ -14,7 +14,27 @@
   })();
 </script>
 
-<link rel="icon" type="image/png" href="assets/img/logo-mark.png" />
+<link rel="icon" type="image/png" href="assets/img/logo-mark.png" id="favicon-link" />
+<script>
+  // Favicon: crop transparent padding so mark fills the icon, no background
+  (function () {
+    var img = new Image();
+    img.onload = function () {
+      var size = 128;
+      var c = document.createElement('canvas');
+      c.width = c.height = size;
+      var ctx = c.getContext('2d');
+      // Crop ~20% transparent padding from each side so the mark fills the icon fully
+      var pad = Math.round(img.width * 0.20);
+      var inner = img.width - pad * 2;
+      ctx.drawImage(img, pad, pad, inner, inner, 0, 0, size, size);
+      var link = document.getElementById('favicon-link');
+      link.type = 'image/png';
+      link.href = c.toDataURL('image/png');
+    };
+    img.src = 'assets/img/logo-mark.png';
+  })();
+</script>
 <link rel="preconnect" href="https://unpkg.com" crossorigin />
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 
@@ -82,7 +102,7 @@
     if (label) {
       label.innerHTML = 'Script Error: ' + (e.message || 'unknown') +
         '<br><span style="font-size:9px;opacity:.5;">' + (e.filename || '') + ':' + (e.lineno || '') + '</span>' +
-        '<br><span style="font-size:9px;opacity:.4;">Buka DevTools (F12) → Console untuk detail.</span>';
+        '<br><span style="font-size:9px;opacity:.4;">Open DevTools (F12) → Console for details.</span>';
       label.style.maxWidth = '400px';
       label.style.lineHeight = '1.6';
       label.style.color = '#E3170A';
@@ -100,7 +120,7 @@
     var splash = document.getElementById('boot-splash');
     var label = document.getElementById('boot-label');
     if (splash && !splash.classList.contains('gone') && root && !root.hasChildNodes()) {
-      label.innerHTML = 'Tidak dapat memuat aplikasi.<br><span style="font-size:10px;opacity:.6;">Buka melalui server: <a href="http://localhost:3100/index.html" style="color:#00C2B8;">http://localhost:3100</a></span>';
+      label.innerHTML = 'Unable to load the app.<br><span style="font-size:10px;opacity:.6;">Serve via a local server: <a href="http://localhost:3100/index.html" style="color:#00C2B8;">http://localhost:3100</a></span>';
       label.style.maxWidth = '320px';
       label.style.lineHeight = '1.6';
       document.querySelector('#boot-splash .mark').style.animationPlayState = 'paused';
@@ -141,25 +161,25 @@
 </script>
 
 <!-- ── Reportive components (handoff, register on window) ─────── -->
-<script type="text/babel" src="assets/components/chrome.jsx?v=2"></script>
+<script type="text/babel" src="assets/components/chrome.jsx?v=3"></script>
 <script type="text/babel" src="assets/components/charts.jsx?v=2"></script>
-<script type="text/babel" src="assets/components/cards.jsx?v=2"></script>
+<script type="text/babel" src="assets/components/cards.jsx?v=34"></script>
 <script type="text/babel" src="assets/components/screen-dashboard.jsx"></script>
-<script type="text/babel" src="assets/components/screen-home.jsx?v=7"></script>
-<script type="text/babel" src="assets/components/screen-access.jsx?v=6"></script>
+<script type="text/babel" src="assets/components/screen-home.jsx?v=27"></script>
+<script type="text/babel" src="assets/components/screen-access.jsx?v=8"></script>
 <script type="text/babel" src="assets/components/screen-templates.jsx"></script>
 <script type="text/babel" src="assets/components/library-sheets.jsx"></script>
-<script type="text/babel" src="assets/components/screen-login.jsx"></script>
+<script type="text/babel" src="assets/components/screen-login.jsx?v=2"></script>
 <!-- Card editor and design canvas are heavy; only load when explicitly used -->
 <script src="assets/components/widget-registry.js"></script>
-<script type="text/babel" src="assets/components/card-editor.jsx?v=23"></script>
+<script type="text/babel" src="assets/components/card-editor.jsx?v=55"></script>
 <script type="text/babel" src="assets/components/design-canvas.jsx"></script>
 
 <!-- ── Reportive runtime (data + app shell) ───────────────────── -->
-<script type="text/babel" src="assets/js/data-bridge.jsx?v=34"></script>
+<script type="text/babel" src="assets/js/data-bridge.jsx?v=38"></script>
 <script type="text/babel" src="assets/js/live-cards.jsx"></script>
 <!-- screen-report depends on window.LIVE (from data-bridge) so must load after it -->
-<script type="text/babel" src="assets/components/screen-report.jsx?v=60"></script>
+<script type="text/babel" src="assets/components/screen-report.jsx?v=105"></script>
 <script type="text/babel" src="assets/js/app.jsx?v=3"></script>
 
 </body>

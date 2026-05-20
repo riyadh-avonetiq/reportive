@@ -1,0 +1,58 @@
+<h2>Home Page — Improvement Directions</h2>
+<p class="subtitle">Mana arah yang paling menarik? Pilih satu atau lebih.</p>
+
+<div class="options" data-multiselect>
+
+  <div class="option" data-choice="A" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Stats Summary Bar</h3>
+      <p>Tambahkan baris ringkasan di atas tabel: jumlah total client, berapa yang punya data aktif, berapa source yang terhubung. Memberi konteks sekilas tanpa buka satu per satu.</p>
+      <div style="margin-top:12px;padding:10px 14px;background:rgba(0,194,184,.08);border:1px solid rgba(0,194,184,.2);border-radius:8px;font-family:monospace;font-size:12px;color:#00C2B8;">
+        3 clients &nbsp;·&nbsp; 8 sources connected &nbsp;·&nbsp; 2 active this week
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="B" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Sortable Columns</h3>
+      <p>Header tabel CLIENT, SOURCES, LAST EDITED bisa diklik untuk mengurutkan data — A→Z, terbaru, terlama, jumlah source. Berguna saat client sudah lebih dari 10.</p>
+      <div style="margin-top:12px;display:flex;gap:8px;font-family:monospace;font-size:11px;">
+        <span style="padding:4px 10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:5px;color:#FCFCFC;">CLIENT ↑</span>
+        <span style="padding:4px 10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:5px;color:#888;">SOURCES</span>
+        <span style="padding:4px 10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:5px;color:#888;">LAST EDITED ↓</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="C" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Compact Actions — Menu "···"</h3>
+      <p>Tombol PDF dan Configure dipindahkan ke dalam menu dropdown "···" yang muncul saat hover. Baris jadi jauh lebih bersih. Hanya Open yang tampil langsung.</p>
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center;font-family:monospace;font-size:12px;">
+        <span style="padding:5px 12px;background:rgba(0,194,184,.12);border:1px solid rgba(0,194,184,.4);border-radius:6px;color:#00C2B8;font-weight:700;">Open →</span>
+        <span style="padding:5px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#aaa;">···</span>
+        <span style="color:#666;font-size:11px;">← PDF & Configure di sini</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="D" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>Data Freshness Indicator</h3>
+      <p>Setiap baris client punya badge kecil yang menunjukkan kapan data terakhir masuk ke Supabase — bukan kapan report diedit. Misalnya "Data: 2 days ago" atau dot merah jika lebih dari 7 hari tidak ada data baru.</p>
+      <div style="margin-top:12px;display:flex;gap:8px;font-family:monospace;font-size:11px;">
+        <span style="padding:3px 8px;background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.3);border-radius:5px;color:#16A34A;">● live</span>
+        <span style="padding:3px 8px;background:rgba(248,180,0,.1);border:1px solid rgba(248,180,0,.3);border-radius:5px;color:#F8B400;">● 3d ago</span>
+        <span style="padding:3px 8px;background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.3);border-radius:5px;color:#DC2626;">● 14d ago</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:24px;">Kamu bisa pilih lebih dari satu — setiap pilihan bisa diimplementasikan secara independen.</p>

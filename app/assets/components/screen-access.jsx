@@ -80,7 +80,7 @@ const AS = {
 const RoleBadge = ({ role }) => {
   const r = ROLES[role] || ROLES.viewer;
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 9px', background: `${r.color}18`, border: `1px solid ${r.color}44`, borderRadius: 5, fontFamily: AS.mono, fontSize: 10, fontWeight: 600, color: r.color, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 9px', background: `${r.color}18`, border: `1px solid ${r.color}44`, borderRadius: 5, fontFamily: AS.mono, fontSize: 12, fontWeight: 600, color: r.color, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
       {r.label}
     </span>
   );
@@ -96,7 +96,7 @@ const ToastContainer = ({ toasts }) => (
         background: t.type === 'error' ? 'rgba(220,38,38,.95)' : t.type === 'undo' ? 'rgba(14,24,42,.98)' : 'rgba(14,24,42,.98)',
         border: `1px solid ${t.type === 'error' ? 'rgba(220,38,38,.4)' : t.type === 'undo' ? 'rgba(248,180,0,.4)' : 'rgba(0,194,184,.35)'}`,
         borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,.5)',
-        fontFamily: 'var(--font-display)', fontSize: 12.5, color: '#FCFCFC',
+        fontFamily: 'var(--font-display)', fontSize: 15, color: '#FCFCFC',
         pointerEvents: 'all', minWidth: 240, maxWidth: 340,
         animation: 'toastIn .2s ease',
       }}>
@@ -111,7 +111,7 @@ const ToastContainer = ({ toasts }) => (
         </div>
         <span style={{ flex: 1, fontWeight: 600 }}>{t.msg}</span>
         {t.onUndo && (
-          <button onClick={t.onUndo} style={{ padding: '4px 10px', border: '1px solid rgba(248,180,0,.5)', borderRadius: 6, background: 'rgba(248,180,0,.12)', color: '#F8B400', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+          <button onClick={t.onUndo} style={{ padding: '4px 10px', border: '1px solid rgba(248,180,0,.5)', borderRadius: 6, background: 'rgba(248,180,0,.12)', color: '#F8B400', fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
             Undo
           </button>
         )}
@@ -125,7 +125,7 @@ const StatusDot = ({ status }) => {
   const c = status === 'active' ? '#16A34A' : status === 'pending' ? '#F8B400' : '#64748B';
   const l = status === 'active' ? 'Active' : status === 'pending' ? 'Pending' : 'Inactive';
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: AS.mono, fontSize: 9.5, color: c, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: AS.mono, fontSize: 11.5, color: c, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
       <span style={{ width: 5, height: 5, borderRadius: '50%', background: c, flexShrink: 0 }}/>
       {l}
     </span>
@@ -142,7 +142,7 @@ function _pwStrength(pw) {
   if (/[0-9]/.test(pw)) s++;
   if (/[^A-Za-z0-9]/.test(pw)) s++;
   const clamp = Math.min(s, 4);
-  const map = ['', 'Lemah', 'Cukup', 'Kuat', 'Sangat kuat'];
+  const map = ['', 'Weak', 'Fair', 'Strong', 'Very strong'];
   const colors = ['', '#DC2626', '#F8B400', '#0EA5E9', '#16A34A'];
   return { score: clamp, label: map[clamp], color: colors[clamp] };
 }
@@ -157,7 +157,7 @@ const PasswordStrengthBar = ({ password }) => {
           <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i <= score ? color : 'var(--navy-edge)', transition: 'background .2s' }}/>
         ))}
       </div>
-      <div style={{ fontFamily: AS.mono, fontSize: 9, color, letterSpacing: '.06em' }}>{label}</div>
+      <div style={{ fontFamily: AS.mono, fontSize: 11, color, letterSpacing: '.06em' }}>{label}</div>
     </div>
   );
 };
@@ -180,10 +180,10 @@ const ClientAccessPicker = ({ clientList = [], selected = [], onChange }) => {
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, padding: '5px 9px', background: 'var(--navy-deep)', border: '1px solid var(--navy-edge)', borderRadius: 6 }}>
           <svg width="10" height="10" fill="none" stroke="var(--text-muted)" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search projects…"
-            style={{ border: 'none', background: 'transparent', color: '#FCFCFC', fontFamily: AS.body, fontSize: 11.5, outline: 'none', width: '100%' }}/>
+            style={{ border: 'none', background: 'transparent', color: '#FCFCFC', fontFamily: AS.body, fontSize: 13.5, outline: 'none', width: '100%' }}/>
         </div>
         <button onClick={toggleAll}
-          style={{ padding: '5px 10px', background: 'transparent', border: `1px solid ${allSelected ? 'rgba(0,194,184,.5)' : 'var(--navy-edge)'}`, borderRadius: 6, color: allSelected ? '#00C2B8' : 'var(--text-muted)', fontFamily: AS.display, fontSize: 10.5, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all .12s' }}>
+          style={{ padding: '5px 10px', background: 'transparent', border: `1px solid ${allSelected ? 'rgba(0,194,184,.5)' : 'var(--navy-edge)'}`, borderRadius: 6, color: allSelected ? '#00C2B8' : 'var(--text-muted)', fontFamily: AS.display, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all .12s' }}>
           {allSelected ? 'Clear all' : 'Select all'}
         </button>
       </div>
@@ -191,7 +191,7 @@ const ClientAccessPicker = ({ clientList = [], selected = [], onChange }) => {
       {/* Scrollable list */}
       <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid var(--navy-edge)', borderRadius: 8, background: 'var(--navy-deep)' }}>
         {filtered.length === 0 && (
-          <div style={{ padding: '12px 14px', fontFamily: AS.body, fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>No projects found</div>
+          <div style={{ padding: '12px 14px', fontFamily: AS.body, fontSize: 14, color: 'var(--text-muted)', textAlign: 'center' }}>No projects found</div>
         )}
         {filtered.map((c, i) => {
           const on = selected.includes(c.id);
@@ -203,10 +203,10 @@ const ClientAccessPicker = ({ clientList = [], selected = [], onChange }) => {
                 {on && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#0C182C" strokeWidth="3.5" strokeLinecap="round"><path d="M5 13l4 4L19 7"/></svg>}
               </div>
               {/* Avatar */}
-              <div style={{ width: 22, height: 22, borderRadius: 6, background: c.grad || 'linear-gradient(135deg,#475569,#334155)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: AS.display, fontWeight: 800, fontSize: 8, color: '#0C182C', flexShrink: 0 }}>
+              <div style={{ width: 22, height: 22, borderRadius: 6, background: c.grad || 'linear-gradient(135deg,#475569,#334155)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: AS.display, fontWeight: 800, fontSize: 10, color: '#0C182C', flexShrink: 0 }}>
                 {c.initials || c.name.slice(0,2).toUpperCase()}
               </div>
-              <span style={{ fontFamily: AS.display, fontSize: 12, fontWeight: 600, color: on ? '#FCFCFC' : 'var(--text-secondary)' }}>{c.name}</span>
+              <span style={{ fontFamily: AS.display, fontSize: 14, fontWeight: 600, color: on ? '#FCFCFC' : 'var(--text-secondary)' }}>{c.name}</span>
             </div>
           );
         })}
@@ -214,7 +214,7 @@ const ClientAccessPicker = ({ clientList = [], selected = [], onChange }) => {
 
       {/* Count badge */}
       {selected.length > 0 && (
-        <div style={{ marginTop: 5, fontFamily: AS.mono, fontSize: 9.5, color: '#00C2B8', letterSpacing: '.06em' }}>
+        <div style={{ marginTop: 5, fontFamily: AS.mono, fontSize: 11.5, color: '#00C2B8', letterSpacing: '.06em' }}>
           {selected.length} project{selected.length > 1 ? 's' : ''} selected
         </div>
       )}
@@ -257,7 +257,7 @@ const InviteModal = ({ onClose, onInvite, clientList = [] }) => {
       const hash = await _hashPw(password.trim());
       const result = await onInvite({ name: name.trim(), email: email.trim().toLowerCase(), role, clients, passwordHash: hash });
       if (!result) {
-        setErrMsg('Gagal menyimpan. Email mungkin sudah terdaftar atau terjadi kesalahan — coba lagi.');
+        setErrMsg('Failed to save. The email may already be registered or an error occurred — try again.');
         setSaving(false);
         return;
       }
@@ -265,7 +265,7 @@ const InviteModal = ({ onClose, onInvite, clientList = [] }) => {
       setPassword('');
       setDone(true);
     } catch (e) {
-      setErrMsg('Error: ' + (e.message || 'Terjadi kesalahan tidak terduga'));
+      setErrMsg('Error: ' + (e.message || 'An unexpected error occurred'));
       setSaving(false);
     }
   };
@@ -277,28 +277,28 @@ const InviteModal = ({ onClose, onInvite, clientList = [] }) => {
         <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(22,163,74,.12)', border: '1px solid rgba(22,163,74,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
           <svg width="22" height="22" fill="none" stroke="#16A34A" strokeWidth="2.2" viewBox="0 0 24 24" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
         </div>
-        <div style={{ fontFamily: AS.display, fontSize: 18, fontWeight: 700, color: '#FCFCFC', marginBottom: 8 }}>Member ditambahkan!</div>
-        <div style={{ fontFamily: AS.body, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 20 }}>
-          <strong style={{ color: '#FCFCFC' }}>{name}</strong> ({email}) sudah bisa login dengan password yang kamu set.
+        <div style={{ fontFamily: AS.display, fontSize: 18, fontWeight: 700, color: '#FCFCFC', marginBottom: 8 }}>Member added!</div>
+        <div style={{ fontFamily: AS.body, fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 20 }}>
+          <strong style={{ color: '#FCFCFC' }}>{name}</strong> ({email}) can now log in with the password you set.
         </div>
         {/* Credential summary box */}
         <div style={{ background: 'var(--navy-deep)', border: '1px solid var(--navy-edge)', borderRadius: 10, padding: '12px 16px', textAlign: 'left', marginBottom: 20 }}>
-          <div style={{ fontFamily: AS.mono, fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>Info Login</div>
+          <div style={{ fontFamily: AS.mono, fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>Login Info</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontFamily: AS.mono, fontSize: 10.5, color: 'var(--text-muted)' }}>Email</span>
-              <span style={{ fontFamily: AS.mono, fontSize: 11, color: '#FCFCFC', fontWeight: 600 }}>{email}</span>
+              <span style={{ fontFamily: AS.mono, fontSize: 12.5, color: 'var(--text-muted)' }}>Email</span>
+              <span style={{ fontFamily: AS.mono, fontSize: 13, color: '#FCFCFC', fontWeight: 600 }}>{email}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontFamily: AS.mono, fontSize: 10.5, color: 'var(--text-muted)' }}>Password</span>
-              <span style={{ fontFamily: AS.mono, fontSize: 11, color: '#00C2B8', fontWeight: 600 }}>{savedPasswordRef.current}</span>
+              <span style={{ fontFamily: AS.mono, fontSize: 12.5, color: 'var(--text-muted)' }}>Password</span>
+              <span style={{ fontFamily: AS.mono, fontSize: 13, color: '#00C2B8', fontWeight: 600 }}>{savedPasswordRef.current}</span>
             </div>
           </div>
         </div>
-        <div style={{ padding: '9px 12px', background: 'rgba(248,180,0,.08)', border: '1px solid rgba(248,180,0,.2)', borderRadius: 8, fontFamily: AS.body, fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 16 }}>
-          💡 Bagikan info login di atas kepada member secara langsung atau via pesan.
+        <div style={{ padding: '9px 12px', background: 'rgba(248,180,0,.08)', border: '1px solid rgba(248,180,0,.2)', borderRadius: 8, fontFamily: AS.body, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 16 }}>
+          💡 Share the login info above with the member directly or via message.
         </div>
-        <button onClick={() => { savedPasswordRef.current = ''; onClose(); }} style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 9, color: '#0C182C', fontFamily: AS.display, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Selesai</button>
+        <button onClick={() => { savedPasswordRef.current = ''; onClose(); }} style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 9, color: '#0C182C', fontFamily: AS.display, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>Done</button>
       </div>
     </div>
   );
@@ -311,8 +311,8 @@ const InviteModal = ({ onClose, onInvite, clientList = [] }) => {
         {/* Header */}
         <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontFamily: AS.display, fontSize: 16, fontWeight: 700, color: '#FCFCFC' }}>Tambah member baru</div>
-            <div style={{ fontFamily: AS.body, fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>Isi data member — mereka langsung bisa login setelah disimpan</div>
+            <div style={{ fontFamily: AS.display, fontSize: 16, fontWeight: 700, color: '#FCFCFC' }}>Add new member</div>
+            <div style={{ fontFamily: AS.body, fontSize: 13.5, color: 'var(--text-muted)', marginTop: 2 }}>Fill in member details — they can log in right away after saving</div>
           </div>
           <button onClick={onClose} style={{ width: 30, height: 30, border: 'none', background: 'var(--navy-elevated)', borderRadius: 7, color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         </div>
@@ -322,23 +322,23 @@ const InviteModal = ({ onClose, onInvite, clientList = [] }) => {
           {/* Name + Email */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
             <div>
-              <div style={{ fontFamily: AS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 6 }}>Nama lengkap *</div>
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="Budi Santoso"
-                style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: '#FCFCFC', fontFamily: AS.body, fontSize: 12.5, outline: 'none' }}/>
+              <div style={{ fontFamily: AS.mono, fontSize: 11.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 6 }}>Full name *</div>
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="Jane Smith"
+                style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: '#FCFCFC', fontFamily: AS.body, fontSize: 15, outline: 'none' }}/>
             </div>
             <div>
-              <div style={{ fontFamily: AS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 6 }}>Email *</div>
+              <div style={{ fontFamily: AS.mono, fontSize: 11.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 6 }}>Email *</div>
               <input value={email} onChange={e => setEmail(e.target.value)} placeholder="name@example.com" type="email"
-                style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: '#FCFCFC', fontFamily: AS.body, fontSize: 12.5, outline: 'none' }}/>
+                style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: '#FCFCFC', fontFamily: AS.body, fontSize: 15, outline: 'none' }}/>
             </div>
           </div>
 
           {/* Password */}
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontFamily: AS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 6 }}>Password sementara * <span style={{ fontFamily: AS.body, fontSize: 10, textTransform: 'none', letterSpacing: 0, color: 'var(--text-muted)' }}>(min. 6 karakter)</span></div>
+            <div style={{ fontFamily: AS.mono, fontSize: 11.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 6 }}>Temporary password * <span style={{ fontFamily: AS.body, fontSize: 12, textTransform: 'none', letterSpacing: 0, color: 'var(--text-muted)' }}>(min. 6 characters)</span></div>
             <div style={{ position: 'relative' }}>
-              <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Buat password untuk member ini" type={showPw ? 'text' : 'password'}
-                style={{ width: '100%', boxSizing: 'border-box', padding: '9px 38px 9px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: '#FCFCFC', fontFamily: AS.body, fontSize: 12.5, outline: 'none' }}/>
+              <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Create a password for this member" type={showPw ? 'text' : 'password'}
+                style={{ width: '100%', boxSizing: 'border-box', padding: '9px 38px 9px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: '#FCFCFC', fontFamily: AS.body, fontSize: 15, outline: 'none' }}/>
               <button type="button" onClick={() => setShowPw(v => !v)}
                 style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2, display: 'flex', alignItems: 'center' }}>
                 <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round">
@@ -354,13 +354,13 @@ const InviteModal = ({ onClose, onInvite, clientList = [] }) => {
 
           {/* Role */}
           <div style={{ marginBottom: 14 }}>
-            <div style={{ fontFamily: AS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 8 }}>Role</div>
+            <div style={{ fontFamily: AS.mono, fontSize: 11.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 8 }}>Role</div>
             <div style={{ display: 'flex', gap: 6 }}>
               {Object.entries(ROLES).filter(([k]) => k !== 'owner').map(([k, r]) => (
                 <button key={k} onClick={() => setRole(k)}
-                  style={{ flex: 1, padding: '9px 6px', border: `1.5px solid ${role === k ? r.color : 'var(--navy-edge)'}`, borderRadius: 8, background: role === k ? `${r.color}14` : 'var(--navy-surface)', color: role === k ? r.color : 'var(--text-muted)', fontFamily: AS.display, fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all .12s' }}>
+                  style={{ flex: 1, padding: '9px 6px', border: `1.5px solid ${role === k ? r.color : 'var(--navy-edge)'}`, borderRadius: 8, background: role === k ? `${r.color}14` : 'var(--navy-surface)', color: role === k ? r.color : 'var(--text-muted)', fontFamily: AS.display, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all .12s' }}>
                   {r.label}
-                  <div style={{ fontFamily: AS.body, fontSize: 9.5, fontWeight: 400, marginTop: 2, color: role === k ? r.color + 'cc' : 'var(--text-muted)', lineHeight: 1.3 }}>{r.desc}</div>
+                  <div style={{ fontFamily: AS.body, fontSize: 11.5, fontWeight: 400, marginTop: 2, color: role === k ? r.color + 'cc' : 'var(--text-muted)', lineHeight: 1.3 }}>{r.desc}</div>
                 </button>
               ))}
             </div>
@@ -368,18 +368,18 @@ const InviteModal = ({ onClose, onInvite, clientList = [] }) => {
 
           {/* Client access */}
           <div>
-            <div style={{ fontFamily: AS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 8 }}>Client access</div>
+            <div style={{ fontFamily: AS.mono, fontSize: 11.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 8 }}>Client access</div>
             <ClientAccessPicker clientList={clientList} selected={clients} onChange={setClients}/>
           </div>
 
-          {errMsg && <div style={{ marginTop: 10, padding: '8px 12px', background: 'rgba(220,38,38,.1)', border: '1px solid rgba(220,38,38,.25)', borderRadius: 7, fontFamily: AS.body, fontSize: 11.5, color: '#FCA5A5' }}>{errMsg}</div>}
+          {errMsg && <div style={{ marginTop: 10, padding: '8px 12px', background: 'rgba(220,38,38,.1)', border: '1px solid rgba(220,38,38,.25)', borderRadius: 7, fontFamily: AS.body, fontSize: 13.5, color: '#FCA5A5' }}>{errMsg}</div>}
         </div>
 
         <div style={{ padding: '14px 24px', borderTop: '1px solid var(--navy-edge)', display: 'flex', gap: 8, background: 'rgba(10,18,34,.5)' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '10px 0', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: AS.display, fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>Batal</button>
+          <button onClick={onClose} style={{ flex: 1, padding: '10px 0', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: AS.display, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
           <button onClick={handleSend} disabled={saving || !canSubmit}
-            style={{ flex: 2, padding: '10px 0', background: saving ? 'rgba(0,194,184,.4)' : 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 8, color: '#0C182C', fontFamily: AS.display, fontSize: 12.5, fontWeight: 700, cursor: (!canSubmit || saving) ? 'not-allowed' : 'pointer', opacity: !canSubmit ? 0.55 : 1, boxShadow: canSubmit ? '0 4px 14px rgba(0,194,184,.25)' : 'none', transition: 'all .15s' }}>
-            {saving ? <><span style={{ display: 'inline-block', width: 12, height: 12, border: '2px solid rgba(12,24,44,.3)', borderTopColor: '#0C182C', borderRadius: '50%', animation: 'spin .6s linear infinite', verticalAlign: 'middle', marginRight: 6 }}></span>Menyimpan…</> : 'Tambah Member →'}
+            style={{ flex: 2, padding: '10px 0', background: saving ? 'rgba(0,194,184,.4)' : 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 8, color: '#0C182C', fontFamily: AS.display, fontSize: 15, fontWeight: 700, cursor: (!canSubmit || saving) ? 'not-allowed' : 'pointer', opacity: !canSubmit ? 0.55 : 1, boxShadow: canSubmit ? '0 4px 14px rgba(0,194,184,.25)' : 'none', transition: 'all .15s' }}>
+            {saving ? <><span style={{ display: 'inline-block', width: 12, height: 12, border: '2px solid rgba(12,24,44,.3)', borderTopColor: '#0C182C', borderRadius: '50%', animation: 'spin .6s linear infinite', verticalAlign: 'middle', marginRight: 6 }}></span>Saving…</> : 'Add Member →'}
           </button>
         </div>
       </div>
@@ -417,10 +417,10 @@ const EditRoleModal = ({ user, onClose, onSave, clientList = [] }) => {
       onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{ width: 480, background: 'rgba(14,24,42,.98)', border: '1px solid var(--navy-edge)', borderRadius: 16, boxShadow: '0 40px 100px rgba(0,0,0,.6)', overflow: 'hidden' }}>
         <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: user.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: AS.display, fontWeight: 800, fontSize: 14, color: '#0C182C' }}>{user.avatar}</div>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: user.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: AS.display, fontWeight: 800, fontSize: 16, color: '#0C182C' }}>{user.avatar}</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: AS.display, fontSize: 15, fontWeight: 700, color: '#FCFCFC' }}>Edit access · {user.name}</div>
-            <div style={{ fontFamily: AS.body, fontSize: 11.5, color: 'var(--text-muted)', marginTop: 1 }}>{user.email}</div>
+            <div style={{ fontFamily: AS.body, fontSize: 13.5, color: 'var(--text-muted)', marginTop: 1 }}>{user.email}</div>
           </div>
           <button onClick={onClose} style={{ width: 28, height: 28, border: 'none', background: 'var(--navy-elevated)', borderRadius: 7, color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         </div>
@@ -430,24 +430,24 @@ const EditRoleModal = ({ user, onClose, onSave, clientList = [] }) => {
           {/* Change summary diff */}
           {hasChanges && (
             <div style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(0,194,184,.06)', border: '1px solid rgba(0,194,184,.2)', borderRadius: 9 }}>
-              <div style={{ fontFamily: AS.mono, fontSize: 8.5, color: '#00C2B8', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 6 }}>Ringkasan perubahan</div>
+              <div style={{ fontFamily: AS.mono, fontSize: 10.5, color: '#00C2B8', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 6 }}>Change summary</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {roleChanged && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: AS.display, fontSize: 11.5, color: 'var(--text-secondary)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: AS.display, fontSize: 13.5, color: 'var(--text-secondary)' }}>
                     <span style={{ color: ROLES[user.role]?.color || '#64748B', fontWeight: 700 }}>{ROLES[user.role]?.label || user.role}</span>
                     <svg width="10" height="10" fill="none" stroke="var(--text-muted)" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                     <span style={{ color: ROLES[role]?.color || '#64748B', fontWeight: 700 }}>{ROLES[role]?.label || role}</span>
                   </div>
                 )}
                 {addedClients.length > 0 && (
-                  <div style={{ fontFamily: AS.display, fontSize: 11, color: '#16A34A' }}>+{addedClients.length} client access ditambah</div>
+                  <div style={{ fontFamily: AS.display, fontSize: 13, color: '#16A34A' }}>+{addedClients.length} client access added</div>
                 )}
                 {removedClients.length > 0 && (
-                  <div style={{ fontFamily: AS.display, fontSize: 11, color: '#DC2626' }}>−{removedClients.length} client access dihapus</div>
+                  <div style={{ fontFamily: AS.display, fontSize: 13, color: '#DC2626' }}>−{removedClients.length} client access removed</div>
                 )}
-                {newPassword && <div style={{ fontFamily: AS.display, fontSize: 11, color: '#F8B400' }}>Password akan direset</div>}
+                {newPassword && <div style={{ fontFamily: AS.display, fontSize: 13, color: '#F8B400' }}>Password will be reset</div>}
                 {gradChanged && !roleChanged && !addedClients.length && !removedClients.length && !newPassword && (
-                  <div style={{ fontFamily: AS.display, fontSize: 11, color: 'var(--text-secondary)' }}>Avatar gradient diubah</div>
+                  <div style={{ fontFamily: AS.display, fontSize: 13, color: 'var(--text-secondary)' }}>Avatar gradient changed</div>
                 )}
               </div>
             </div>
@@ -455,9 +455,9 @@ const EditRoleModal = ({ user, onClose, onSave, clientList = [] }) => {
 
           {/* Avatar gradient picker */}
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontFamily: AS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 8 }}>Avatar color</div>
+            <div style={{ fontFamily: AS.mono, fontSize: 11.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 8 }}>Avatar color</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 9, background: grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: AS.display, fontWeight: 800, fontSize: 13, color: '#0C182C', flexShrink: 0 }}>{user.avatar}</div>
+              <div style={{ width: 36, height: 36, borderRadius: 9, background: grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: AS.display, fontWeight: 800, fontSize: 15, color: '#0C182C', flexShrink: 0 }}>{user.avatar}</div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {GRAD_PRESETS.map(g => (
                   <button key={g} onClick={() => setGrad(g)} title={g}
@@ -467,11 +467,11 @@ const EditRoleModal = ({ user, onClose, onSave, clientList = [] }) => {
             </div>
           </div>
 
-          <div style={{ fontFamily: AS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 8 }}>Role</div>
+          <div style={{ fontFamily: AS.mono, fontSize: 11.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 8 }}>Role</div>
           <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
             {Object.entries(ROLES).map(([k, r]) => (
               <button key={k} onClick={() => setRole(k)}
-                style={{ flex: 1, padding: '8px 4px', border: `1.5px solid ${role === k ? r.color : 'var(--navy-edge)'}`, borderRadius: 8, background: role === k ? `${r.color}14` : 'var(--navy-surface)', color: role === k ? r.color : 'var(--text-muted)', fontFamily: AS.display, fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all .12s' }}>
+                style={{ flex: 1, padding: '8px 4px', border: `1.5px solid ${role === k ? r.color : 'var(--navy-edge)'}`, borderRadius: 8, background: role === k ? `${r.color}14` : 'var(--navy-surface)', color: role === k ? r.color : 'var(--text-muted)', fontFamily: AS.display, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all .12s' }}>
                 {r.label}
               </button>
             ))}
@@ -479,10 +479,10 @@ const EditRoleModal = ({ user, onClose, onSave, clientList = [] }) => {
 
           {/* Reset password (optional) */}
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontFamily: AS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 6 }}>Reset password <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(kosongkan untuk tidak mengubah)</span></div>
+            <div style={{ fontFamily: AS.mono, fontSize: 11.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 6 }}>Reset password <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(leave blank to keep unchanged)</span></div>
             <div style={{ position: 'relative' }}>
-              <input value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Password baru" type={showPw ? 'text' : 'password'}
-                style={{ width: '100%', boxSizing: 'border-box', padding: '9px 36px 9px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: '#FCFCFC', fontFamily: AS.body, fontSize: 12.5, outline: 'none' }}/>
+              <input value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password" type={showPw ? 'text' : 'password'}
+                style={{ width: '100%', boxSizing: 'border-box', padding: '9px 36px 9px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: '#FCFCFC', fontFamily: AS.body, fontSize: 15, outline: 'none' }}/>
               <button type="button" onClick={() => setShowPw(v => !v)}
                 style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', padding: 2 }}>
                 <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
@@ -498,17 +498,17 @@ const EditRoleModal = ({ user, onClose, onSave, clientList = [] }) => {
 
           {role !== 'admin' && (
             <>
-              <div style={{ fontFamily: AS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 8 }}>Client access</div>
+              <div style={{ fontFamily: AS.mono, fontSize: 11.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 8 }}>Client access</div>
               <ClientAccessPicker clientList={clientList} selected={clients} onChange={setClients}/>
             </>
           )}
         </div>
 
         <div style={{ padding: '14px 24px', borderTop: '1px solid var(--navy-edge)', display: 'flex', gap: 8, background: 'rgba(10,18,34,.5)' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '9px 0', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: AS.display, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+          <button onClick={onClose} style={{ flex: 1, padding: '9px 0', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: AS.display, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
           <button onClick={handleSave} disabled={saving}
-            style={{ flex: 2, padding: '9px 0', background: saving ? 'rgba(0,194,184,.4)' : 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 8, color: '#0C182C', fontFamily: AS.display, fontSize: 12, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(0,194,184,.25)' }}>
-            {saving ? 'Menyimpan…' : 'Simpan perubahan'}
+            style={{ flex: 2, padding: '9px 0', background: saving ? 'rgba(0,194,184,.4)' : 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 8, color: '#0C182C', fontFamily: AS.display, fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(0,194,184,.25)' }}>
+            {saving ? 'Saving…' : 'Save changes'}
           </button>
         </div>
       </div>
@@ -526,7 +526,7 @@ const ClientAccessCell = ({ user, clientMap = {} }) => {
         <div style={{ width: 22, height: 22, borderRadius: 6, background: 'rgba(0,194,184,.12)', border: '1px solid rgba(0,194,184,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <svg width="11" height="11" fill="none" stroke="#00C2B8" strokeWidth="2.2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
-        <span style={{ fontFamily: AS.display, fontSize: 11.5, fontWeight: 700, color: '#00C2B8', letterSpacing: '.02em' }}>All clients</span>
+        <span style={{ fontFamily: AS.display, fontSize: 13.5, fontWeight: 700, color: '#00C2B8', letterSpacing: '.02em' }}>All clients</span>
       </div>
     );
   }
@@ -536,7 +536,7 @@ const ClientAccessCell = ({ user, clientMap = {} }) => {
   // Empty state — no client access
   if (ids.length === 0) {
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 8px', background: 'rgba(248,180,0,.1)', border: '1px solid rgba(248,180,0,.3)', borderRadius: 5, fontFamily: AS.mono, fontSize: 9.5, color: '#F8B400', letterSpacing: '.06em', textTransform: 'uppercase' }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 8px', background: 'rgba(248,180,0,.1)', border: '1px solid rgba(248,180,0,.3)', borderRadius: 5, fontFamily: AS.mono, fontSize: 11.5, color: '#F8B400', letterSpacing: '.06em', textTransform: 'uppercase' }}>
         <svg width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         No access
       </span>
@@ -565,7 +565,7 @@ const ClientAccessCell = ({ user, clientMap = {} }) => {
                 border: '2px solid var(--navy-surface)',
                 marginLeft: i === 0 ? 0 : -7,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: AS.display, fontWeight: 800, fontSize: 9, color: '#0C182C',
+                fontFamily: AS.display, fontWeight: 800, fontSize: 11, color: '#0C182C',
                 zIndex: 10 - i, position: 'relative',
               }}>
               {v.initials}
@@ -579,7 +579,7 @@ const ClientAccessCell = ({ user, clientMap = {} }) => {
             border: '2px solid var(--navy-surface)',
             marginLeft: -7,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: AS.mono, fontWeight: 700, fontSize: 9.5, color: 'var(--text-secondary)',
+            fontFamily: AS.mono, fontWeight: 700, fontSize: 11.5, color: 'var(--text-secondary)',
             position: 'relative', zIndex: 1,
           }}>
             +{overflow}
@@ -588,7 +588,7 @@ const ClientAccessCell = ({ user, clientMap = {} }) => {
       </div>
 
       {/* Count label */}
-      <span style={{ fontFamily: AS.mono, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '.04em' }}>
+      <span style={{ fontFamily: AS.mono, fontSize: 12, color: 'var(--text-muted)', letterSpacing: '.04em' }}>
         {ids.length} {ids.length === 1 ? 'client' : 'clients'}
       </span>
 
@@ -601,15 +601,15 @@ const ClientAccessCell = ({ user, clientMap = {} }) => {
           boxShadow: '0 12px 32px rgba(0,0,0,.5)',
           display: 'flex', flexDirection: 'column', gap: 5,
         }}>
-          <div style={{ fontFamily: AS.mono, fontSize: 8.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 2 }}>Has access to</div>
+          <div style={{ fontFamily: AS.mono, fontSize: 10.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 2 }}>Has access to</div>
           {ids.map(id => {
             const v = clientMap[id] || { initials: '??', grad: 'linear-gradient(135deg,#475569,#334155)' };
             return (
               <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 18, height: 18, borderRadius: 5, background: v.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: AS.display, fontWeight: 800, fontSize: 8, color: '#0C182C', flexShrink: 0 }}>
+                <div style={{ width: 18, height: 18, borderRadius: 5, background: v.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: AS.display, fontWeight: 800, fontSize: 10, color: '#0C182C', flexShrink: 0 }}>
                   {v.initials}
                 </div>
-                <span style={{ fontFamily: AS.display, fontSize: 11.5, color: '#FCFCFC', fontWeight: 600 }}>{v.name || id}</span>
+                <span style={{ fontFamily: AS.display, fontSize: 13.5, color: '#FCFCFC', fontWeight: 600 }}>{v.name || id}</span>
               </div>
             );
           })}
@@ -647,7 +647,7 @@ const SelfPasswordModal = ({ user, onClose }) => {
         .from('team_members').select('password_hash').eq('email', user.email).maybeSingle();
       if (error) throw error;
       if (!data || data.password_hash !== currentHash) {
-        setErrMsg('Password saat ini salah. Coba lagi.');
+        setErrMsg('Current password is incorrect. Try again.');
         setSaving(false);
         return;
       }
@@ -657,7 +657,7 @@ const SelfPasswordModal = ({ user, onClose }) => {
       if (upErr) throw upErr;
       setDone(true);
     } catch (e) {
-      setErrMsg('Error: ' + (e.message || 'Terjadi kesalahan'));
+      setErrMsg('Error: ' + (e.message || 'An unexpected error occurred'));
       setSaving(false);
     }
   };
@@ -668,9 +668,9 @@ const SelfPasswordModal = ({ user, onClose }) => {
         <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(22,163,74,.12)', border: '1px solid rgba(22,163,74,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
           <svg width="22" height="22" fill="none" stroke="#16A34A" strokeWidth="2.2" viewBox="0 0 24 24" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
         </div>
-        <div style={{ fontFamily: AS.display, fontSize: 17, fontWeight: 700, color: '#FCFCFC', marginBottom: 8 }}>Password diperbarui!</div>
-        <div style={{ fontFamily: AS.body, fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.5 }}>Password baru kamu sudah aktif. Gunakan saat login berikutnya.</div>
-        <button onClick={onClose} style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 9, color: '#0C182C', fontFamily: AS.display, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Selesai</button>
+        <div style={{ fontFamily: AS.display, fontSize: 17, fontWeight: 700, color: '#FCFCFC', marginBottom: 8 }}>Password updated!</div>
+        <div style={{ fontFamily: AS.body, fontSize: 15, color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.5 }}>Your new password is now active. Use it at your next login.</div>
+        <button onClick={onClose} style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 9, color: '#0C182C', fontFamily: AS.display, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>Done</button>
       </div>
     </div>
   );
@@ -681,41 +681,41 @@ const SelfPasswordModal = ({ user, onClose }) => {
       <div style={{ width: 420, background: 'rgba(14,24,42,.98)', border: '1px solid var(--navy-edge)', borderRadius: 16, boxShadow: '0 40px 100px rgba(0,0,0,.6)', overflow: 'hidden' }}>
         <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontFamily: AS.display, fontSize: 15, fontWeight: 700, color: '#FCFCFC' }}>Ganti password</div>
-            <div style={{ fontFamily: AS.body, fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>Verifikasi password lama, lalu buat yang baru</div>
+            <div style={{ fontFamily: AS.display, fontSize: 15, fontWeight: 700, color: '#FCFCFC' }}>Change password</div>
+            <div style={{ fontFamily: AS.body, fontSize: 13.5, color: 'var(--text-muted)', marginTop: 2 }}>Verify your current password, then set a new one</div>
           </div>
           <button onClick={onClose} style={{ width: 28, height: 28, border: 'none', background: 'var(--navy-elevated)', borderRadius: 7, color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         </div>
         <div style={{ padding: '20px 24px' }}>
           <div style={{ marginBottom: 14 }}>
-            <div style={{ fontFamily: AS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 6 }}>Password saat ini</div>
+            <div style={{ fontFamily: AS.mono, fontSize: 11.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 6 }}>Current password</div>
             <div style={{ position: 'relative' }}>
               <input value={currentPw} onChange={e => setCurrentPw(e.target.value)} type={showCurrent ? 'text' : 'password'} placeholder="••••••••"
-                style={{ width: '100%', boxSizing: 'border-box', padding: '9px 36px 9px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: '#FCFCFC', fontFamily: AS.body, fontSize: 12.5, outline: 'none' }}/>
+                style={{ width: '100%', boxSizing: 'border-box', padding: '9px 36px 9px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: '#FCFCFC', fontFamily: AS.body, fontSize: 15, outline: 'none' }}/>
               <button type="button" onClick={() => setShowCurrent(v => !v)} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', padding: 2 }}>
                 <EyeIcon show={showCurrent}/>
               </button>
             </div>
           </div>
           <div>
-            <div style={{ fontFamily: AS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 6 }}>Password baru <span style={{ fontFamily: AS.body, fontSize: 10, textTransform: 'none', letterSpacing: 0 }}>(min. 6 karakter)</span></div>
+            <div style={{ fontFamily: AS.mono, fontSize: 11.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 6 }}>New password <span style={{ fontFamily: AS.body, fontSize: 12, textTransform: 'none', letterSpacing: 0 }}>(min. 6 characters)</span></div>
             <div style={{ position: 'relative' }}>
-              <input value={newPw} onChange={e => setNewPw(e.target.value)} type={showNew ? 'text' : 'password'} placeholder="Buat password baru"
+              <input value={newPw} onChange={e => setNewPw(e.target.value)} type={showNew ? 'text' : 'password'} placeholder="Create new password"
                 onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
-                style={{ width: '100%', boxSizing: 'border-box', padding: '9px 36px 9px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: '#FCFCFC', fontFamily: AS.body, fontSize: 12.5, outline: 'none' }}/>
+                style={{ width: '100%', boxSizing: 'border-box', padding: '9px 36px 9px 12px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, color: '#FCFCFC', fontFamily: AS.body, fontSize: 15, outline: 'none' }}/>
               <button type="button" onClick={() => setShowNew(v => !v)} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', padding: 2 }}>
                 <EyeIcon show={showNew}/>
               </button>
             </div>
             <PasswordStrengthBar password={newPw}/>
           </div>
-          {errMsg && <div style={{ marginTop: 10, padding: '8px 12px', background: 'rgba(220,38,38,.1)', border: '1px solid rgba(220,38,38,.25)', borderRadius: 7, fontFamily: AS.body, fontSize: 11.5, color: '#FCA5A5' }}>{errMsg}</div>}
+          {errMsg && <div style={{ marginTop: 10, padding: '8px 12px', background: 'rgba(220,38,38,.1)', border: '1px solid rgba(220,38,38,.25)', borderRadius: 7, fontFamily: AS.body, fontSize: 13.5, color: '#FCA5A5' }}>{errMsg}</div>}
         </div>
         <div style={{ padding: '14px 24px', borderTop: '1px solid var(--navy-edge)', display: 'flex', gap: 8, background: 'rgba(10,18,34,.5)' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '9px 0', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: AS.display, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Batal</button>
+          <button onClick={onClose} style={{ flex: 1, padding: '9px 0', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: AS.display, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
           <button onClick={handleSave} disabled={saving || !currentPw || newPw.length < 6}
-            style={{ flex: 2, padding: '9px 0', background: saving ? 'rgba(0,194,184,.4)' : 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 8, color: '#0C182C', fontFamily: AS.display, fontSize: 12, fontWeight: 700, cursor: (saving || !currentPw || newPw.length < 6) ? 'not-allowed' : 'pointer', opacity: (!currentPw || newPw.length < 6) ? 0.55 : 1 }}>
-            {saving ? 'Menyimpan…' : 'Simpan password baru'}
+            style={{ flex: 2, padding: '9px 0', background: saving ? 'rgba(0,194,184,.4)' : 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 8, color: '#0C182C', fontFamily: AS.display, fontSize: 14, fontWeight: 700, cursor: (saving || !currentPw || newPw.length < 6) ? 'not-allowed' : 'pointer', opacity: (!currentPw || newPw.length < 6) ? 0.55 : 1 }}>
+            {saving ? 'Saving…' : 'Save new password'}
           </button>
         </div>
       </div>
@@ -769,7 +769,7 @@ const UserRow = ({ user, idx, onEditRole, onRevoke, isSelf, clientMap, isNew, is
 
         {/* Avatar */}
         <div style={{ position: 'relative' }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: user.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: AS.display, fontWeight: 800, fontSize: 13, color: '#0C182C' }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: user.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: AS.display, fontWeight: 800, fontSize: 15, color: '#0C182C' }}>
             {user.avatar}
           </div>
         </div>
@@ -780,17 +780,17 @@ const UserRow = ({ user, idx, onEditRole, onRevoke, isSelf, clientMap, isNew, is
             <input ref={nameInputRef} value={nameVal} onChange={e => setNameVal(e.target.value)}
               onBlur={commitNameEdit}
               onKeyDown={e => { if (e.key === 'Enter') commitNameEdit(); if (e.key === 'Escape') cancelNameEdit(); }}
-              style={{ width: '100%', boxSizing: 'border-box', padding: '3px 7px', background: 'var(--navy-elevated)', border: '1.5px solid rgba(0,194,184,.5)', borderRadius: 5, color: '#FCFCFC', fontFamily: AS.display, fontSize: 13.5, fontWeight: 700, outline: 'none' }}/>
+              style={{ width: '100%', boxSizing: 'border-box', padding: '3px 7px', background: 'var(--navy-elevated)', border: '1.5px solid rgba(0,194,184,.5)', borderRadius: 5, color: '#FCFCFC', fontFamily: AS.display, fontSize: 16, fontWeight: 700, outline: 'none' }}/>
           ) : (
             <div onDoubleClick={startNameEdit}
               title={(!isSelf && onEditName) ? 'Double-click to rename' : undefined}
-              style={{ fontFamily: AS.display, fontSize: 13.5, fontWeight: 700, color: '#FCFCFC', display: 'flex', alignItems: 'center', gap: 6, cursor: (!isSelf && onEditName) ? 'text' : 'default' }}>
+              style={{ fontFamily: AS.display, fontSize: 16, fontWeight: 700, color: '#FCFCFC', display: 'flex', alignItems: 'center', gap: 6, cursor: (!isSelf && onEditName) ? 'text' : 'default' }}>
               {user.name}
-              {isSelf && <span style={{ fontFamily: AS.mono, fontSize: 9, color: 'var(--avo-teal)', background: 'rgba(0,194,184,.1)', padding: '1px 6px', borderRadius: 3, letterSpacing: '.08em' }}>YOU</span>}
-              {isNew && <span style={{ fontFamily: AS.mono, fontSize: 9, color: '#16A34A', background: 'rgba(22,163,74,.12)', padding: '1px 6px', borderRadius: 3, letterSpacing: '.08em' }}>NEW</span>}
+              {isSelf && <span style={{ fontFamily: AS.mono, fontSize: 11, color: 'var(--avo-teal)', background: 'rgba(0,194,184,.1)', padding: '1px 6px', borderRadius: 3, letterSpacing: '.08em' }}>YOU</span>}
+              {isNew && <span style={{ fontFamily: AS.mono, fontSize: 11, color: '#16A34A', background: 'rgba(22,163,74,.12)', padding: '1px 6px', borderRadius: 3, letterSpacing: '.08em' }}>NEW</span>}
             </div>
           )}
-          <div style={{ fontFamily: AS.mono, fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>{user.email}</div>
+          <div style={{ fontFamily: AS.mono, fontSize: 12.5, color: 'var(--text-muted)', marginTop: 2 }}>{user.email}</div>
         </div>
 
         {/* Role */}
@@ -809,10 +809,10 @@ const UserRow = ({ user, idx, onEditRole, onRevoke, isSelf, clientMap, isNew, is
             style={{ width: 26, height: 26, border: '1px solid var(--navy-edge)', borderRadius: 6, background: expanded ? 'rgba(0,194,184,.1)' : 'transparent', color: expanded ? '#00C2B8' : 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .12s' }}>
             <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24" strokeLinecap="round" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6"/></svg>
           </button>
-          <div style={{ fontFamily: AS.mono, fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{user.lastActive}</div>
+          <div style={{ fontFamily: AS.mono, fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{user.lastActive}</div>
           {isSelf && (
             <button onClick={onChangePassword}
-              style={{ padding: '6px 10px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 6, color: 'var(--text-secondary)', fontFamily: AS.display, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, transition: 'all .12s', whiteSpace: 'nowrap' }}
+              style={{ padding: '6px 10px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 6, color: 'var(--text-secondary)', fontFamily: AS.display, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, transition: 'all .12s', whiteSpace: 'nowrap' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(248,180,0,.5)'; e.currentTarget.style.color = '#F8B400'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--navy-edge)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
               <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
@@ -822,14 +822,14 @@ const UserRow = ({ user, idx, onEditRole, onRevoke, isSelf, clientMap, isNew, is
           {!isSelf && (
             <>
               <button onClick={() => onEditRole(user)}
-                style={{ padding: '6px 11px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 6, color: 'var(--text-secondary)', fontFamily: AS.display, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, transition: 'all .12s' }}
+                style={{ padding: '6px 11px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 6, color: 'var(--text-secondary)', fontFamily: AS.display, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, transition: 'all .12s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,194,184,.5)'; e.currentTarget.style.color = '#00C2B8'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--navy-edge)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
                 <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
                 Edit
               </button>
               <button onClick={() => onRevoke(user)}
-                style={{ padding: '6px 11px', background: 'transparent', border: '1px solid rgba(220,38,38,.3)', borderRadius: 6, color: 'rgba(220,38,38,.7)', fontFamily: AS.display, fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all .12s' }}
+                style={{ padding: '6px 11px', background: 'transparent', border: '1px solid rgba(220,38,38,.3)', borderRadius: 6, color: 'rgba(220,38,38,.7)', fontFamily: AS.display, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .12s' }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'rgba(220,38,38,.1)'; e.currentTarget.style.color = '#DC2626'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(220,38,38,.7)'; }}>
                 Revoke
@@ -846,7 +846,7 @@ const UserRow = ({ user, idx, onEditRole, onRevoke, isSelf, clientMap, isNew, is
             ['Joined', joinedFormatted, 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', '#4285F4'],
             ['Last active', user.lastActiveRaw
               ? new Date(user.lastActiveRaw).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-              : 'Belum pernah aktif',
+              : 'Never active',
               'M12 8v4l3 3M12 22a10 10 0 100-20 10 10 0 000 20z', '#00C2B8'],
           ].map(([label, value, iconPath, color]) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -854,8 +854,8 @@ const UserRow = ({ user, idx, onEditRole, onRevoke, isSelf, clientMap, isNew, is
                 <svg width="11" height="11" fill="none" stroke={color} strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d={iconPath}/></svg>
               </div>
               <div>
-                <div style={{ fontFamily: AS.mono, fontSize: 8.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>{label}</div>
-                <div style={{ fontFamily: AS.display, fontSize: 11.5, fontWeight: 600, color: '#FCFCFC', marginTop: 1 }}>{value}</div>
+                <div style={{ fontFamily: AS.mono, fontSize: 10.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>{label}</div>
+                <div style={{ fontFamily: AS.display, fontSize: 13.5, fontWeight: 600, color: '#FCFCFC', marginTop: 1 }}>{value}</div>
               </div>
             </div>
           ))}
@@ -868,12 +868,12 @@ const UserRow = ({ user, idx, onEditRole, onRevoke, isSelf, clientMap, isNew, is
 // ─── Roles legend ─────────────────────────────────────────────────
 const RolesCard = () => (
   <div style={{ background: 'var(--navy-surface)', border: '1px solid var(--navy-edge)', borderRadius: 14, padding: '20px 22px', boxShadow: '0 4px 14px rgba(0,0,0,.12)' }}>
-    <div style={{ fontFamily: AS.display, fontSize: 14, fontWeight: 700, color: '#FCFCFC', marginBottom: 14 }}>Role permissions</div>
+    <div style={{ fontFamily: AS.display, fontSize: 16, fontWeight: 700, color: '#FCFCFC', marginBottom: 14 }}>Role permissions</div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {Object.entries(ROLES).map(([k, r]) => (
         <div key={k} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
           <RoleBadge role={k}/>
-          <div style={{ fontFamily: AS.body, fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.5, paddingTop: 2 }}>{r.desc}</div>
+          <div style={{ fontFamily: AS.body, fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.5, paddingTop: 2 }}>{r.desc}</div>
         </div>
       ))}
     </div>
@@ -895,7 +895,7 @@ const SummaryCards = ({ users }) => {
             <svg width="16" height="16" fill="none" stroke={c} strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>
           </div>
           <div>
-            <div style={{ fontFamily: AS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 2 }}>{l}</div>
+            <div style={{ fontFamily: AS.mono, fontSize: 11.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 2 }}>{l}</div>
             <div style={{ fontFamily: AS.display, fontSize: 24, fontWeight: 800, color: '#FCFCFC', letterSpacing: '-.02em', fontVariantNumeric: 'tabular-nums' }}>{v}</div>
           </div>
         </div>
@@ -1011,7 +1011,7 @@ const ScreenAccess = ({ onNavigate }) => {
 
   // ── CRUD ───────────────────────────────────────────────────────
   const handleRevoke = (user) => {
-    if (!confirm(`Hapus akses untuk ${user.name} (${user.email})?\n\nMereka tidak akan bisa login lagi.`)) return;
+    if (!confirm(`Remove access for ${user.name} (${user.email})?\n\nThey will no longer be able to log in.`)) return;
     setUsers(prev => prev.filter(u => u.id !== user.id));
     setSelected(prev => prev.filter(id => id !== user.id));
 
@@ -1021,15 +1021,15 @@ const ScreenAccess = ({ onNavigate }) => {
         if (error) {
           console.error('[handleRevoke]', error);
           setUsers(prev => [...prev, user]);
-          showToast(`Gagal menghapus akses ${user.name}`, 'error');
+          showToast(`Failed to remove access for ${user.name}`, 'error');
         }
       }
     }, 5000);
 
-    showToast(`Akses ${user.name} dihapus`, 'undo', () => {
+    showToast(`Access for ${user.name} removed`, 'undo', () => {
       clearTimeout(deleteTimer);
       setUsers(prev => [...prev, user]);
-      showToast(`Akses ${user.name} dipulihkan`);
+      showToast(`Access for ${user.name} restored`);
     });
   };
 
@@ -1075,7 +1075,7 @@ const ScreenAccess = ({ onNavigate }) => {
     if (addedUser) {
       setNewMemberId(addedUser.id);
       setTimeout(() => setNewMemberId(null), 3000);
-      showToast(`${name} berhasil ditambahkan`);
+      showToast(`${name} added successfully`);
       return true;
     }
     return false;
@@ -1089,7 +1089,7 @@ const ScreenAccess = ({ onNavigate }) => {
       if (grad) update.grad = grad;
       await _ACCESS_SUPA.from('team_members').update(update).eq('id', userId);
     }
-    showToast('Perubahan disimpan');
+    showToast('Changes saved');
   };
 
   const handleInlineName = async (userId, newName) => {
@@ -1101,7 +1101,7 @@ const ScreenAccess = ({ onNavigate }) => {
     if (_ACCESS_SUPA) {
       await _ACCESS_SUPA.from('team_members').update({ name: newName, avatar: initials }).eq('id', userId);
     }
-    showToast('Nama diperbarui');
+    showToast('Name updated');
   };
 
   // ── Sort ───────────────────────────────────────────────────────
@@ -1115,7 +1115,7 @@ const ScreenAccess = ({ onNavigate }) => {
   const toggleSelectAll = () => setSelected(prev => prev.length === filtered.length ? [] : filtered.map(u => u.id));
   const handleBulkRevoke = () => {
     const targets = users.filter(u => selected.includes(u.id));
-    if (!confirm(`Hapus akses ${targets.length} member sekaligus?`)) return;
+    if (!confirm(`Remove access for ${targets.length} members at once?`)) return;
     targets.forEach(u => handleRevoke(u));
     setSelected([]);
   };
@@ -1126,26 +1126,26 @@ const ScreenAccess = ({ onNavigate }) => {
 
       {/* Top bar */}
       <header style={{ height: 80, minHeight: 80, background: 'rgba(10,18,34,.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', padding: '0 28px', gap: 14, position: 'relative', zIndex: 10, flexShrink: 0, boxSizing: 'border-box' }}>
-        <img src="assets/logo-mark.png" style={{ width: 62, height: 62 }}/>
+        <img src="assets/logo-mark.png" style={{ width: 106, height: 106 }}/>
         <div>
-          <div style={{ fontFamily: AS.display, fontSize: 14, fontWeight: 700, color: '#FCFCFC', letterSpacing: '-.01em' }}>Reportive</div>
-          <div style={{ fontFamily: AS.mono, fontSize: 8.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>by Avonetiq</div>
+          <div style={{ fontFamily: AS.display, fontSize: 16, fontWeight: 700, color: '#FCFCFC', letterSpacing: '-.01em' }}>Reportive</div>
+          <div style={{ fontFamily: AS.mono, fontSize: 10.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>by Avonetiq</div>
         </div>
         <div style={{ width: 1, height: 20, background: 'var(--navy-edge)' }}/>
         {[['Home',''],['Templates',''],['Access','active']].map(([l, a]) => (
-          <div key={l} onClick={() => onNavigate && onNavigate(NAV_ROUTES[l])} style={{ padding: '6px 12px', borderRadius: 7, cursor: 'pointer', background: a ? 'rgba(0,194,184,.1)' : 'transparent', color: a ? '#00C2B8' : 'var(--text-secondary)', fontFamily: AS.display, fontSize: 12.5, fontWeight: a ? 700 : 500 }}>{l}</div>
+          <div key={l} onClick={() => onNavigate && onNavigate(NAV_ROUTES[l])} style={{ padding: '6px 12px', borderRadius: 7, cursor: 'pointer', background: a ? 'rgba(0,194,184,.1)' : 'transparent', color: a ? '#00C2B8' : 'var(--text-secondary)', fontFamily: AS.display, fontSize: 15, fontWeight: a ? 700 : 500 }}>{l}</div>
         ))}
         <div style={{ flex: 1 }}/>
-        <button onClick={handleLogout} style={{ padding: '6px 12px', background: 'transparent', border: '1px solid rgba(220,38,38,.35)', borderRadius: 7, color: 'rgba(220,38,38,.7)', fontFamily: AS.display, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', transition: 'all .15s' }}
+        <button onClick={handleLogout} style={{ padding: '6px 12px', background: 'transparent', border: '1px solid rgba(220,38,38,.35)', borderRadius: 7, color: 'rgba(220,38,38,.7)', fontFamily: AS.display, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', transition: 'all .15s' }}
           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(220,38,38,.1)'; e.currentTarget.style.color = '#DC2626'; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(220,38,38,.7)'; }}>
           Sign out
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#00C2B8,#7000FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: AS.display, fontWeight: 700, fontSize: 12, color: '#0C182C' }}>AO</div>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#00C2B8,#7000FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: AS.display, fontWeight: 700, fontSize: 14, color: '#0C182C' }}>AO</div>
           <div>
-            <div style={{ fontFamily: AS.display, fontSize: 12, fontWeight: 600, color: '#FCFCFC' }}>Avonetiq Owner</div>
-            <div style={{ fontFamily: AS.mono, fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Owner</div>
+            <div style={{ fontFamily: AS.display, fontSize: 14, fontWeight: 600, color: '#FCFCFC' }}>Avonetiq Owner</div>
+            <div style={{ fontFamily: AS.mono, fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Owner</div>
           </div>
         </div>
       </header>
@@ -1173,7 +1173,7 @@ const ScreenAccess = ({ onNavigate }) => {
                 <div style={{ display: 'flex', gap: 3, background: 'var(--navy-deep)', borderRadius: 8, padding: 3 }}>
                   {[['all','All'],['editor','Editor'],['viewer','Viewer']].map(([k, l]) => (
                     <button key={k} onClick={() => setFilterRole(k)}
-                      style={{ padding: '5px 12px', border: 'none', borderRadius: 6, cursor: 'pointer', fontFamily: AS.display, fontSize: 11.5, fontWeight: 600, background: filterRole === k ? 'var(--navy-elevated)' : 'transparent', color: filterRole === k ? '#FCFCFC' : 'var(--text-muted)', transition: 'background .12s' }}>
+                      style={{ padding: '5px 12px', border: 'none', borderRadius: 6, cursor: 'pointer', fontFamily: AS.display, fontSize: 13.5, fontWeight: 600, background: filterRole === k ? 'var(--navy-elevated)' : 'transparent', color: filterRole === k ? '#FCFCFC' : 'var(--text-muted)', transition: 'background .12s' }}>
                       {l}
                     </button>
                   ))}
@@ -1182,9 +1182,9 @@ const ScreenAccess = ({ onNavigate }) => {
                 {/* Client filter dropdown */}
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: filterClient !== 'all' ? 'rgba(0,194,184,.08)' : 'var(--navy-surface)', border: `1px solid ${filterClient !== 'all' ? 'rgba(0,194,184,.4)' : 'var(--navy-edge)'}`, borderRadius: 8, transition: 'background .12s, border-color .12s' }}>
                   <svg width="12" height="12" fill="none" stroke={filterClient !== 'all' ? '#00C2B8' : 'var(--text-muted)'} strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
-                  <span style={{ fontFamily: AS.mono, fontSize: 9.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Project</span>
+                  <span style={{ fontFamily: AS.mono, fontSize: 11.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Project</span>
                   <select value={filterClient} onChange={e => setFilterClient(e.target.value)}
-                    style={{ border: 'none', background: 'transparent', color: filterClient !== 'all' ? '#00C2B8' : '#FCFCFC', fontFamily: AS.display, fontSize: 11.5, fontWeight: 600, outline: 'none', cursor: 'pointer', appearance: 'none', paddingRight: 16, backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right center' }}>
+                    style={{ border: 'none', background: 'transparent', color: filterClient !== 'all' ? '#00C2B8' : '#FCFCFC', fontFamily: AS.display, fontSize: 13.5, fontWeight: 600, outline: 'none', cursor: 'pointer', appearance: 'none', paddingRight: 16, backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right center' }}>
                     <option value="all" style={{ background: '#0C182C' }}>All projects</option>
                     {clientList.map(({ id, name }) => (
                       <option key={id} value={id} style={{ background: '#0C182C' }}>{name}</option>
@@ -1200,17 +1200,17 @@ const ScreenAccess = ({ onNavigate }) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'var(--navy-surface)', border: '1px solid var(--navy-edge)', borderRadius: 8, width: 200 }}>
                   <svg width="12" height="12" fill="none" stroke="var(--text-muted)" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                   <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members…"
-                    style={{ border: 'none', background: 'transparent', color: '#FCFCFC', fontFamily: AS.body, fontSize: 12, outline: 'none', width: '100%' }}/>
+                    style={{ border: 'none', background: 'transparent', color: '#FCFCFC', fontFamily: AS.body, fontSize: 14, outline: 'none', width: '100%' }}/>
                 </div>
               </div>
 
               {/* Bulk action bar */}
               {selected.length > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', marginBottom: 8, background: 'rgba(0,194,184,.08)', border: '1px solid rgba(0,194,184,.25)', borderRadius: 9 }}>
-                  <span style={{ fontFamily: AS.display, fontSize: 12, fontWeight: 700, color: '#00C2B8' }}>{selected.length} dipilih</span>
+                  <span style={{ fontFamily: AS.display, fontSize: 14, fontWeight: 700, color: '#00C2B8' }}>{selected.length} dipilih</span>
                   <div style={{ flex: 1 }}/>
-                  <button onClick={() => setSelected([])} style={{ padding: '5px 10px', background: 'transparent', border: '1px solid var(--navy-edge)', borderRadius: 6, color: 'var(--text-muted)', fontFamily: AS.display, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Batal</button>
-                  <button onClick={handleBulkRevoke} style={{ padding: '5px 12px', background: 'rgba(220,38,38,.1)', border: '1px solid rgba(220,38,38,.35)', borderRadius: 6, color: '#DC2626', fontFamily: AS.display, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                  <button onClick={() => setSelected([])} style={{ padding: '5px 10px', background: 'transparent', border: '1px solid var(--navy-edge)', borderRadius: 6, color: 'var(--text-muted)', fontFamily: AS.display, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Batal</button>
+                  <button onClick={handleBulkRevoke} style={{ padding: '5px 12px', background: 'rgba(220,38,38,.1)', border: '1px solid rgba(220,38,38,.35)', borderRadius: 6, color: '#DC2626', fontFamily: AS.display, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
                     Revoke {selected.length} member
                   </button>
                 </div>
@@ -1226,7 +1226,7 @@ const ScreenAccess = ({ onNavigate }) => {
                   </div>
                   <div/>
                   {[['name','Member'],['role','Role'],['status','Status'],['clients','Client access'],['lastActiveRaw','Last active']].map(([field, label]) => (
-                    <div key={field} onClick={() => handleSort(field)} style={{ fontFamily: AS.mono, fontSize: 9.5, fontWeight: 600, color: sortField === field ? '#00C2B8' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, userSelect: 'none' }}>
+                    <div key={field} onClick={() => handleSort(field)} style={{ fontFamily: AS.mono, fontSize: 11.5, fontWeight: 600, color: sortField === field ? '#00C2B8' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, userSelect: 'none' }}>
                       {label}
                       {sortField === field && <svg width="8" height="8" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d={sortDir === 'asc' ? 'M18 15l-6-6-6 6' : 'M6 9l6 6 6-6'}/></svg>}
                     </div>
@@ -1247,7 +1247,7 @@ const ScreenAccess = ({ onNavigate }) => {
                 ))}
 
                 {filtered.length === 0 && (
-                  <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-muted)', fontFamily: AS.body, fontSize: 13 }}>No members match your filter.</div>
+                  <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-muted)', fontFamily: AS.body, fontSize: 15 }}>No members match your filter.</div>
                 )}
               </div>
             </div>
@@ -1258,9 +1258,9 @@ const ScreenAccess = ({ onNavigate }) => {
 
               {/* Quick invite */}
               <div style={{ background: 'linear-gradient(135deg,rgba(0,194,184,.08),rgba(248,180,0,.04))', border: '1px solid rgba(0,194,184,.2)', borderRadius: 14, padding: '18px 20px' }}>
-                <div style={{ fontFamily: AS.display, fontSize: 14, fontWeight: 700, color: '#FCFCFC', marginBottom: 6 }}>Invite a teammate</div>
-                <div style={{ fontFamily: AS.body, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 14 }}>Add colleagues as Editors to collaborate on client reports.</div>
-                <button onClick={() => setShowInvite(true)} style={{ width: '100%', padding: '9px 0', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 8, color: '#0C182C', fontFamily: AS.display, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,194,184,.2)' }}>
+                <div style={{ fontFamily: AS.display, fontSize: 16, fontWeight: 700, color: '#FCFCFC', marginBottom: 6 }}>Invite a teammate</div>
+                <div style={{ fontFamily: AS.body, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 14 }}>Add colleagues as Editors to collaborate on client reports.</div>
+                <button onClick={() => setShowInvite(true)} style={{ width: '100%', padding: '9px 0', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 8, color: '#0C182C', fontFamily: AS.display, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,194,184,.2)' }}>
                   + Invite member
                 </button>
               </div>

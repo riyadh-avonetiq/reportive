@@ -22,8 +22,8 @@ const EP = {
 
 const ELabel = ({ children, hint }) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: EP.muted, textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 600 }}>{children}</span>
-    {hint && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.06em' }}>{hint}</span>}
+    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: EP.muted, textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 600 }}>{children}</span>
+    {hint && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: EP.muted, letterSpacing: '0.06em' }}>{hint}</span>}
   </div>
 );
 
@@ -61,7 +61,7 @@ const ESelect = ({ value, onChange, options, groups }) => (
       background: EP.surface,
       border: `1px solid ${EP.edge}`,
       borderRadius: 6, color: EP.fg,
-      fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none',
+      fontFamily: 'var(--font-body)', fontSize: 14, outline: 'none',
       appearance: 'none',
       backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='7' viewBox='0 0 10 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748B' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
       backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center',
@@ -77,7 +77,7 @@ const ESelect = ({ value, onChange, options, groups }) => (
 
 const EToggle = ({ value, onChange, label }) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-    {label && <span style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: EP.fg }}>{label}</span>}
+    {label && <span style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: EP.fg }}>{label}</span>}
     <div
       onClick={() => onChange && onChange(!value)}
       style={{
@@ -107,7 +107,7 @@ const ESizeButtons = ({ value, onChange, label }) => (
             flex: 1, padding: '6px 0', border: 'none', borderRadius: 6, cursor: 'pointer',
             background: value === s ? EP.teal : EP.elevated,
             color: value === s ? '#0C182C' : EP.sec,
-            fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700,
+            fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
             transition: 'background .12s',
           }}>{s}</button>
       ))}
@@ -136,7 +136,7 @@ const EChip = ({ children, color = EP.teal }) => (
   <span style={{
     padding: '3px 9px', borderRadius: 5,
     background: `${color}22`, color, border: `1px solid ${color}55`,
-    fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600, letterSpacing: '0.06em',
+    fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, letterSpacing: '0.06em',
   }}>{children}</span>
 );
 
@@ -297,7 +297,7 @@ const ColumnsEditor = ({ columns, metrics, maxCols = 6, addLabel = 'Add column',
           border: `1px dashed ${canAdd ? EP.teal + '66' : EP.edge}`,
           borderRadius: 6, color: canAdd ? EP.teal : EP.muted,
           cursor: canAdd ? 'pointer' : 'default',
-          fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 600,
+          fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600,
           width: '100%', justifyContent: 'center', marginTop: columns.length ? 2 : 0,
           opacity: canAdd ? 1 : 0.45,
         }}
@@ -317,9 +317,9 @@ const VariantSetupForm = ({ variant, channel, config, onConfigChange }) => {
   const metrics = (window.CHANNEL_METRICS || {})[channel] || [];
 
   if (!schemas.length) return (
-    <div style={{ padding: '12px 0', fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted, lineHeight: 1.6, textAlign: 'center' }}>
+    <div style={{ padding: '12px 0', fontFamily: 'var(--font-mono)', fontSize: 12, color: EP.muted, lineHeight: 1.6, textAlign: 'center' }}>
       No configurable fields for this variant.<br/>
-      <span style={{ fontSize: 9 }}>Use Browse to pick a different variant.</span>
+      <span style={{ fontSize: 11 }}>Use Browse to pick a different variant.</span>
     </div>
   );
 
@@ -386,7 +386,7 @@ const ChartTypePicker = ({ value, onChange }) => (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={active ? EP.teal : EP.muted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d={ct.icon}/>
             </svg>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: active ? EP.teal : EP.muted, letterSpacing: '0.06em' }}>{ct.label}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: active ? EP.teal : EP.muted, letterSpacing: '0.06em' }}>{ct.label}</span>
           </button>
         );
       })}
@@ -413,7 +413,7 @@ const DataSourceSection = ({ state, setState }) => {
               border: `1px solid ${src === s.id ? s.color + 'AA' : EP.edge}`,
               borderRadius: 6, background: src === s.id ? s.color + '18' : EP.elevated,
               color: src === s.id ? s.color : EP.sec, cursor: 'pointer',
-              fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600,
+              fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 600,
               transition: 'border-color .12s, background .12s',
             }}>
             <ChannelLogo channel={s.id} size={13}/>
@@ -422,7 +422,7 @@ const DataSourceSection = ({ state, setState }) => {
         ))}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted, padding: '6px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: EP.muted, padding: '6px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6 }}>
           Semua akun terhubung
         </div>
         {(src === 'google' || src === 'meta') && (
@@ -437,8 +437,8 @@ const DataSourceSection = ({ state, setState }) => {
 // ─── Filter builder ───────────────────────────────────────────────
 const FilterSection = ({ filters, setFilters }) => (
   <ESection label="Filter">
-    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted, padding: '8px 10px', background: EP.elevated, border: `1px dashed ${EP.edge}`, borderRadius: 6, lineHeight: 1.5 }}>
-      Filter per-widget tersedia di panel Setup baru (klik widget langsung di report).
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: EP.muted, padding: '8px 10px', background: EP.elevated, border: `1px dashed ${EP.edge}`, borderRadius: 6, lineHeight: 1.5 }}>
+      Per-widget filters are available in the new Setup panel (click a widget directly in the report).
     </div>
   </ESection>
 );
@@ -484,7 +484,7 @@ const DateRangeSection = ({ state, setState }) => (
         }} onClick={() => setState({ ...state, dateRange: o.val })}>
           {state.dateRange === o.val && <div style={{ width: 5, height: 5, background: '#0C182C', borderRadius: '50%' }}/>}
         </div>
-        <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: EP.fg }} onClick={() => setState({ ...state, dateRange: o.val })}>{o.label}</span>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: EP.fg }} onClick={() => setState({ ...state, dateRange: o.val })}>{o.label}</span>
       </label>
     ))}
   </ESection>
@@ -539,7 +539,7 @@ const SetupTable = ({ state, setState }) => {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
           {allCols.map(c => (
             <button key={c} onClick={() => toggle(c)}
-              style={{ padding: '4px 9px', border: `1px solid ${active.includes(c) ? EP.teal+'88' : EP.edge}`, borderRadius: 5, background: active.includes(c) ? 'rgba(0,194,184,.1)' : EP.elevated, color: active.includes(c) ? EP.teal : EP.muted, fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600, cursor: 'pointer' }}>{c}</button>
+              style={{ padding: '4px 9px', border: `1px solid ${active.includes(c) ? EP.teal+'88' : EP.edge}`, borderRadius: 5, background: active.includes(c) ? 'rgba(0,194,184,.1)' : EP.elevated, color: active.includes(c) ? EP.teal : EP.muted, fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>{c}</button>
           ))}
         </div>
       </ESection>
@@ -551,7 +551,7 @@ const SetupTable = ({ state, setState }) => {
         <div style={{ display: 'flex', gap: 5 }}>
           <ESelect value={state.sortCol || 'spend'} options={[{value:'spend',label:'Spend'},{value:'roas',label:'ROAS'},{value:'clicks',label:'Clicks'},{value:'conv',label:'Conversions'}]}/>
           <button onClick={() => setState({ ...state, sortDir: state.sortDir === 'asc' ? 'desc' : 'asc' })}
-            style={{ padding: '6px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.sec, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600 }}>
+            style={{ padding: '6px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.sec, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600 }}>
             {state.sortDir === 'asc' ? '↑ ASC' : '↓ DESC'}
           </button>
         </div>
@@ -569,14 +569,14 @@ const SetupTable = ({ state, setState }) => {
 const SetupNarrative = ({ state, setState }) => (
   <>
     <ESection label="Headline text">
-      <textarea value={state.headline || 'Performa marketing Maret 2025 naik 19,7%'} onChange={e => setState({ ...state, headline: e.target.value })}
+      <textarea value={state.headline || 'Marketing performance March 2025 up 19.7%'} onChange={e => setState({ ...state, headline: e.target.value })}
         rows={2}
-        style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-display)', fontSize: 12.5, outline: 'none', resize: 'vertical' }}/>
+        style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-display)', fontSize: 15, outline: 'none', resize: 'vertical' }}/>
     </ESection>
     <ESection label="Body copy">
-      <textarea value={state.body || 'Konversi meningkat seiring shift anggaran ke Google Ads. SEO organik tumbuh 8,1% tanpa tambahan budget.'} onChange={e => setState({ ...state, body: e.target.value })}
+      <textarea value={state.body || 'Conversions increased as budget shifted to Google Ads. Organic SEO grew 8.1% without additional spend.'} onChange={e => setState({ ...state, body: e.target.value })}
         rows={3}
-        style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.sec, fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none', resize: 'vertical', lineHeight: 1.5 }}/>
+        style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.sec, fontFamily: 'var(--font-body)', fontSize: 14, outline: 'none', resize: 'vertical', lineHeight: 1.5 }}/>
     </ESection>
     <EDivider/>
     <ESection label="Show elements">
@@ -639,67 +639,96 @@ const SetupList = ({ state, setState }) => (
   </>
 );
 
-const SetupPageSpeed = ({ state, setState }) => (
-  <>
-    <ESection label="Data source">
-      <ESelect value={state.dataSource || 'pagespeed'} onChange={v => setState({ ...state, dataSource: v })}
-        options={[{value:'pagespeed',label:'Google PageSpeed Insights'},{value:'lighthouse',label:'Lighthouse'},{value:'webvitals',label:'Web Vitals (CrUX)'}]}/>
-    </ESection>
-    <EDivider/>
-    <ESection label="Page URL">
-      <EInput value={state.pageUrl || 'kopisenjanusantara.com'} onChange={v => setState({ ...state, pageUrl: v })} placeholder="e.g. example.com/page"/>
-    </ESection>
-    <EDivider/>
-    <ESection label="Device strategy">
-      {['mobile','desktop','both'].map(d => (
-        <label key={d} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, cursor: 'pointer' }}>
-          <div style={{
-            width: 14, height: 14, borderRadius: '50%', border: `1.5px solid ${state.device === d ? EP.teal : EP.edge}`,
-            background: state.device === d ? EP.teal : 'transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }} onClick={() => setState({ ...state, device: d })}>
-            {state.device === d && <div style={{ width: 5, height: 5, background: '#0C182C', borderRadius: '50%' }}/>}
+const SetupPageSpeed = () => {
+  const [ctrl, setCtrl] = React.useState(() => window._psiControl || null);
+  const [keyDraft, setKeyDraft] = React.useState('');
+  const [showKey, setShowKey] = React.useState(false);
+
+  React.useEffect(() => {
+    const update = () => { const c = window._psiControl; setCtrl(c ? { ...c } : null); };
+    window.addEventListener('psiControlUpdate', update);
+    update();
+    return () => window.removeEventListener('psiControlUpdate', update);
+  }, []);
+
+  if (!ctrl) return (
+    <div style={{ padding: '12px 0', fontFamily: 'var(--font-mono)', fontSize: 11, color: EP.muted, lineHeight: 1.6 }}>
+      Select the PageSpeed widget in the report to enable measurement controls.
+    </div>
+  );
+
+  const { run, measuring, measureError, lastMeasured, psiApiKey, savePsiApiKey, clearError, retryIn = 0 } = ctrl;
+  const teal = '#00C2B8';
+  const gold = '#F8B400';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <button onClick={() => run()} disabled={measuring || retryIn > 0} style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 14px',
+        background: measuring ? 'rgba(0,194,184,.12)' : 'linear-gradient(135deg,#00C2B8,#009E96)',
+        border: measuring ? '1px solid rgba(0,194,184,.3)' : 'none',
+        borderRadius: 7, cursor: (measuring || retryIn > 0) ? 'not-allowed' : 'pointer',
+        color: measuring ? teal : '#0C182C',
+        fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700,
+        boxShadow: measuring ? 'none' : '0 3px 10px rgba(0,194,184,.22)',
+        opacity: retryIn > 0 ? 0.5 : 1, transition: 'all .2s',
+      }}>
+        {measuring
+          ? <><span style={{ width: 10, height: 10, border: '2px solid rgba(0,194,184,.3)', borderTopColor: teal, borderRadius: '50%', display: 'inline-block', animation: 'bootPulse 0.8s linear infinite' }}/> Measuring…</>
+          : <><svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.3" viewBox="0 0 24 24" strokeLinecap="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Run Measurement</>}
+      </button>
+
+      {lastMeasured && !measuring && (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: teal }}>✓ Last measured · {lastMeasured}</div>
+      )}
+      {measuring && (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: EP.muted }}>Contacting Google API… (~10–30s)</div>
+      )}
+      {retryIn > 0 && !measuring && (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: gold }}>Rate limited · auto-retry in {retryIn}s</div>
+      )}
+
+      {/* API Key */}
+      <div style={{ borderTop: `1px solid ${EP.edge}`, paddingTop: 8, marginTop: 2 }}>
+        <button onClick={() => { setKeyDraft(psiApiKey || ''); setShowKey(v => !v); }}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px solid ${showKey ? teal : EP.edge}`, borderRadius: 6, cursor: 'pointer', color: psiApiKey ? teal : EP.muted, fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+          <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+          {psiApiKey ? 'API Key saved' : 'Set Google API Key'}
+        </button>
+        {showKey && (
+          <div style={{ display: 'flex', gap: 5, marginTop: 6 }}>
+            <input value={keyDraft} onChange={e => setKeyDraft(e.target.value)} placeholder="AIza…"
+              style={{ flex: 1, padding: '5px 8px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }}/>
+            <button onClick={() => { savePsiApiKey?.(keyDraft.trim()); setShowKey(false); clearError?.(); }}
+              style={{ padding: '5px 10px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 5, color: '#0C182C', fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              Save
+            </button>
           </div>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: EP.fg, textTransform: 'capitalize' }}>{d}</span>
-        </label>
-      ))}
-    </ESection>
-    <EDivider/>
-    <ESection label="Metrics to display">
-      {[['Performance', 'perf'],['Accessibility', 'a11y'],['Best Practices', 'practices'],['SEO', 'seo']].map(([label, key]) => (
-        <div key={key} style={{ marginBottom: 8 }}>
-          <EToggle value={state['show' + key.charAt(0).toUpperCase() + key.slice(1)] !== false} onChange={v => setState({ ...state, ['show' + key.charAt(0).toUpperCase() + key.slice(1)]: v })} label={label}/>
-        </div>
-      ))}
-    </ESection>
-    <EDivider/>
-    <ESection label="Core Web Vitals">
-      <div style={{ marginBottom: 8 }}>
-        <EToggle value={state.showCWV !== false} onChange={v => setState({ ...state, showCWV: v })} label="Show Core Web Vitals"/>
+        )}
       </div>
-      {state.showCWV !== false && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {[['LCP', 'lcp'],['FID', 'fid'],['CLS', 'cls']].map(([label, key]) => (
-            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={state['cwv_' + key] !== false}
-                onChange={e => setState({ ...state, ['cwv_' + key]: e.target.checked })}
-                style={{ width: 16, height: 16, cursor: 'pointer' }}
-              />
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: EP.fg }}>{label}</span>
-            </label>
-          ))}
+
+      {/* Error states */}
+      {measureError === 'rate_limited' && (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: gold, background: 'rgba(248,180,0,.08)', border: '1px solid rgba(248,180,0,.2)', borderRadius: 6, padding: '7px 10px' }}>
+          Google PSI is rate-limited.{retryIn > 0 ? ` Auto-retry in ${retryIn}s…` : ' Retrying…'}
         </div>
       )}
-    </ESection>
-    <EDivider/>
-    <ESection label="Recommendations">
-      <ESelect value={state.recCount || '3'} onChange={v => setState({ ...state, recCount: v })}
-        options={[{value:'2',label:'Top 2'},{value:'3',label:'Top 3'},{value:'5',label:'Top 5'},{value:'all',label:'All recommendations'}]}/>
-    </ESection>
-  </>
-);
+      {measureError === 'quota_exceeded' && (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#E3170A', background: 'rgba(227,23,10,.08)', border: '1px solid rgba(227,23,10,.2)', borderRadius: 6, padding: '7px 10px' }}>
+          Daily quota exceeded. {!psiApiKey ? 'Add a personal API Key.' : 'Try again tomorrow.'}
+        </div>
+      )}
+      {measureError && measureError !== 'rate_limited' && measureError !== 'quota_exceeded' && (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#E3170A', background: 'rgba(227,23,10,.08)', border: '1px solid rgba(227,23,10,.2)', borderRadius: 6, padding: '7px 10px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <span style={{ flex: 1 }}>{measureError.includes('Lighthouse returned error') ? 'Google Lighthouse failed to analyze this page. Please try again.' : measureError}</span>
+          <button onClick={() => { clearError?.(); run(); }} style={{ padding: '2px 8px', background: 'rgba(227,23,10,.15)', border: '1px solid rgba(227,23,10,.3)', borderRadius: 4, color: '#E3170A', fontFamily: 'var(--font-mono)', fontSize: 10, cursor: 'pointer', flexShrink: 0 }}>Retry</button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const SetupCarousel = ({ state, setState }) => (
   <>
@@ -707,11 +736,11 @@ const SetupCarousel = ({ state, setState }) => (
       {[['Top ROAS campaign','chart-sparks'],['Biggest traffic mover','list-pages'],['Monthly goal status','progress-goals']].map(([l, id], i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, padding: '7px 10px', background: EP.elevated, borderRadius: 6, border: `1px solid ${EP.edge}` }}>
           <svg width="9" height="13" viewBox="0 0 9 13" fill={EP.muted}><circle cx="2" cy="2" r="1.1"/><circle cx="7" cy="2" r="1.1"/><circle cx="2" cy="6.5" r="1.1"/><circle cx="7" cy="6.5" r="1.1"/><circle cx="2" cy="11" r="1.1"/><circle cx="7" cy="11" r="1.1"/></svg>
-          <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 11.5, color: EP.fg }}>{l}</span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: EP.muted }}>{id}</span>
+          <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 13.5, color: EP.fg }}>{l}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: EP.muted }}>{id}</span>
         </div>
       ))}
-      <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 6, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+      <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 6, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
         <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5.5 1v9M1 5.5h9"/></svg>
         Add item
       </button>
@@ -772,7 +801,7 @@ const DragDots = () => (
 );
 
 // ─── TAB: Setup (simplified) ─────────────────────────────────────────
-const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connectedSources, sharedWidgetCount = 0, instanceSource, onSourceChange, pageData }) => {
+const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connectedSources, sharedWidgetCount = 0, instanceSource, onSourceChange, pageData, onConnectedChange = null, layoutRows = null }) => {
   const [dragMetIdx,  setDragMetIdx]  = React.useState(null);
   const [dragMetOver, setDragMetOver] = React.useState(null);
   const dragAllIdxRef  = React.useRef(null);
@@ -783,6 +812,11 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
   const [customModal,   setCustomModal]   = React.useState(null); // null | {mode:'new'} | {mode:'edit',metric}
   const [customDraft,   setCustomDraft]   = React.useState({ name: '', formula: '', format: 'num' });
   const metPickerRef = React.useRef(null);
+  const [addOpen,          setAddOpen]          = React.useState(false);
+  const [connectingFor,    setConnectingFor]    = React.useState(null);
+  const [accountsFor,      setAccountsFor]      = React.useState({});
+  const [loadingFor,       setLoadingFor]       = React.useState(null);
+  const [disconnectPending, setDisconnectPending] = React.useState(null);
 
   React.useEffect(() => {
     if (!metPickerOpen) return;
@@ -828,11 +862,17 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     window.addEventListener('narrativeHeroFocus', handler);
     return () => window.removeEventListener('narrativeHeroFocus', handler);
   }, [widgetType]);
+  React.useEffect(() => {
+    if (widgetType !== 'narrative-note') return;
+    const handler = e => setActiveField(e.detail);
+    window.addEventListener('narrativeNoteFocus', handler);
+    return () => window.removeEventListener('narrativeNoteFocus', handler);
+  }, [widgetType]);
 
   if (!widgetId) {
     return (
-      <div style={{ padding: '24px 0', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted, lineHeight: 1.7 }}>
-        Pilih widget di report<br/>untuk mengedit pengaturannya.
+      <div style={{ padding: '24px 0', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: EP.muted, lineHeight: 1.7 }}>
+        Select a widget in the report<br/>to edit its settings.
       </div>
     );
   }
@@ -858,15 +898,17 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
   const isSingleM   = ['single-stat', 'chart-area', 'chart-bar'].includes(widgetType);
   const isDonut     = widgetType === 'chart-donut';
   const isHeatmap   = widgetType === 'chart-heatmap';
-  const isNarrHero  = widgetType === 'narrative-hero';
-  const isNarrNote  = widgetType === 'narrative-note';
-  const isNarrCall  = widgetType === 'narrative-callout';
-  const isNarrQuote = widgetType === 'narrative-quote';
-  const isNarrative = isNarrHero || isNarrNote || isNarrCall || isNarrQuote;
+  const isNarrHero    = widgetType === 'narrative-hero';
+  const isNarrNote    = widgetType === 'narrative-note';
+  const isNarrCall    = widgetType === 'narrative-callout';
+  const isNarrQuote   = widgetType === 'narrative-quote';
+  const isNarrative   = isNarrHero || isNarrNote || isNarrCall || isNarrQuote;
+  const isKpiCompare    = widgetType === 'kpi-compare';
+  const isListDevices   = widgetType === 'list-devices';
 
-  const DESIGN_ONLY_TYPES = ['carousel-highlights','kpi-compare','kpi-stacked','chart-sparks',
-    'progress-psi','progress-score','progress-goals','progress-pacing','progress-grid',
-    'list-keywords','list-pages','list-countries','list-devices'];
+  const DESIGN_ONLY_TYPES = ['carousel-highlights','chart-sparks',
+    'progress-psi','progress-goals','progress-pacing',
+    'list-keywords','list-pages','list-countries'];
   const isDesignOnly = DESIGN_ONLY_TYPES.includes(widgetType);
 
   // Merged config — WIDGET_DEFAULTS → saved config
@@ -909,36 +951,165 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     const nx = [...cfg.dimensions]; const [m] = nx.splice(from, 1); nx.splice(to, 0, m); up({ dimensions: nx });
   };
 
+  // Source connect/disconnect helpers
+  const handleConnectClick = (s) => {
+    if (connectingFor === s) { setConnectingFor(null); return; }
+    setConnectingFor(s);
+    if (accountsFor[s] !== undefined) return;
+    setLoadingFor(s);
+    (window._fetchAccounts ? window._fetchAccounts(s) : Promise.resolve([])).then(rows => {
+      setAccountsFor(a => ({ ...a, [s]: rows || [] }));
+      setLoadingFor(null);
+    });
+  };
+  const handleSelectAccount = (s, acc) => {
+    const newConnected = { ...(connectedSources || {}), [s]: acc };
+    setConnectingFor(null);
+    setAddOpen(false);
+    onConnectedChange && onConnectedChange(newConnected);
+  };
+  const handleDisconnectSource = (s) => {
+    const newConnected = { ...(connectedSources || {}) };
+    delete newConnected[s];
+    onConnectedChange && onConnectedChange(newConnected);
+  };
+
   // Reusable source selector block
+  const ALL_SOURCES = ['google', 'meta', 'ga4', 'search'];
+  const connectedList2 = ALL_SOURCES.filter(s => connectedSources?.[s]);
+  const unconnectedList = ALL_SOURCES.filter(s => !connectedSources?.[s]);
   const SourceSection = (
     <ESection label="Data source">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-        {connectedList.map(s => {
+        {/* Connected sources */}
+        {connectedList2.map(s => {
           const label = getSrcAccountLabel(s, connectedSources);
           const isCurrent = s === srcKey;
-          const canSwitch = !!onSourceChange;
           return (
             <div key={s}
-              onClick={canSwitch && !isCurrent ? () => onSourceChange(widgetId, s) : undefined}
-              style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px', border: `1px solid ${isCurrent ? SRC_COLORS[s] : SRC_COLORS[s]+'44'}`, borderRadius: 7, background: isCurrent ? SRC_COLORS[s] + '18' : 'transparent', cursor: canSwitch && !isCurrent ? 'pointer' : 'default', transition: 'background .12s' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px', border: `1px solid ${isCurrent ? SRC_COLORS[s] : SRC_COLORS[s]+'44'}`, borderRadius: 7, background: isCurrent ? SRC_COLORS[s]+'18' : 'transparent', transition: 'background .12s' }}>
               <ChannelLogo channel={s} size={13}/>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 700, color: isCurrent ? SRC_COLORS[s] : EP.sec, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
-                {isCurrent && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, color: EP.muted, marginTop: 1 }}>Sumber aktif widget ini</div>}
-                {!isCurrent && canSwitch && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, color: EP.muted, marginTop: 1 }}>klik untuk ganti</div>}
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 700, color: isCurrent ? SRC_COLORS[s] : EP.sec, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
+                {isCurrent && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: EP.muted, marginTop: 1 }}>Active source for this widget</div>}
               </div>
-              {isCurrent && <div style={{ width: 7, height: 7, borderRadius: '50%', background: SRC_COLORS[s], flexShrink: 0 }}/>}
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
+                {isCurrent && <div style={{ width: 6, height: 6, borderRadius: '50%', background: SRC_COLORS[s] }}/>}
+                {onSourceChange && !isCurrent && (
+                  <button onClick={() => onSourceChange(widgetId, s)}
+                    style={{ padding: '3px 8px', borderRadius: 5, border: `1px solid ${SRC_COLORS[s]}55`, background: `${SRC_COLORS[s]}11`, color: SRC_COLORS[s], fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, cursor: 'pointer', lineHeight: 1.2 }}>
+                    Use
+                  </button>
+                )}
+                {onConnectedChange && (
+                  <button onClick={e => { e.stopPropagation(); setDisconnectPending(s); }}
+                    style={{ padding: '3px 7px', borderRadius: 5, border: '1px solid rgba(220,38,38,.4)', background: 'rgba(220,38,38,.08)', color: '#DC2626', fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, cursor: 'pointer', lineHeight: 1.2 }}>
+                    Disconnect
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}
-        {connectedList.length === 0 && (
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted, lineHeight: 1.6 }}>
-            Belum ada sumber data. Hubungkan di Configure.
+        {connectedList2.length === 0 && !onConnectedChange && (
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: EP.muted, lineHeight: 1.6 }}>
+            No data source connected. Add one in Configure.
           </span>
+        )}
+
+        {/* Add Data Source */}
+        {onConnectedChange && unconnectedList.length > 0 && (
+          <div style={{ position: 'relative', marginTop: connectedList2.length > 0 ? 2 : 0 }}>
+            <button onClick={() => { setAddOpen(o => !o); setConnectingFor(null); }}
+              style={{ width: '100%', padding: '7px 10px', border: `1px dashed ${addOpen ? EP.teal : EP.edge}`, borderRadius: 7, background: addOpen ? EP.teal+'0D' : 'transparent', color: addOpen ? EP.teal : EP.muted, fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, transition: 'all .15s' }}>
+              <span style={{ fontSize: 16, lineHeight: 1, marginTop: -1 }}>{addOpen ? '×' : '+'}</span>
+              {addOpen ? 'Cancel' : 'Add Data Source'}
+            </button>
+
+            {/* Dropdown list — stays open while addOpen, independent of connectingFor */}
+            {addOpen && (
+              <div style={{ marginTop: 4, border: `1px solid ${EP.edge}`, borderRadius: 8, background: EP.bg, maxHeight: 260, overflowY: 'auto' }}>
+                {/* Platform rows */}
+                {unconnectedList.map((s, i) => {
+                  const isActive = connectingFor === s;
+                  const isLoadingThis = loadingFor === s;
+                  const accs = accountsFor[s];
+                  return (
+                    <div key={s} style={{ borderTop: i > 0 ? `1px solid ${EP.edge}` : 'none' }}>
+                      <div onClick={() => handleConnectClick(s)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer', background: isActive ? SRC_COLORS[s]+'11' : 'transparent', transition: 'background .1s' }}
+                        onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = EP.elevated; }}
+                        onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}>
+                        <ChannelLogo channel={s} size={13}/>
+                        <span style={{ flex: 1, fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: isActive ? SRC_COLORS[s] : EP.fg }}>{SRC_DISPLAY[s]}</span>
+                        {isActive && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={SRC_COLORS[s]} strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>}
+                      </div>
+                      {/* Account list for this platform */}
+                      {isActive && (
+                        <div style={{ borderTop: `1px solid ${EP.edge}`, background: 'rgba(5,10,22,.4)' }}>
+                          {isLoadingThis ? (
+                            <div style={{ padding: '10px 12px', fontFamily: 'var(--font-mono)', fontSize: 12, color: EP.muted }}>Loading accounts…</div>
+                          ) : !accs || accs.length === 0 ? (
+                            <div style={{ padding: '10px 12px', fontFamily: 'var(--font-mono)', fontSize: 12, color: EP.muted, lineHeight: 1.6 }}>No accounts in database.</div>
+                          ) : (
+                            <div style={{ maxHeight: 150, overflowY: 'auto' }}>
+                              {accs.map((acc, ai) => (
+                                <div key={acc.id} onClick={() => handleSelectAccount(s, acc)}
+                                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderTop: ai > 0 ? `1px solid ${EP.edge}` : 'none', cursor: 'pointer', background: 'transparent', transition: 'background .1s' }}
+                                  onMouseEnter={e => { e.currentTarget.style.background = SRC_COLORS[s]+'18'; }}
+                                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: EP.fg, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc.name}</div>
+                                    {acc.sub && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: EP.muted, marginTop: 1 }}>{acc.sub}</div>}
+                                  </div>
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={EP.muted} strokeWidth="2.2" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </ESection>
   );
+
+  const DisconnectModal = disconnectPending ? (
+    <div style={{ position: 'fixed', right: 0, top: 0, bottom: 0, width: 320, zIndex: 9999, background: 'rgba(5,10,22,.78)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ background: EP.bg, border: `1px solid ${EP.edge}`, borderRadius: 10, padding: '20px 18px', width: '100%', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: EP.fg }}>
+          Disconnect {SRC_DISPLAY[disconnectPending]}?
+        </div>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 13.5, color: EP.sec, lineHeight: 1.65 }}>
+          This will disconnect {SRC_DISPLAY[disconnectPending]} from this client. All widgets using this source will stop displaying data.
+        </div>
+        {(() => {
+          const count = layoutRows ? layoutRows.filter(e => e.source === disconnectPending).length : 0;
+          return count > 0 ? (
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12.5, color: '#F59E0B', background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.2)', borderRadius: 6, padding: '7px 10px' }}>
+              {count} widget(s) in this report are using this source.
+            </div>
+          ) : null;
+        })()}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => setDisconnectPending(null)}
+            style={{ flex: 1, padding: '9px 0', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 7, color: EP.sec, fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            Cancel
+          </button>
+          <button onClick={() => { handleDisconnectSource(disconnectPending); setDisconnectPending(null); }}
+            style={{ flex: 1, padding: '9px 0', background: 'rgba(220,38,38,.12)', border: '1px solid rgba(220,38,38,.4)', borderRadius: 7, color: '#DC2626', fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+            Yes, Disconnect
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   // ── TEXT WIDGET ──────────────────────────────────────────────────
   if (isText) {
@@ -955,7 +1126,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
             onChange={e => up({ body: e.target.value })}
             placeholder="Tulis narasi atau penjelasan di sini..."
             rows={7}
-            style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}
+            style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 14, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}
           />
         </ESection>
       </>
@@ -990,13 +1161,39 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     return (
       <>
         <ESizeButtons label="Font size" value={cfg.fontSize || 'M'} onChange={v => up({ fontSize: v })}/>
-        <ESection label="Formatting">
-          <FormattingToolbar/>
-        </ESection>
+        <EDivider/>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <ELabel>Sections ({heroBlocks.length} / 4)</ELabel>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {heroBlocks.length > 1 && (
+              <button
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => removeBlock(heroBlocks.length - 1)}
+                style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 5, color: '#F87171', cursor: 'pointer', padding: '4px 8px' }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14"/></svg>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700 }}>Remove</span>
+              </button>
+            )}
+            {heroBlocks.length < 4 && (
+              <button
+                onMouseDown={e => e.preventDefault()}
+                onClick={addBlock}
+                style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(0,194,184,0.12)', border: '1px solid rgba(0,194,184,0.3)', borderRadius: 5, color: '#00C2B8', cursor: 'pointer', padding: '4px 8px' }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700 }}>Add</span>
+              </button>
+            )}
+          </div>
+        </div>
+        {af && (
+          <ESection label="Formatting">
+            <FormattingToolbar/>
+          </ESection>
+        )}
         {af && afBlock && (
           <ESection label={afLabel}>
             {afSublabel && heroBlocks.length > 1 && (
-              <p style={{ margin: '0 0 6px', fontFamily: 'var(--font-body)', fontSize: 10, color: EP.muted }}>{afSublabel}</p>
+              <p style={{ margin: '0 0 6px', fontFamily: 'var(--font-body)', fontSize: 12, color: EP.muted }}>{afSublabel}</p>
             )}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               {afColors.map(c => (
@@ -1012,61 +1209,71 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
             </div>
           </ESection>
         )}
-        <EDivider/>
-        {heroBlocks.map((block, i) => (
-          <React.Fragment key={i}>
-            {i > 0 && <EDivider/>}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <ELabel>{heroBlocks.length > 1 ? `Section ${i + 1}` : 'Content'}</ELabel>
-              {heroBlocks.length > 1 && (
-                <button onMouseDown={e => { e.preventDefault(); removeBlock(i); }}
-                  title="Hapus section ini"
-                  style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 5, color: '#F87171', cursor: 'pointer', padding: '4px 8px', transition: 'background .12s' }}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6M14,11v6"/><path d="M9,6V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1v2"/></svg>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700 }}>Remove</span>
-                </button>
-              )}
-            </div>
-          </React.Fragment>
-        ))}
-        {heroBlocks.length < 4 && (
-          <>
-            <EDivider/>
-            <button onClick={addBlock} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px 0', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 6, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 600 }}>
-              + Add section
-            </button>
-          </>
-        )}
       </>
     );
   }
 
   // ── NARRATIVE NOTE (analyst note, 3 beats) ───────────────────────
   if (isNarrNote) {
-    const beatLabel = (n, field) => `Beat ${n} ${field}`;
+    const af = activeField;
+    const beatCount = Math.min(6, Math.max(2, cfg.beatCount || 3));
+    const tColors = ['', '#FCFCFC', '#00C2B8', '#F8B400', '#F87171'];
+    const bColors = ['', '#9BABBF', '#FCFCFC', '#00C2B8', '#F8B400'];
+    const colorSwatch = { '': 'Default', '#FCFCFC': 'White', '#00C2B8': 'Teal', '#F8B400': 'Gold', '#F87171': 'Red', '#9BABBF': 'Muted' };
+    const afColors     = af?.field === 'body' ? bColors : tColors;
+    const afColorKey   = af ? `beat${af.bi + 1}_${af.field}Color` : null;
+    const afCurrentColor = afColorKey ? (cfg[afColorKey] || '') : null;
+    const afDefaultBg  = af?.field === 'body' ? 'rgba(155,171,191,0.6)' : 'rgba(255,255,255,0.85)';
+    const afLabel      = af ? (af.field === 'body' ? 'Body color' : 'Title color') : 'Text color';
     return (
       <>
-        {sharedBanner}
-        <ESection label="Eyebrow label">
-          <EInput value={cfg.name || ''} onChange={v => up({ name: v })} placeholder="Analyst note · March 2025"/>
-        </ESection>
+        <ESizeButtons label="Font size" value={cfg.fontSize || 'M'} onChange={v => up({ fontSize: v })}/>
         <EDivider/>
-        {[1,2,3].map(n => (
-          <React.Fragment key={n}>
-            <ELabel>{`Beat ${n}`}</ELabel>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 14 }}>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <EInput value={cfg[`beat${n}_emoji`] || ''} onChange={v => up({ [`beat${n}_emoji`]: v })} placeholder={['📊','💡','🎯'][n-1]}/>
-                <div style={{ flex: 1 }}>
-                  <EInput value={cfg[`beat${n}_title`] || ''} onChange={v => up({ [`beat${n}_title`]: v })} placeholder={['What happened','Why it matters','Next action'][n-1]}/>
-                </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <ELabel>Sections ({beatCount} / 6)</ELabel>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {beatCount > 2 && (
+              <button
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => up({ beatCount: beatCount - 1 })}
+                style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 5, color: '#F87171', cursor: 'pointer', padding: '4px 8px' }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14"/></svg>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700 }}>Remove</span>
+              </button>
+            )}
+            {beatCount < 6 && (
+              <button
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => up({ beatCount: beatCount + 1 })}
+                style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(0,194,184,0.12)', border: '1px solid rgba(0,194,184,0.3)', borderRadius: 5, color: '#00C2B8', cursor: 'pointer', padding: '4px 8px' }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700 }}>Add</span>
+              </button>
+            )}
+          </div>
+        </div>
+        {af && (
+          <>
+            <ESection label="Formatting">
+              <FormattingToolbar/>
+            </ESection>
+            <ESection label={afLabel}>
+              <p style={{ margin: '0 0 6px', fontFamily: 'var(--font-body)', fontSize: 12, color: EP.muted }}>Beat {af.bi + 1}</p>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                {afColors.map(c => (
+                  <div key={c} title={colorSwatch[c]}
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => up({ [afColorKey]: c })}
+                    style={{ width: 22, height: 22, borderRadius: '50%', cursor: 'pointer',
+                      background: c || afDefaultBg,
+                      border: afCurrentColor === c ? `2px solid ${EP.fg}` : '2px solid transparent',
+                      boxShadow: afCurrentColor === c ? `0 0 0 2px ${c || EP.fg}` : 'none',
+                      flexShrink: 0 }}/>
+                ))}
               </div>
-              <textarea value={cfg[`beat${n}_body`] || ''} onChange={e => up({ [`beat${n}_body`]: e.target.value })}
-                placeholder={['Total spend naik 12,4% MoM...','Google Ads tetap kontributor ROAS terbesar...','Geser 15% budget retargeting...'][n-1]}
-                rows={2} style={{ width: '100%', boxSizing: 'border-box', padding: '7px 9px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11.5, lineHeight: 1.5, resize: 'vertical', outline: 'none' }}/>
-            </div>
-          </React.Fragment>
-        ))}
+            </ESection>
+          </>
+        )}
       </>
     );
   }
@@ -1077,13 +1284,13 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
       <>
         {sharedBanner}
         <ESection label="Title">
-          <EInput value={cfg.title || ''} onChange={v => up({ title: v })} placeholder="3 halaman berpotensi naik ke top-3"/>
+          <EInput value={cfg.title || ''} onChange={v => up({ title: v })} placeholder="3 pages could move to top-3"/>
         </ESection>
         <EDivider/>
         <ESection label="Body text">
           <textarea value={cfg.body || ''} onChange={e => up({ body: e.target.value })}
-            placeholder="Penjelasan detail tentang opportunity ini..."
-            rows={4} style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}/>
+            placeholder="Detailed explanation of this opportunity..."
+            rows={4} style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 14, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}/>
         </ESection>
         <EDivider/>
         <ESection label="CTA button">
@@ -1100,8 +1307,8 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
         {sharedBanner}
         <ESection label="Quote text">
           <textarea value={cfg.quote || ''} onChange={e => up({ quote: e.target.value })}
-            placeholder='"Laporan bulanan jadi jauh lebih cepat disiapkan..."'
-            rows={4} style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}/>
+            placeholder='"Monthly reports are now prepared so much faster..."'
+            rows={4} style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 14, lineHeight: 1.6, resize: 'vertical', outline: 'none' }}/>
         </ESection>
         <EDivider/>
         <ESection label="Author">
@@ -1114,8 +1321,204 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
     );
   }
 
-  // ── DESIGN-ONLY WIDGETS (carousel, kpi-compare, progress-*, list-*) ─
+  // ── Shared filter section for all Data & KPI widgets ────────────
+  const KPI_FILTER_OPS = [
+    { value: 'contains', label: 'Contains' },
+    { value: 'is',       label: 'Equals' },
+    { value: 'not',      label: 'Not equal' },
+    { value: 'starts',   label: 'Starts with' },
+  ];
+  function renderFilterRows(filtersArr, onChange, dims) {
+    const defaultDim = dims[0]?.key;
+    return filtersArr.map(function(f, fi) {
+      return (
+        <div key={fi} style={{ background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <ESelect value={f.dim || defaultDim} onChange={function(v) { var nf = filtersArr.slice(); nf[fi] = Object.assign({}, f, { dim: v, val: '' }); onChange(nf); }}
+                options={dims.map(function(d) { return { value: d.key, label: d.label }; })}/>
+            </div>
+            <div style={{ width: 100, flexShrink: 0 }}>
+              <ESelect value={f.op || 'contains'} onChange={function(v) { var nf = filtersArr.slice(); nf[fi] = Object.assign({}, f, { op: v }); onChange(nf); }}
+                options={KPI_FILTER_OPS}/>
+            </div>
+            <button onClick={function() { onChange(filtersArr.filter(function(_, j) { return j !== fi; })); }}
+              style={{ width: 24, height: 24, border: `1px solid ${EP.edge}`, borderRadius: 4, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16, lineHeight: 1 }}>×</button>
+          </div>
+          {(dimValMap[f.dim || defaultDim] || []).length > 0 ? (
+            <select value={f.val || ''} onChange={function(e) { var nf = filtersArr.slice(); nf[fi] = Object.assign({}, f, { val: e.target.value }); onChange(nf); }}
+              style={{ width: '100%', boxSizing: 'border-box', padding: '6px 10px', background: EP.surface, border: `1px solid ${EP.edge}`, borderRadius: 5, color: f.val ? EP.fg : EP.muted, fontFamily: 'var(--font-body)', fontSize: 13.5, outline: 'none' }}>
+              <option value="">— pilih nilai —</option>
+              {(dimValMap[f.dim || defaultDim] || []).map(function(v) { return <option key={v} value={v}>{v}</option>; })}
+            </select>
+          ) : (
+            <input value={f.val || ''} onChange={function(e) { var nf = filtersArr.slice(); nf[fi] = Object.assign({}, f, { val: e.target.value }); onChange(nf); }}
+              placeholder="nilai filter…"
+              style={{ width: '100%', boxSizing: 'border-box', padding: '6px 10px', background: EP.surface, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 13.5, outline: 'none' }}/>
+          )}
+        </div>
+      );
+    });
+  }
+  function renderKpiFilterSection() {
+    if (!availD.length) return null;
+    const defaultDim = availD[0]?.key;
+    const filtersArr = cfg.filters || [];
+    return (
+      <>
+        <EDivider/>
+        <ESection label="Filters">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 6 }}>
+            {renderFilterRows(filtersArr, function(nf) { up({ filters: nf }); }, availD)}
+          </div>
+          <button onClick={() => up({ filters: [...filtersArr, { dim: defaultDim, op: 'contains', val: '' }] })}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 5, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600 }}>
+            <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4.5 1v7M1 4.5h7"/></svg>
+            Add filter
+          </button>
+        </ESection>
+      </>
+    );
+  }
+
+  // ── KPI COMPARE (period comparison widget) ───────────────────────
+  if (isKpiCompare) {
+    const nfmt = cfg.numberFormat || 'compact';
+    return (
+      <>
+        {sharedBanner}
+        <ESection label="Widget name">
+          <EInput value={cfg.name || ''} onChange={v => up({ name: v })} placeholder={availM.find(m => m.key === (cfg.metric || availM[0]?.key))?.label || 'Widget name...'}/>
+        </ESection>
+        <EDivider/>
+        {SourceSection}
+        {DisconnectModal}
+        {availM.length > 0 && (
+          <>
+            <EDivider/>
+            <ESection label="Metric">
+              {(() => {
+                const activeCm  = (cfg.customMetrics || [])[0] || null;
+                const activeKey = activeCm ? null : (cfg.metric || availM[0]?.key);
+                const isOpen    = metPickerOpen === 'single';
+                const btnLabel  = activeCm ? activeCm.name : (availM.find(m => m.key === activeKey)?.label || activeKey || '—');
+                const toggle    = () => setMetPickerOpen(isOpen ? null : 'single');
+                return (
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ display: 'flex', width: '100%', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, overflow: 'hidden' }}>
+                      <button onClick={toggle}
+                        style={{ flex: 1, minWidth: 0, padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                        {activeCm && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: EP.teal, background: `${EP.teal}22`, padding: '1px 5px', borderRadius: 3, flexShrink: 0 }}>fx</span>}
+                        <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 14, color: EP.fg, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{btnLabel}</span>
+                      </button>
+                      {activeCm && (
+                        <>
+                          <div style={{ width: 1, background: EP.edge, alignSelf: 'stretch' }}/>
+                          <button onClick={() => openEditCustom(activeCm)}
+                            style={{ width: 36, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: EP.muted }}>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                          </button>
+                        </>
+                      )}
+                      <div style={{ width: 1, background: EP.edge, alignSelf: 'stretch' }}/>
+                      <button onClick={toggle}
+                        style={{ width: 32, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={EP.muted} strokeWidth="2" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>
+                      </button>
+                    </div>
+                    {isOpen && (
+                      <>
+                        <div style={{ position: 'fixed', inset: 0, zIndex: 1999 }} onClick={() => setMetPickerOpen(null)}/>
+                        <MetricPickerDropdown
+                          availMetrics={availM}
+                          selectedKeys={activeKey ? [activeKey] : []}
+                          showCustom={true}
+                          singleSelect={true}
+                          onAdd={key => { up({ metric: key, customMetrics: [] }); setMetPickerOpen(null); }}
+                          onCustom={() => { up({ metric: null, customMetrics: [] }); setMetPickerOpen(null); openNewCustom(); }}
+                          onClose={() => setMetPickerOpen(null)}
+                        />
+                      </>
+                    )}
+                    {customModal && (
+                      <CustomMetricModal draft={customDraft} setDraft={setCustomDraft} availMetrics={availM}
+                        mode={customModal.mode} onSave={saveCustomMetric} onClose={() => setCustomModal(null)}/>
+                    )}
+                  </div>
+                );
+              })()}
+            </ESection>
+          </>
+        )}
+        <EDivider/>
+        <ESection label="Number format">
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[['compact', 'Compact', '7.6K'], ['detail', 'Detail', '7,600']].map(([val, label, hint]) => (
+              <button key={val} onClick={() => up({ numberFormat: val })}
+                style={{ flex: 1, padding: '6px 4px', background: nfmt === val ? EP.teal + '22' : 'transparent', border: `1px solid ${nfmt === val ? EP.teal : EP.edge}`, borderRadius: 6, color: nfmt === val ? EP.teal : EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 600, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <span>{label}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.7 }}>{hint}</span>
+              </button>
+            ))}
+          </div>
+        </ESection>
+        {renderKpiFilterSection()}
+      </>
+    );
+  }
+
+
+  // ── LIST DEVICES (category split bars) ───────────────────────────
+  if (isListDevices) {
+    const LABEL_DEFAULTS = ['Mobile', 'Desktop', 'Tablet'];
+    const PCT_DEFAULTS   = ['72', '22', '6'];
+    const numInp = (key, placeholder) => (
+      <input value={cfg[key] != null ? String(cfg[key]) : ''} onChange={e => { const v = e.target.value; up({ [key]: v === '' ? null : (isNaN(Number(v)) ? v : Number(v)) }); }}
+        placeholder={placeholder}
+        style={{ width: '70px', flexShrink: 0, padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }}
+      />
+    );
+    return (
+      <>
+        {sharedBanner}
+        <ESection label="Title">
+          <EInput value={cfg.title || ''} onChange={v => up({ title: v })} placeholder="Device split"/>
+        </ESection>
+        {[1, 2, 3].map(i => (
+          <React.Fragment key={i}>
+            <EDivider/>
+            <ESection label={`Row ${i}`}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <EInput value={cfg[`label${i}`] || ''} onChange={v => up({ [`label${i}`]: v })} placeholder={LABEL_DEFAULTS[i-1]}/>
+                </div>
+                {numInp(`pct${i}`, PCT_DEFAULTS[i-1])}
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: EP.muted }}>%</span>
+              </div>
+            </ESection>
+          </React.Fragment>
+        ))}
+      </>
+    );
+  }
+
+  // ── DESIGN-ONLY WIDGETS (carousel, progress-*, list-*) ───────────
   if (isDesignOnly) {
+    if (widgetType === 'progress-psi') {
+      return (
+        <>
+          <ESection label="Widget name">
+            <EInput value={cfg.name || ''} onChange={v => up({ name: v })} placeholder="Widget name..."/>
+          </ESection>
+          <EDivider/>
+          <ESizeButtons label="Font size" value={cfg.fontSize || 'M'} onChange={v => up({ fontSize: v })}/>
+          <EDivider/>
+          <ESection label="Run Measurement">
+            <SetupPageSpeed/>
+          </ESection>
+        </>
+      );
+    }
     return (
       <>
         {sharedBanner}
@@ -1125,46 +1528,74 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
         <EDivider/>
         <div style={{ display: 'flex', gap: 8, padding: '10px 12px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 8 }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={EP.muted} strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: EP.muted, lineHeight: 1.5 }}>
-            Widget ini adalah <strong style={{ color: EP.sec }}>template desain</strong> dengan konten bawaan. Pengaturan konten lebih lanjut belum tersedia.
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: EP.muted, lineHeight: 1.5 }}>
+            This is a <strong style={{ color: EP.sec }}>design template</strong> widget with built-in content. Additional content settings are not yet available.
           </div>
         </div>
       </>
     );
   }
 
-  // ── Shared custom-metrics block (for single-metric widget types) ──
-  const renderCustomMetrics = () => (
-    <>
-      <EDivider/>
-      <ESection label={`Custom Metrics${(cfg.customMetrics || []).length ? ` (${(cfg.customMetrics || []).length})` : ''}`}>
-        {(cfg.customMetrics || []).length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 6 }}>
-            {(cfg.customMetrics || []).map(cm => (
-              <div key={cm.id} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', background: `${EP.teal}0C`, border: `1px solid ${EP.teal}30`, borderRadius: 5 }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700, color: EP.teal, background: `${EP.teal}22`, padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>fx</span>
-                  <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, color: EP.teal, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cm.name}</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, flexShrink: 0 }}>{cm.format === 'rupiah' ? 'Rp' : cm.format === 'pct' ? '%' : '#'}</span>
-                </div>
-                <button onClick={() => openEditCustom(cm)} title="Edit formula"
-                  style={{ width: 24, height: 24, border: `1px solid ${EP.edge}`, borderRadius: 5, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </button>
-                <button onClick={() => up({ customMetrics: (cfg.customMetrics || []).filter(m => m.id !== cm.id) })}
-                  style={{ width: 24, height: 24, border: `1px solid rgba(220,38,38,.3)`, borderRadius: 5, background: 'rgba(220,38,38,.08)', color: EP.red, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-              </div>
-            ))}
-          </div>
+  // ── Searchable metric picker trigger (ESelect-style button → MetricPickerDropdown) ──
+  function renderMetricPickerTrigger(selectedKey, pickerKey, onAdd, disabledKeys) {
+    const isOpen = metPickerOpen === pickerKey;
+    const label = availM.find(m => m.key === selectedKey)?.label || selectedKey || '—';
+    return (
+      <div style={{ position: 'relative' }}>
+        <button onClick={() => setMetPickerOpen(isOpen ? null : pickerKey)}
+          style={{ width: '100%', padding: '8px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, cursor: 'pointer', textAlign: 'left' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: EP.fg }}>{label}</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={EP.muted} strokeWidth="2" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        {isOpen && (
+          <>
+            <div style={{ position: 'fixed', inset: 0, zIndex: 1999 }} onClick={() => setMetPickerOpen(null)}/>
+            <MetricPickerDropdown
+              availMetrics={availM}
+              selectedKeys={disabledKeys || [selectedKey].filter(Boolean)}
+              showCustom={true}
+              singleSelect={true}
+              onAdd={key => { onAdd(key); setMetPickerOpen(null); }}
+              onCustom={() => { setMetPickerOpen(null); openNewCustom(); }}
+              onClose={() => setMetPickerOpen(null)}
+            />
+          </>
         )}
+      </div>
+    );
+  }
+
+  // ── Custom metrics body — list (+ optional add button) + modal, no section wrapper ──
+  function renderCustomMetricsBody(showAdd) { return (
+    <>
+      {(cfg.customMetrics || []).length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 6 }}>
+          {(cfg.customMetrics || []).map(cm => (
+            <div key={cm.id} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', background: `${EP.teal}0C`, border: `1px solid ${EP.teal}30`, borderRadius: 5 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: EP.teal, background: `${EP.teal}22`, padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>fx</span>
+                <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: EP.teal, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cm.name}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: EP.muted, flexShrink: 0 }}>{cm.format === 'rupiah' ? 'Rp' : cm.format === 'pct' ? '%' : '#'}</span>
+              </div>
+              <button onClick={() => openEditCustom(cm)} title="Edit formula"
+                style={{ width: 24, height: 24, border: `1px solid ${EP.edge}`, borderRadius: 5, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button onClick={() => up({ customMetrics: (cfg.customMetrics || []).filter(m => m.id !== cm.id) })}
+                style={{ width: 24, height: 24, border: `1px solid rgba(220,38,38,.3)`, borderRadius: 5, background: 'rgba(220,38,38,.08)', color: EP.red, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      {showAdd && (
         <button onClick={openNewCustom}
-          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px dashed ${EP.teal}66`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px dashed ${EP.teal}66`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 600, width: '100%', justifyContent: 'center', marginTop: 6 }}>
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 1v8M1 5h8"/></svg>
           Add custom metric
         </button>
-      </ESection>
+      )}
       {customModal && (
         <CustomMetricModal
           draft={customDraft}
@@ -1176,7 +1607,17 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
         />
       )}
     </>
-  );
+  ); }
+
+  // ── Shared custom-metrics block — with its own section header (heatmap, donut, etc.) ──
+  function renderCustomMetrics() { return (
+    <>
+      <EDivider/>
+      <ESection label={`Custom Metrics${(cfg.customMetrics || []).length ? ` (${(cfg.customMetrics || []).length})` : ''}`}>
+        {renderCustomMetricsBody(true)}
+      </ESection>
+    </>
+  ); }
 
   // ── HEATMAP WIDGET ───────────────────────────────────────────────
   if (isHeatmap) {
@@ -1188,6 +1629,8 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
         </ESection>
         <EDivider/>
         {SourceSection}
+        {DisconnectModal}
+        {renderKpiFilterSection()}
         {renderCustomMetrics()}
       </>
     );
@@ -1203,16 +1646,82 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
         </ESection>
         <EDivider/>
         {SourceSection}
+        {DisconnectModal}
         {availM.length > 0 && (
           <>
             <EDivider/>
             <ESection label="Metric">
-              <ESelect value={cfg.metric || availM[0]?.key} onChange={v => up({ metric: v })}
-                options={availM.map(m => ({ value: m.key, label: m.label }))}/>
+              {(() => {
+                const activeCm  = (cfg.customMetrics || [])[0] || null;
+                const activeKey = activeCm ? null : (cfg.metric || availM[0]?.key);
+                const isOpen    = metPickerOpen === 'single';
+                const btnLabel  = activeCm ? activeCm.name : (availM.find(m => m.key === activeKey)?.label || activeKey || '—');
+                const toggle    = () => setMetPickerOpen(isOpen ? null : 'single');
+                return (
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ display: 'flex', width: '100%', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, overflow: 'hidden' }}>
+                      <button onClick={toggle}
+                        style={{ flex: 1, minWidth: 0, padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                        {activeCm && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: EP.teal, background: `${EP.teal}22`, padding: '1px 5px', borderRadius: 3, flexShrink: 0 }}>fx</span>}
+                        <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 14, color: EP.fg, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{btnLabel}</span>
+                      </button>
+                      {activeCm && (
+                        <>
+                          <div style={{ width: 1, background: EP.edge, alignSelf: 'stretch' }}/>
+                          <button onClick={() => openEditCustom(activeCm)}
+                            style={{ width: 36, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: EP.muted }}>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                          </button>
+                        </>
+                      )}
+                      <div style={{ width: 1, background: EP.edge, alignSelf: 'stretch' }}/>
+                      <button onClick={toggle}
+                        style={{ width: 32, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={EP.muted} strokeWidth="2" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>
+                      </button>
+                    </div>
+                    {isOpen && (
+                      <>
+                        <div style={{ position: 'fixed', inset: 0, zIndex: 1999 }} onClick={() => setMetPickerOpen(null)}/>
+                        <MetricPickerDropdown
+                          availMetrics={availM}
+                          selectedKeys={activeKey ? [activeKey] : []}
+                          showCustom={true}
+                          singleSelect={true}
+                          onAdd={key => { up({ metric: key, customMetrics: [] }); setMetPickerOpen(null); }}
+                          onCustom={() => { up({ metric: null, customMetrics: [] }); setMetPickerOpen(null); openNewCustom(); }}
+                          onClose={() => setMetPickerOpen(null)}
+                        />
+                      </>
+                    )}
+                    {customModal && (
+                      <CustomMetricModal draft={customDraft} setDraft={setCustomDraft} availMetrics={availM}
+                        mode={customModal.mode} onSave={saveCustomMetric} onClose={() => setCustomModal(null)}/>
+                    )}
+                  </div>
+                );
+              })()}
             </ESection>
           </>
         )}
-        {renderCustomMetrics()}
+        {availM.length === 0 && renderCustomMetrics()}
+        {widgetType === 'single-stat' && (
+          <>
+            <EDivider/>
+            <ESection label="Number format">
+              <div style={{ display: 'flex', gap: 6 }}>
+                {[['compact', 'Compact', '7.6K'], ['detail', 'Detail', '7,600']].map(([val, label, hint]) => (
+                  <button key={val} onClick={() => up({ numberFormat: val })}
+                    style={{ flex: 1, padding: '6px 4px', background: (cfg.numberFormat||'compact') === val ? EP.teal + '22' : 'transparent', border: `1px solid ${(cfg.numberFormat||'compact') === val ? EP.teal : EP.edge}`, borderRadius: 6, color: (cfg.numberFormat||'compact') === val ? EP.teal : EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 600, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <span>{label}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.7 }}>{hint}</span>
+                  </button>
+                ))}
+              </div>
+            </ESection>
+          </>
+        )}
+        {renderKpiFilterSection()}
       </>
     );
   }
@@ -1227,6 +1736,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
         </ESection>
         <EDivider/>
         {SourceSection}
+        {DisconnectModal}
         {availD.length > 0 && (
           <>
             <EDivider/>
@@ -1245,6 +1755,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
             </ESection>
           </>
         )}
+        {renderKpiFilterSection()}
         {renderCustomMetrics()}
       </>
     );
@@ -1260,8 +1771,15 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
       <ESection label="Widget name">
         <EInput value={cfg.name} onChange={v => up({ name: v })} placeholder={getDefaultWidgetName(cardId, srcKey)}/>
       </ESection>
+      {isTable && (
+        <>
+          <EDivider/>
+          <ESizeButtons label="Font size" value={cfg.fontSize || 'M'} onChange={v => up({ fontSize: v })}/>
+        </>
+      )}
       <EDivider/>
       {SourceSection}
+      {DisconnectModal}
 
       {isTable && availD.length > 0 && srcKey !== 'search' && (
         <>
@@ -1292,7 +1810,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
             </div>
             {cfg.dimensions.length < maxDims && availD.some(d => !cfg.dimensions.includes(d.key)) && (
               <button onClick={() => { const f = availD.find(d => !cfg.dimensions.includes(d.key)); if (f) up({ dimensions: [...cfg.dimensions, f.key] }); }}
-                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px dashed ${EP.teal}66`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px dashed ${EP.teal}66`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 1v8M1 5h8"/></svg>
                 Add dimension
               </button>
@@ -1347,7 +1865,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
                         <input value={cfg.metricLabels?.[key] ?? meta.label}
                           onChange={e => up({ metricLabels: { ...(cfg.metricLabels || {}), [key]: e.target.value } })}
                           placeholder={meta.label}
-                          style={{ width: 72, padding: '6px 7px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}
+                          style={{ width: 72, padding: '6px 7px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 13, outline: 'none' }}
                         />
                         <button onClick={() => { const newMet = cfg.metrics.filter((_, j) => j !== origI); up({ metrics: newMet, metricOrder: _metricOrder.filter(id => id !== key) }); }}
                           disabled={cfg.metrics.length <= 1}
@@ -1362,9 +1880,9 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
                       <div key={`c_${cm.id}`} {...dragHandlers(i)} style={dragStyle(i)}>
                         <div style={{ cursor: 'grab', color: EP.muted, display: 'flex', alignItems: 'center', flexShrink: 0 }}><DragDots/></div>
                         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', background: `${EP.teal}0C`, border: `1px solid ${EP.teal}30`, borderRadius: 5 }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700, color: EP.teal, background: `${EP.teal}22`, padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>fx</span>
-                          <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, color: EP.teal, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cm.name}</span>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, flexShrink: 0 }}>{cm.format === 'rupiah' ? 'Rp' : cm.format === 'pct' ? '%' : '#'}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: EP.teal, background: `${EP.teal}22`, padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>fx</span>
+                          <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: EP.teal, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cm.name}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: EP.muted, flexShrink: 0 }}>{cm.format === 'rupiah' ? 'Rp' : cm.format === 'pct' ? '%' : '#'}</span>
                         </div>
                         <button onClick={() => openEditCustom(cm)} title="Edit formula"
                           style={{ width: 24, height: 24, border: `1px solid ${EP.edge}`, borderRadius: 5, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -1385,7 +1903,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
             {((cfg.metrics || []).length + (cfg.customMetrics || []).length) < maxMetrics && (
               <div style={{ position: 'relative' }} ref={metPickerRef}>
                 <button onClick={() => setMetPickerOpen(o => !o)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px dashed ${EP.teal}66`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'transparent', border: `1px dashed ${EP.teal}66`, borderRadius: 5, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 1v8M1 5h8"/></svg>
                   Add metric
                 </button>
@@ -1405,6 +1923,8 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
         </>
       )}
 
+      {isKpiStrip && renderKpiFilterSection()}
+
       {isTable && (
         <>
           <EDivider/>
@@ -1413,44 +1933,19 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
               const validFilterKeys = (window.FILTER_DIM_REGISTRY?.[srcKey] || (() => availD.map(d => d.key)))(cfg.dimensions || []);
               const filterableD = availD.filter(d => validFilterKeys.includes(d.key));
               const defaultFilterDim = filterableD[0]?.key || availD[0]?.key || 'name';
+              const filtersArr = cfg.filters || [];
               return (
-            <>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 6 }}>
-              {(cfg.filters || []).map((f, fi) => (
-                <div key={fi} style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                  <div style={{ width: 82 }}>
-                    <ESelect value={f.dim || defaultFilterDim} onChange={v => { const nf = [...cfg.filters]; nf[fi] = { ...f, dim: v, val: '' }; up({ filters: nf }); }}
-                      options={filterableD.map(d => ({ value: d.key, label: d.label }))}/>
+                <>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 6 }}>
+                    {renderFilterRows(filtersArr, function(nf) { up({ filters: nf }); }, filterableD)}
                   </div>
-                  <div style={{ width: 42 }}>
-                    <ESelect value={f.op || 'contains'} onChange={v => { const nf = [...cfg.filters]; nf[fi] = { ...f, op: v }; up({ filters: nf }); }}
-                      options={[{value:'contains',label:'~'},{value:'is',label:'='},{value:'not',label:'≠'},{value:'starts',label:'^'}]}/>
-                  </div>
-                  {(dimValMap[f.dim || availD[0]?.key] || []).length > 0 ? (
-                    <select value={f.val || ''} onChange={e => { const nf = [...cfg.filters]; nf[fi] = { ...f, val: e.target.value }; up({ filters: nf }); }}
-                      style={{ flex: 1, minWidth: 0, padding: '6px 7px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: f.val ? EP.fg : EP.muted, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none', appearance: 'none' }}>
-                      <option value="">— pilih nilai —</option>
-                      {(dimValMap[f.dim || availD[0]?.key] || []).map(v => (
-                        <option key={v} value={v}>{v}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input value={f.val || ''} onChange={e => { const nf = [...cfg.filters]; nf[fi] = { ...f, val: e.target.value }; up({ filters: nf }); }}
-                      placeholder="value"
-                      style={{ flex: 1, minWidth: 0, padding: '6px 7px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}/>
-                  )}
-                  <button onClick={() => up({ filters: cfg.filters.filter((_, j) => j !== fi) })}
-                    style={{ width: 22, height: 22, border: `1px solid ${EP.edge}`, borderRadius: 4, background: 'transparent', color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13, lineHeight: 1 }}>×</button>
-                </div>
-              ))}
-            </div>
-            <button onClick={() => up({ filters: [...(cfg.filters||[]), { dim: defaultFilterDim, op: 'contains', val: '' }] })}
-              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 5, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 600 }}>
-              <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4.5 1v7M1 4.5h7"/></svg>
-              Add filter
-            </button>
-            </>
-            );
+                  <button onClick={() => up({ filters: [...filtersArr, { dim: defaultFilterDim, op: 'contains', val: '' }] })}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 5, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600 }}>
+                    <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4.5 1v7M1 4.5h7"/></svg>
+                    Add filter
+                  </button>
+                </>
+              );
             })()}
           </ESection>
         </>
@@ -1474,7 +1969,7 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
 
 // ─── Metric picker dropdown ───────────────────────────────────────
 
-const MetricPickerDropdown = ({ availMetrics, selectedKeys, showCustom, onAdd, onCustom, onClose }) => {
+const MetricPickerDropdown = ({ availMetrics, selectedKeys, showCustom, onAdd, onCustom, onClose, singleSelect }) => {
   const [search, setSearch] = React.useState('');
   const filtered = availMetrics.filter(m =>
     !search || m.label.toLowerCase().includes(search.toLowerCase()) || m.key.toLowerCase().includes(search.toLowerCase())
@@ -1485,31 +1980,32 @@ const MetricPickerDropdown = ({ availMetrics, selectedKeys, showCustom, onAdd, o
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5 }}>
           <svg width="10" height="10" fill="none" stroke={EP.muted} strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari metric…" autoFocus
-            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 11 }}/>
+            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 13 }}/>
         </div>
       </div>
       <div style={{ maxHeight: 200, overflowY: 'auto' }}>
         {filtered.map(m => {
           const picked = selectedKeys.includes(m.key);
+          const disabled = picked && !singleSelect;
           return (
-            <button key={m.key} disabled={picked} onClick={() => { onAdd(m.key); onClose(); }}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '8px 12px', background: 'none', border: 'none', textAlign: 'left', cursor: picked ? 'default' : 'pointer', opacity: picked ? 0.38 : 1 }}>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: EP.fg }}>{m.label}</span>
+            <button key={m.key} disabled={disabled} onClick={() => { onAdd(m.key); onClose(); }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '8px 12px', background: 'none', border: 'none', textAlign: 'left', cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.38 : 1 }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: EP.fg }}>{m.label}</span>
               {picked && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={EP.teal} strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>}
             </button>
           );
         })}
         {filtered.length === 0 && (
-          <div style={{ padding: '12px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted }}>No match</div>
+          <div style={{ padding: '12px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: EP.muted }}>No match</div>
         )}
       </div>
       {showCustom && (
         <div style={{ borderTop: `1px solid ${EP.edge}`, padding: '6px' }}>
           <button onClick={onCustom}
             style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '7px 10px', background: `${EP.teal}0D`, border: `1px solid ${EP.teal}33`, borderRadius: 6, cursor: 'pointer', textAlign: 'left' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, fontWeight: 700, color: EP.teal, background: `${EP.teal}25`, padding: '2px 5px', borderRadius: 3 }}>fx</span>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 600, color: EP.teal }}>Custom Metric</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, marginLeft: 'auto' }}>Buat formula sendiri →</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, fontWeight: 700, color: EP.teal, background: `${EP.teal}25`, padding: '2px 5px', borderRadius: 3 }}>fx</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: EP.teal }}>Custom Metric</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: EP.muted, marginLeft: 'auto' }}>Buat formula sendiri →</span>
           </button>
         </div>
       )}
@@ -1548,8 +2044,8 @@ const CustomMetricModal = ({ draft, setDraft, availMetrics, mode, onSave, onClos
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: `1px solid ${EP.edge}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: EP.teal, background: `${EP.teal}22`, padding: '2px 6px', borderRadius: 3 }}>fx</span>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: EP.fg }}>{mode === 'new' ? 'Custom Metric' : 'Edit Metric'}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: EP.teal, background: `${EP.teal}22`, padding: '2px 6px', borderRadius: 3 }}>fx</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: EP.fg }}>{mode === 'new' ? 'Custom Metric' : 'Edit Metric'}</span>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: EP.muted, cursor: 'pointer', padding: 4, display: 'flex' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -1560,24 +2056,24 @@ const CustomMetricModal = ({ draft, setDraft, availMetrics, mode, onSave, onClos
         <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 13 }}>
 
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 5 }}>LABEL</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: EP.muted, letterSpacing: '0.08em', marginBottom: 5 }}>LABEL</div>
             <input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="e.g. CPM"
-              style={{ width: '100%', boxSizing: 'border-box', padding: '7px 9px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none' }}/>
+              style={{ width: '100%', boxSizing: 'border-box', padding: '7px 9px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.fg, fontFamily: 'var(--font-body)', fontSize: 14, outline: 'none' }}/>
           </div>
 
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 5 }}>FORMULA</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: EP.muted, letterSpacing: '0.08em', marginBottom: 5 }}>FORMULA</div>
             <textarea ref={formulaRef} value={draft.formula} onChange={e => setDraft(d => ({ ...d, formula: e.target.value }))}
               placeholder="e.g. (spend / impressions) * 1000" rows={2}
-              style={{ width: '100%', boxSizing: 'border-box', padding: '7px 9px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.teal, fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', resize: 'none', lineHeight: 1.55 }}/>
+              style={{ width: '100%', boxSizing: 'border-box', padding: '7px 9px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.teal, fontFamily: 'var(--font-mono)', fontSize: 14, outline: 'none', resize: 'none', lineHeight: 1.55 }}/>
           </div>
 
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 6 }}>VARIABLES</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: EP.muted, letterSpacing: '0.08em', marginBottom: 6 }}>VARIABLES</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
               {availMetrics.map(m => (
                 <button key={m.key} onClick={() => insert(m.key)}
-                  style={{ padding: '3px 8px', background: `${EP.teal}0E`, border: `1px solid ${EP.teal}30`, borderRadius: 4, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, lineHeight: 1.5 }}>
+                  style={{ padding: '3px 8px', background: `${EP.teal}0E`, border: `1px solid ${EP.teal}30`, borderRadius: 4, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1.5 }}>
                   {m.key}
                 </button>
               ))}
@@ -1585,17 +2081,17 @@ const CustomMetricModal = ({ draft, setDraft, availMetrics, mode, onSave, onClos
           </div>
 
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 6 }}>OPERATORS</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: EP.muted, letterSpacing: '0.08em', marginBottom: 6 }}>OPERATORS</div>
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
               {OPERATORS.map(op => (
                 <button key={op} onClick={() => insert(OP_MAP[op])}
-                  style={{ width: 34, height: 30, background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  style={{ width: 34, height: 30, background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {op}
                 </button>
               ))}
               {[1000, 100].map(n => (
                 <button key={n} onClick={() => insert(String(n))}
-                  style={{ padding: '0 10px', height: 30, background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10.5, display: 'flex', alignItems: 'center' }}>
+                  style={{ padding: '0 10px', height: 30, background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 12.5, display: 'flex', alignItems: 'center' }}>
                   {n}
                 </button>
               ))}
@@ -1603,11 +2099,11 @@ const CustomMetricModal = ({ draft, setDraft, availMetrics, mode, onSave, onClos
           </div>
 
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.muted, letterSpacing: '0.08em', marginBottom: 6 }}>FORMAT HASIL</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: EP.muted, letterSpacing: '0.08em', marginBottom: 6 }}>FORMAT HASIL</div>
             <div style={{ display: 'flex', gap: 6 }}>
               {FORMAT_OPTS.map(f => (
                 <button key={f.value} onClick={() => setDraft(d => ({ ...d, format: f.value }))}
-                  style={{ flex: 1, padding: '6px 4px', background: draft.format === f.value ? `${EP.teal}1A` : 'transparent', border: `1px solid ${draft.format === f.value ? EP.teal : EP.edge}`, borderRadius: 6, color: draft.format === f.value ? EP.teal : EP.muted, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 9.5, fontWeight: draft.format === f.value ? 700 : 400, textAlign: 'center' }}>
+                  style={{ flex: 1, padding: '6px 4px', background: draft.format === f.value ? `${EP.teal}1A` : 'transparent', border: `1px solid ${draft.format === f.value ? EP.teal : EP.edge}`, borderRadius: 6, color: draft.format === f.value ? EP.teal : EP.muted, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11.5, fontWeight: draft.format === f.value ? 700 : 400, textAlign: 'center' }}>
                   {f.label}
                 </button>
               ))}
@@ -1618,11 +2114,11 @@ const CustomMetricModal = ({ draft, setDraft, availMetrics, mode, onSave, onClos
         {/* Footer */}
         <div style={{ display: 'flex', gap: 8, padding: '12px 16px', borderTop: `1px solid ${EP.edge}` }}>
           <button onClick={onClose}
-            style={{ flex: 1, padding: '7px 0', background: 'transparent', border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 600 }}>
+            style={{ flex: 1, padding: '7px 0', background: 'transparent', border: `1px solid ${EP.edge}`, borderRadius: 6, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600 }}>
             Cancel
           </button>
           <button onClick={() => canSave && onSave(draft)} disabled={!canSave}
-            style={{ flex: 2, padding: '7px 0', background: canSave ? EP.teal : EP.elevated, border: 'none', borderRadius: 6, color: canSave ? '#0B1628' : EP.muted, cursor: canSave ? 'pointer' : 'default', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700 }}>
+            style={{ flex: 2, padding: '7px 0', background: canSave ? EP.teal : EP.elevated, border: 'none', borderRadius: 6, color: canSave ? '#0B1628' : EP.muted, cursor: canSave ? 'pointer' : 'default', fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700 }}>
             {mode === 'new' ? 'Add Metric' : 'Save Changes'}
           </button>
         </div>
@@ -1651,7 +2147,7 @@ const StyleTab = ({ state, setState, widgetConfig, widgetId, cardId, onConfigCha
           <div style={{ display: 'flex', gap: 5 }}>
             {[5, 10, 20, 50].map(n => (
               <button key={n} onClick={() => wup({ pageSize: n })}
-                style={{ flex: 1, padding: '6px 0', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, borderRadius: 6, cursor: 'pointer', border: `1px solid ${(wcfg.pageSize || 10) === n ? EP.teal : EP.edge}`, background: (wcfg.pageSize || 10) === n ? EP.teal + '22' : 'transparent', color: (wcfg.pageSize || 10) === n ? EP.teal : EP.muted }}
+                style={{ flex: 1, padding: '6px 0', fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, borderRadius: 6, cursor: 'pointer', border: `1px solid ${(wcfg.pageSize || 10) === n ? EP.teal : EP.edge}`, background: (wcfg.pageSize || 10) === n ? EP.teal + '22' : 'transparent', color: (wcfg.pageSize || 10) === n ? EP.teal : EP.muted }}
               >{n}</button>
             ))}
           </div>
@@ -1675,12 +2171,12 @@ const StyleTab = ({ state, setState, widgetConfig, widgetId, cardId, onConfigCha
         <div key={i} style={{ display: 'flex', gap: 5, marginBottom: 6, alignItems: 'center' }}>
           <ESelect value={r.metric} options={[{value:'delta',label:'Delta %'},{value:'roas',label:'ROAS'},{value:'ctr',label:'CTR'}]}/>
           <ESelect value={r.op} options={[{value:'gt',label:'>'},{value:'lt',label:'<'},{value:'gte',label:'≥'}]}/>
-          <input value={r.val} style={{ width: 42, padding: '5px 6px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }}/>
+          <input value={r.val} style={{ width: 42, padding: '5px 6px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 5, color: EP.fg, fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }}/>
           <div style={{ width: 20, height: 20, borderRadius: '50%', background: r.color || EP.green, cursor: 'pointer', border: `1.5px solid ${EP.edge}`, flexShrink: 0 }}/>
         </div>
       ))}
       <button onClick={() => setState({ ...state, fmtRules: [...(state.fmtRules||[]), {metric:'delta',op:'gt',val:'0',color:EP.green}]})}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 6, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 6, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
         <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5.5 1v9M1 5.5h9"/></svg>
         Add formatting rule
       </button>
@@ -1699,14 +2195,14 @@ const StyleTab = ({ state, setState, widgetConfig, widgetId, cardId, onConfigCha
         <ELabel>Positive change color</ELabel>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {[EP.green, EP.teal, EP.gold].map(c => <EColorDot key={c} color={c} selected={(state.posColor||EP.green)===c} onClick={() => setState({ ...state, posColor: c })}/>)}
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted }}>{state.posColor || EP.green}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: EP.muted }}>{state.posColor || EP.green}</span>
         </div>
       </div>
       <div style={{ marginBottom: 10 }}>
         <ELabel>Negative change color</ELabel>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {[EP.red, '#F8B400', EP.muted].map(c => <EColorDot key={c} color={c} selected={(state.negColor||EP.red)===c} onClick={() => setState({ ...state, negColor: c })}/>)}
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.muted }}>{state.negColor || EP.red}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: EP.muted }}>{state.negColor || EP.red}</span>
         </div>
       </div>
       <EToggle value={state.showAbsolute || false} onChange={v => setState({ ...state, showAbsolute: v })} label="Show absolute change"/>
@@ -1741,22 +2237,22 @@ const PagesTab = ({ state, setState }) => {
           {pages.map(p => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 7 }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={EP.muted} strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
-              <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 12.5, color: EP.fg }}>{p.label}</span>
+              <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 15, color: EP.fg }}>{p.label}</span>
               {p.current
-                ? <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: EP.teal, padding: '2px 7px', background: 'rgba(0,194,184,.1)', borderRadius: 4, letterSpacing: '0.08em' }}>AKTIF</span>
-                : <button onClick={() => remove(p.id)} style={{ padding: '3px 7px', background: 'rgba(220,38,38,.12)', border: '1px solid rgba(220,38,38,.3)', borderRadius: 5, color: EP.red, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10 }}>×</button>
+                ? <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: EP.teal, padding: '2px 7px', background: 'rgba(0,194,184,.1)', borderRadius: 4, letterSpacing: '0.08em' }}>ACTIVE</span>
+                : <button onClick={() => remove(p.id)} style={{ padding: '3px 7px', background: 'rgba(220,38,38,.12)', border: '1px solid rgba(220,38,38,.3)', borderRadius: 5, color: EP.red, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 12 }}>×</button>
               }
             </div>
           ))}
         </div>
-        <button onClick={add} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 6, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 600, width: '100%', justifyContent: 'center', marginTop: 6 }}>
+        <button onClick={add} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px', background: 'transparent', border: `1px dashed ${EP.edge}`, borderRadius: 6, color: EP.muted, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, width: '100%', justifyContent: 'center', marginTop: 6 }}>
           <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5.5 1v9M1 5.5h9"/></svg>
           Add New Page
         </button>
       </ESection>
       <EDivider/>
       <ESection label="Website profiles">
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: EP.sec, lineHeight: 1.5, margin: '0 0 10px' }}>Hubungkan nama sekunder ke URL website. Saat akun dipilih, PA bar otomatis difilter URL-nya.</p>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: 13.5, color: EP.sec, lineHeight: 1.5, margin: '0 0 10px' }}>Link a secondary name to a website URL. When the account is selected, the PA bar automatically filters by URL.</p>
         {profiles.map((p, i) => (
           <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 5, alignItems: 'center' }}>
             <EInput value={p.name} onChange={v => { const np = [...profiles]; np[i] = { ...p, name: v }; setState({ ...state, profiles: np }); }} placeholder="Profile name"/>
@@ -1764,9 +2260,9 @@ const PagesTab = ({ state, setState }) => {
           </div>
         ))}
         <button onClick={() => setState({ ...state, profiles: [...profiles, { name: '', url: '' }]})}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px', background: 'rgba(0,194,184,.08)', border: `1px solid rgba(0,194,184,.3)`, borderRadius: 6, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700, width: '100%', justifyContent: 'center', marginTop: 4 }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px', background: 'rgba(0,194,184,.08)', border: `1px solid rgba(0,194,184,.3)`, borderRadius: 6, color: EP.teal, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, width: '100%', justifyContent: 'center', marginTop: 4 }}>
           <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5.5 1v9M1 5.5h9"/></svg>
-          Tambah Profile
+          Add Profile
         </button>
       </ESection>
     </>
@@ -1814,16 +2310,6 @@ const CardThumbnail = ({ cardId }) => {
         <text x="60" y="17" fontFamily="monospace" fontSize="5" fill="rgba(255,255,255,.3)">PREV PERIOD</text>
         <text x="60" y="33" fontFamily="monospace" fontSize="14" fontWeight="700" fill="rgba(255,255,255,.45)">2.1K</text>
         <text x="60" y="45" fontFamily="monospace" fontSize="6.5" fill="rgba(255,255,255,.25)">Mar 2025</text>
-      </svg>);
-
-    case 'kpi-stacked': return (
-      <svg {...sp}>{bg}
-        {[0,1,2,3].map(i=>(
-          <g key={i} transform={`translate(0,${i*13+7})`}>
-            <rect x="6" y="0" width={[36,28,40,22][i]} height="3" rx="1.5" fill="rgba(255,255,255,.2)"/>
-            <rect x="62" y="0" width={[28,20,24,16][i]} height="3" rx="1.5" fill={i<3?Td:'rgba(255,255,255,.1)'}/>
-            <text x="100" y="4" textAnchor="middle" fontFamily="monospace" fontSize="7" fill={i===3?'rgba(220,80,80,.8)':Gr}>{i===3?'▼':'▲'}</text>
-          </g>))}
       </svg>);
 
     /* ── Charts ────────────────────────────────────────────── */
@@ -1955,21 +2441,6 @@ const CardThumbnail = ({ cardId }) => {
           </g>))}
       </svg>);
 
-    case 'progress-score': return (
-      <svg {...sp}>{bg}
-        <circle cx="38" cy="31" r="24" stroke="rgba(255,255,255,.06)" strokeWidth="9" fill="none"/>
-        <circle cx="38" cy="31" r="24" stroke={T} strokeWidth="9" fill="none"
-          strokeDasharray="122 150.8" strokeDashoffset="37.7" strokeLinecap="round"/>
-        <text x="38" y="28" textAnchor="middle" fontFamily="monospace" fontSize="11" fontWeight="700" fill={T}>85</text>
-        <text x="38" y="38" textAnchor="middle" fontFamily="monospace" fontSize="5" fill="rgba(255,255,255,.35)">SCORE</text>
-        {[10,22,34,46].map((y,i)=>(
-          <g key={i}>
-            <rect x="74" y={y} width={[28,22,26,18][i]} height="3" rx="1" fill="rgba(255,255,255,.18)"/>
-            <rect x="106" y={y} width="0" height="3" rx="1" fill={Td}/>
-          </g>))}
-        {[16,28,40,52].map((y,i)=>(
-          <rect key={i} x="74" y={y} width={[16,10,14,8][i]} height="2.5" rx="1" fill={i<2?Td:'rgba(255,255,255,.1)'}/>))}
-      </svg>);
 
     case 'progress-goals': return (
       <svg {...sp}>{bg}
@@ -1991,17 +2462,6 @@ const CardThumbnail = ({ cardId }) => {
         <text x="52" y="48" fontFamily="monospace" fontSize="6.5" fill="rgba(255,255,255,.28)">of 2.0 Jt (70%)</text>
       </svg>);
 
-    case 'progress-grid': return (
-      <svg {...sp}>{bg}
-        {[[24,22],[86,22],[24,48],[86,48]].map(([cx,cy],i)=>(
-          <g key={i}>
-            <circle cx={cx} cy={cy} r="16" stroke="rgba(255,255,255,.07)" strokeWidth="6" fill="none"/>
-            <circle cx={cx} cy={cy} r="16" stroke={[T,Au,Gr,Pu][i]} strokeWidth="6" fill="none"
-              strokeDasharray={`${[63,46,55,38][i]} 100.5`} strokeDashoffset="25.1" strokeLinecap="round"/>
-            <text x={cx} y={cy+3.5} textAnchor="middle" fontFamily="monospace" fontSize="7" fontWeight="700"
-              fill="rgba(255,255,255,.88)">{[92,74,88,62][i]}</text>
-          </g>))}
-      </svg>);
 
     /* ── Lists ─────────────────────────────────────────────── */
     case 'list-keywords': return (
@@ -2171,21 +2631,21 @@ const CardThumbnail = ({ cardId }) => {
 
 // ─── TAB: Browse ─────────────────────────────────────────────────
 const UNIVERSAL_CATS = [
-  { id: 'kpi',    title: 'KPI',    desc: 'Key performance indicators dan angka ringkasan' },
-  { id: 'charts', title: 'Charts', desc: 'Grafik untuk memvisualisasikan tren dan perbandingan' },
-  { id: 'table',  title: 'Table',  desc: 'Tabel data dengan dimensi dan metrik yang bisa dikustom' },
-  { id: 'text',   title: 'Text',   desc: 'Widget teks dan narasi untuk penjelasan laporan' },
+  { id: 'kpi',    title: 'KPI',    desc: 'Key performance indicators and summary numbers' },
+  { id: 'charts', title: 'Charts', desc: 'Charts to visualize trends and comparisons' },
+  { id: 'table',  title: 'Table',  desc: 'Data table with customizable dimensions and metrics' },
+  { id: 'text',   title: 'Text',   desc: 'Text and narrative widgets for report commentary' },
 ];
 
 const UNIVERSAL_WIDGET_TYPES = [
-  { id: 'kpi-strip',     cat: 'kpi',    title: 'KPI Strip',    desc: '4–6 metrik dalam satu baris', defaultSource: 'google' },
-  { id: 'single-stat',   cat: 'kpi',    title: 'Single Stat',  desc: 'Satu angka besar dengan tren', defaultSource: 'google' },
-  { id: 'chart-area',    cat: 'charts', title: 'Area Chart',   desc: 'Tren metrik sepanjang waktu',  defaultSource: 'google' },
-  { id: 'chart-bar',     cat: 'charts', title: 'Bar Chart',    desc: 'Perbandingan nilai per kategori', defaultSource: 'google' },
-  { id: 'chart-donut',   cat: 'charts', title: 'Donut Chart',  desc: 'Distribusi persentase',        defaultSource: 'google' },
-  { id: 'chart-heatmap', cat: 'charts', title: 'Heatmap',      desc: 'Aktivitas berdasarkan hari & jam', defaultSource: 'ga4' },
-  { id: 'table',         cat: 'table',  title: 'Data Table',   desc: 'Tabel dengan dimensi & metrik', defaultSource: 'google' },
-  { id: 'text',          cat: 'text',   title: 'Text / Narasi',desc: 'Judul dan paragraf bebas',     defaultSource: null },
+  { id: 'kpi-strip',     cat: 'kpi',    title: 'KPI Strip',    desc: '4–6 metrics in a single row', defaultSource: 'google' },
+  { id: 'single-stat',   cat: 'kpi',    title: 'Single Stat',  desc: 'One large number with trend', defaultSource: 'google' },
+  { id: 'chart-area',    cat: 'charts', title: 'Area Chart',   desc: 'Metric trend over time',      defaultSource: 'google' },
+  { id: 'chart-bar',     cat: 'charts', title: 'Bar Chart',    desc: 'Value comparison by category', defaultSource: 'google' },
+  { id: 'chart-donut',   cat: 'charts', title: 'Donut Chart',  desc: 'Percentage distribution',     defaultSource: 'google' },
+  { id: 'chart-heatmap', cat: 'charts', title: 'Heatmap',      desc: 'Activity by day & hour',      defaultSource: 'ga4' },
+  { id: 'table',         cat: 'table',  title: 'Data Table',   desc: 'Table with dimensions & metrics', defaultSource: 'google' },
+  { id: 'text',          cat: 'text',   title: 'Text / Narrative', desc: 'Free-form title and paragraph', defaultSource: null },
 ];
 
 // Maps old window.CARDS card IDs → universal widget type + default source.
@@ -2202,7 +2662,6 @@ const CARD_TO_UNIVERSAL = {
   'kpi-single':          { type: 'single-stat',       defaultSource: 'google' },
   'kpi-strip':           { type: 'kpi-strip',         defaultSource: 'google' },
   'kpi-compare':         { type: 'kpi-compare',       defaultSource: 'google' },
-  'kpi-stacked':         { type: 'kpi-stacked',       defaultSource: 'google' },
   // charts — data-connected
   'chart-area':          { type: 'chart-area',        defaultSource: 'google' },
   'chart-area-axes':     { type: 'chart-area',        defaultSource: 'google' },
@@ -2217,10 +2676,8 @@ const CARD_TO_UNIVERSAL = {
   'table-rankings':      { type: 'table',             defaultSource: 'google' },
   // progress — design-only (data baked into components)
   'progress-psi':        { type: 'progress-psi',      defaultSource: 'ga4' },
-  'progress-score':      { type: 'progress-score',    defaultSource: 'ga4' },
   'progress-goals':      { type: 'progress-goals',    defaultSource: 'google' },
   'progress-pacing':     { type: 'progress-pacing',   defaultSource: 'google' },
-  'progress-grid':       { type: 'progress-grid',     defaultSource: 'ga4' },
   // lists — design-only
   'list-keywords':       { type: 'list-keywords',     defaultSource: 'google' },
   'list-pages':          { type: 'list-pages',        defaultSource: 'ga4' },
@@ -2251,7 +2708,7 @@ const BrowseTab = ({ onSelect, connectedSources }) => {
               padding: '4px 10px', borderRadius: 20, border: `1px solid ${active ? EP.teal+'99' : EP.edge}`,
               background: active ? 'rgba(0,194,184,.12)' : EP.elevated,
               color: active ? EP.teal : EP.sec, cursor: 'pointer',
-              fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 600,
+              fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 600,
               transition: 'background .12s, color .12s',
             }}>{c.title}</button>
           );
@@ -2259,7 +2716,7 @@ const BrowseTab = ({ onSelect, connectedSources }) => {
       </div>
 
       {catMeta && (
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: EP.muted, marginBottom: 10 }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: EP.muted, marginBottom: 10 }}>
           {catMeta.desc}
         </div>
       )}
@@ -2274,8 +2731,8 @@ const BrowseTab = ({ onSelect, connectedSources }) => {
           {[[1,1],[1,5],[1,9],[5,1],[5,5],[5,9]].map(([cx,cy],i)=>
             <circle key={i} cx={cx} cy={cy} r="1.3" fill="#00C2B8" opacity=".7"/>)}
         </svg>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: EP.teal, letterSpacing: '0.06em' }}>
-          Drag widget ke dalam canvas untuk menambahkan
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: EP.teal, letterSpacing: '0.06em' }}>
+          Drag a widget into the canvas to add it
         </span>
       </div>
 
@@ -2320,7 +2777,7 @@ const BrowseTab = ({ onSelect, connectedSources }) => {
                       {[[1,1],[1,5],[1,9],[5,1],[5,5],[5,9]].map(([cx,cy],i)=>
                         <circle key={i} cx={cx} cy={cy} r="1.3" fill={EP.teal} opacity=".6"/>)}
                     </svg>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7.5, letterSpacing: '.04em', color: EP.teal, opacity: .65 }}>drag to canvas</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '.04em', color: EP.teal, opacity: .65 }}>drag to canvas</span>
                     <svg width="9" height="9" viewBox="0 0 24 24" fill="none"
                       stroke={EP.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                       style={{ marginLeft: 'auto', opacity: .55 }}>
@@ -2331,8 +2788,8 @@ const BrowseTab = ({ onSelect, connectedSources }) => {
               </div>
               {/* Title + desc */}
               <div style={{ padding: '7px 9px 9px' }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700, lineHeight: 1.3, color: EP.fg }}>{w.title}</div>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 9.5, color: EP.muted, marginTop: 2, lineHeight: 1.4 }}>{w.desc || ''}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, lineHeight: 1.3, color: EP.fg }}>{w.title}</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: EP.muted, marginTop: 2, lineHeight: 1.4 }}>{w.desc || ''}</div>
               </div>
             </div>
           );
@@ -2371,7 +2828,9 @@ const CardEditorPanel = ({
   sharedWidgetCount = 0,
   instanceSource = null,
   onSourceChange = null,
+  onConnectedChange = null,
   pageData = null,
+  layoutRows = null,
   style = {},
 }) => {
   const [tab, setTab] = React.useState(defaultTab);
@@ -2407,7 +2866,7 @@ const CardEditorPanel = ({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={EP.teal} strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: EP.fg, letterSpacing: '-0.01em' }}>Card Properties</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: EP.fg, letterSpacing: '-0.01em' }}>Card Properties</span>
           </div>
           {onClose && (
             <button onClick={onClose} style={{ width: 26, height: 26, border: 'none', background: EP.elevated, borderRadius: 6, color: EP.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, lineHeight: 1 }}>×</button>
@@ -2415,8 +2874,8 @@ const CardEditorPanel = ({
         </div>
         {/* Card meta */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0 10px' }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: EP.teal, background: 'rgba(0,194,184,.1)', padding: '2px 8px', borderRadius: 4, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{card.cat}</span>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: EP.sec, flex: 1 }}>{card.title}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: EP.teal, background: 'rgba(0,194,184,.1)', padding: '2px 8px', borderRadius: 4, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{card.cat}</span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: EP.sec, flex: 1 }}>{card.title}</span>
         </div>
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 0, marginBottom: -1 }}>
@@ -2424,7 +2883,7 @@ const CardEditorPanel = ({
             <button key={t.id} onClick={() => setTab(t.id)}
               style={{
                 flex: 1, padding: '8px 0', border: 'none', background: 'transparent', cursor: 'pointer',
-                fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: tab === t.id ? 700 : 500,
+                fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: tab === t.id ? 700 : 500,
                 color: tab === t.id ? EP.fg : EP.muted,
                 borderBottom: `2px solid ${tab === t.id ? EP.teal : 'transparent'}`,
                 transition: 'color .12s',
@@ -2446,16 +2905,18 @@ const CardEditorPanel = ({
             sharedWidgetCount={sharedWidgetCount}
             instanceSource={instanceSource}
             onSourceChange={onSourceChange}
+            onConnectedChange={onConnectedChange}
             pageData={pageData}
+            layoutRows={layoutRows}
           />
         )}
       </div>
 
       {/* Footer */}
       <div style={{ padding: '10px 16px', borderTop: `1px solid ${EP.edge}`, display: 'flex', gap: 6, flexShrink: 0, background: 'rgba(10,18,34,.5)' }}>
-        {onClose && <button onClick={onClose} style={{ flex: 1, padding: '8px 0', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 7, color: EP.sec, fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Close</button>}
+        {onClose && <button onClick={onClose} style={{ flex: 1, padding: '8px 0', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 7, color: EP.sec, fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Close</button>}
         {onUndo && (
-          <button onClick={onUndo} title="Undo (Ctrl+Z)" style={{ flex: 1, padding: '8px 0', background: 'rgba(248,180,0,.08)', border: '1px solid rgba(248,180,0,.3)', borderRadius: 7, color: EP.gold, fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+          <button onClick={onUndo} title="Undo (Ctrl+Z)" style={{ flex: 1, padding: '8px 0', background: 'rgba(248,180,0,.08)', border: '1px solid rgba(248,180,0,.3)', borderRadius: 7, color: EP.gold, fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9h10a5 5 0 1 1 0 10H3"/><polyline points="3 9 7 5 3 9 7 13"/></svg>
             Undo
           </button>

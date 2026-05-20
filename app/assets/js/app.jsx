@@ -51,7 +51,7 @@ class AppErrorBoundary extends React.Component {
         <button
           onClick={() => { this.setState({ error: null }); window.location.hash = 'home'; }}
           style={{ marginTop: 20, padding: '8px 20px', background: '#00C2B8', border: 'none', borderRadius: 7, color: '#0C182C', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>
-          ← Kembali ke Home
+          ← Back to Home
         </button>
       </div>
     );

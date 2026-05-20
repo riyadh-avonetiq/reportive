@@ -33,7 +33,7 @@ function deltaColor(v) {
 // ─── Eyebrow label ────────────────────────────────────────────────
 function Eyebrow({ children, color = muted }) {
   return (
-    <div style={{ fontFamily: T.mono, fontSize: 9.5, color, textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 600 }}>
+    <div style={{ fontFamily: T.mono, fontSize: 11, color, textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 600 }}>
       {children}
     </div>
   );
@@ -50,8 +50,8 @@ function Kpi({ label, value, delta, sub, compare, accent = teal, spark, scale = 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {delta != null && <RDelta value={Math.round(delta * 10) / 10}/>}
-          {compare && delta != null && <span style={{ fontFamily: T.body, fontSize: 10, color: muted }}>{compare}</span>}
-          {sub && delta == null && <span style={{ fontFamily: T.mono, fontSize: 9, color: muted }}>{sub}</span>}
+          {compare && delta != null && <span style={{ fontFamily: T.body, fontSize: 12, color: muted }}>{compare}</span>}
+          {sub && delta == null && <span style={{ fontFamily: T.mono, fontSize: 11, color: muted }}>{sub}</span>}
         </div>
         {spark && <Spark data={spark} color={accent} w={56} h={18}/>}
       </div>
@@ -65,8 +65,8 @@ function ChartCard({ title, sub, children, style }) {
     <RCard padding={16} style={style}>
       {title && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg }}>{title}</div>
-          {sub && <div style={{ fontFamily: T.body, fontSize: 11, color: muted, marginTop: 2 }}>{sub}</div>}
+          <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: fg }}>{title}</div>
+          {sub && <div style={{ fontFamily: T.body, fontSize: 13, color: muted, marginTop: 2 }}>{sub}</div>}
         </div>
       )}
       {children}
@@ -87,7 +87,7 @@ function SectionHead({ channel, title, subtitle }) {
       <div>
         <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: fg }}>{title}</div>
         {subtitle && (
-          <div style={{ fontFamily: T.mono, fontSize: 9, color: muted, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{subtitle}</div>
+          <div style={{ fontFamily: T.mono, fontSize: 11, color: muted, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{subtitle}</div>
         )}
       </div>
     </div>
@@ -99,7 +99,7 @@ function LegendDot({ color, label }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
       <div style={{ width: 8, height: 2, background: color, borderRadius: 1 }}/>
-      <span style={{ fontFamily: T.mono, fontSize: 9, color: muted }}>{label}</span>
+      <span style={{ fontFamily: T.mono, fontSize: 11, color: muted }}>{label}</span>
     </div>
   );
 }
@@ -359,9 +359,9 @@ function DateRangePicker({ dateRange, onApply, onCancel }) {
 
   const triggerLabel = () => {
     if (activePreset) return activePreset;
-    if (!pendingFrom && !pendingTo) return 'Pilih rentang tanggal…';
+    if (!pendingFrom && !pendingTo) return 'Select date range…';
     if (phase === 'end' && pendingFrom && !pendingTo)
-      return pendingFrom + '  →  pilih tanggal akhir';
+      return pendingFrom + '  →  select end date';
     if (pendingFrom && pendingTo) return pendingFrom + '  →  ' + pendingTo;
     return pendingFrom || '—';
   };
@@ -390,7 +390,7 @@ function DateRangePicker({ dateRange, onApply, onCancel }) {
           background: 'rgba(255,255,255,.02)',
         }}>
           <div style={{
-            fontFamily: T.mono, fontSize: 8.5, color: muted,
+            fontFamily: T.mono, fontSize: 10.5, color: muted,
             textTransform: 'uppercase', letterSpacing: '0.13em', fontWeight: 700,
             padding: '0 12px 8px',
           }}>Quick Select</div>
@@ -403,7 +403,7 @@ function DateRangePicker({ dateRange, onApply, onCancel }) {
                 border: 'none',
                 borderLeft: `2px solid ${active ? teal : 'transparent'}`,
                 color: active ? teal : sec,
-                fontFamily: T.body, fontSize: 11.5, cursor: 'pointer',
+                fontFamily: T.body, fontSize: 13.5, cursor: 'pointer',
                 transition: 'background .1s, color .1s',
                 display: 'block',
               }}>{p.label}</button>
@@ -417,7 +417,7 @@ function DateRangePicker({ dateRange, onApply, onCancel }) {
           {/* Range display + navigation */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{
-              flex: 1, fontFamily: T.mono, fontSize: 10, padding: '6px 10px', borderRadius: 7,
+              flex: 1, fontFamily: T.mono, fontSize: 12, padding: '6px 10px', borderRadius: 7,
               background: 'rgba(255,255,255,.05)',
               border: `1px solid ${phase === 'end' ? 'rgba(0,194,184,.35)' : 'rgba(255,255,255,.09)'}`,
               color: phase === 'end' ? teal : sec, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -461,8 +461,8 @@ function DateRangePicker({ dateRange, onApply, onCancel }) {
 
           {/* Phase hint */}
           {phase === 'end' && pendingFrom && !pendingTo && (
-            <div style={{ fontFamily: T.mono, fontSize: 9.5, color: teal, textAlign: 'center', opacity: 0.85 }}>
-              Klik tanggal akhir untuk menyelesaikan pilihan
+            <div style={{ fontFamily: T.mono, fontSize: 11.5, color: teal, textAlign: 'center', opacity: 0.85 }}>
+              Click end date to complete the selection
             </div>
           )}
 
@@ -474,15 +474,15 @@ function DateRangePicker({ dateRange, onApply, onCancel }) {
             <button onClick={() => { setPendingFrom(null); setPendingTo(null); setPhase('start'); setActivePreset(null); }} style={{
               padding: '5px 12px', background: 'transparent',
               border: '1px solid rgba(255,255,255,.1)', borderRadius: 7,
-              color: muted, fontFamily: T.mono, fontSize: 10, cursor: 'pointer',
+              color: muted, fontFamily: T.mono, fontSize: 12, cursor: 'pointer',
             }}>Reset</button>
 
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={onCancel} style={{
                 padding: '6px 14px', background: 'rgba(255,255,255,.06)',
                 border: '1px solid rgba(255,255,255,.1)', borderRadius: 7,
-                color: sec, fontFamily: T.display, fontSize: 11, fontWeight: 600, cursor: 'pointer',
-              }}>Batal</button>
+                color: sec, fontFamily: T.display, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              }}>Cancel</button>
               <button
                 onClick={() => onApply({ from: pendingFrom, to: pendingTo })}
                 disabled={!!(pendingFrom && !pendingTo && phase === 'end')}
@@ -492,7 +492,7 @@ function DateRangePicker({ dateRange, onApply, onCancel }) {
                     ? 'rgba(0,194,184,.25)'
                     : 'linear-gradient(135deg,#00C2B8,#009E96)',
                   border: 'none', borderRadius: 7,
-                  color: '#0C182C', fontFamily: T.display, fontSize: 11, fontWeight: 700,
+                  color: '#0C182C', fontFamily: T.display, fontSize: 13, fontWeight: 700,
                   cursor: (pendingFrom && !pendingTo && phase === 'end') ? 'not-allowed' : 'pointer',
                   transition: 'background .15s',
                 }}
@@ -539,7 +539,7 @@ function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPrese
       }}>
         <button onClick={onBack} style={{
           background: 'none', border: '1px solid rgba(255,255,255,.12)',
-          borderRadius: 7, color: sec, fontFamily: T.mono, fontSize: 10,
+          borderRadius: 7, color: sec, fontFamily: T.mono, fontSize: 12,
           padding: '5px 12px', cursor: 'pointer',
           textTransform: 'uppercase', letterSpacing: '0.1em',
           display: 'flex', alignItems: 'center', gap: 5,
@@ -551,19 +551,19 @@ function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPrese
           width: 28, height: 28, borderRadius: 8,
           background: client.avatarGrad || 'linear-gradient(135deg,#00C2B8,#7000FF)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: T.display, fontSize: 9, fontWeight: 800, color: '#fff', flexShrink: 0,
+          fontFamily: T.display, fontSize: 11, fontWeight: 800, color: '#fff', flexShrink: 0,
         }}>{client.initials || '?'}</div>
 
         <div>
-          <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg, lineHeight: 1.2 }}>{client.name}</div>
-          <div style={{ fontFamily: T.mono, fontSize: 9, color: muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{client.industry}</div>
+          <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 700, color: fg, lineHeight: 1.2 }}>{client.name}</div>
+          <div style={{ fontFamily: T.mono, fontSize: 11, color: muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{client.industry}</div>
         </div>
 
         <div style={{ flex: 1 }}/>
 
         {isMock && (
           <div style={{
-            fontFamily: T.mono, fontSize: 9, color: gold,
+            fontFamily: T.mono, fontSize: 11, color: gold,
             background: 'rgba(248,180,0,.1)', border: '1px solid rgba(248,180,0,.2)',
             borderRadius: 5, padding: '3px 9px', textTransform: 'uppercase', letterSpacing: '0.1em',
           }}>Demo Data</div>
@@ -575,7 +575,7 @@ function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPrese
           padding: '5px 12px', borderRadius: 7, cursor: 'pointer',
           background: showPicker ? 'rgba(0,194,184,.1)' : 'rgba(255,255,255,.06)',
           border: `1px solid ${showPicker ? 'rgba(0,194,184,.32)' : 'rgba(255,255,255,.12)'}`,
-          color: showPicker ? teal : fg, fontFamily: T.mono, fontSize: 10,
+          color: showPicker ? teal : fg, fontFamily: T.mono, fontSize: 12,
           transition: 'background .15s, color .15s', maxWidth: 260, overflow: 'hidden',
         }}>
           <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round">
@@ -611,7 +611,7 @@ function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPrese
         {!_IS_VIEWER && (
           <button onClick={onEdit} style={{
             padding: '6px 12px', borderRadius: 7, cursor: 'pointer',
-            fontFamily: T.display, fontSize: 10, fontWeight: 600,
+            fontFamily: T.display, fontSize: 12, fontWeight: 600,
             background: showEditor ? 'rgba(0,194,184,.15)' : 'rgba(255,255,255,.06)',
             border: `1px solid ${showEditor ? 'rgba(0,194,184,.4)' : 'rgba(255,255,255,.12)'}`,
             color: showEditor ? teal : sec,
@@ -627,7 +627,7 @@ function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPrese
         <button onClick={onPresent} style={{
           padding: '6px 14px', borderRadius: 7, cursor: 'pointer',
           background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none',
-          color: '#0C182C', fontFamily: T.display, fontSize: 10, fontWeight: 700,
+          color: '#0C182C', fontFamily: T.display, fontSize: 12, fontWeight: 700,
           display: 'flex', alignItems: 'center', gap: 5,
           boxShadow: '0 2px 10px rgba(0,194,184,.3)',
         }}>
@@ -709,7 +709,7 @@ function SelectableWidget({ id, cardId, editState, children }) {
 }
 
 // ─── Table dimension / metric schemas ─────────────────────────────
-const FONT_SCALES = { S: 0.85, M: 1, L: 1.15 };
+const FONT_SCALES = { S: 1, M: 1.2, L: 1.35 };
 
 // ─── Universal widget → card-type map ─────────────────────────────
 // widgetConfigs is keyed by card type so all widgets of the same type
@@ -863,7 +863,7 @@ const _gscCountryFmt = (() => {
 
 const _gscDateFmt = (() => {
   try {
-    const df = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    const df = new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
     return str => {
       if (!str) return '—';
       const [y, m, d] = str.split('-').map(Number);
@@ -924,10 +924,109 @@ function evalFormula(formula, values) {
 }
 
 // Build a flat values object from DATA_REGISTRY for aggregated (p) data
+function applyKpiFilters(p, source, filters) {
+  if (!p || !filters || !filters.length || filters.every(function(f) { return !f.val; })) return p;
+  var matchRow = function(row, f) {
+    var rv = String(row[f.dim] || '').toLowerCase();
+    var v  = (f.val || '').toLowerCase();
+    if (!v) return true;
+    if (f.op === 'is')     return rv === v;
+    if (f.op === 'not')    return rv !== v;
+    if (f.op === 'starts') return rv.startsWith(v);
+    return rv.includes(v);
+  };
+  var matchAll = function(row) { return filters.every(function(f) { return !f.val || matchRow(row, f); }); };
+
+  if (source === 'google') {
+    var rows = (p.campaigns || []).filter(matchAll);
+    var s = rows.reduce(function(a, r) { return {
+      spend: a.spend + (+r.spend || 0),
+      impressions: a.impressions + (+r.impressions || 0),
+      clicks: a.clicks + (+r.clicks || 0),
+      conversions: a.conversions + (+r.conversions || 0),
+    }; }, { spend: 0, impressions: 0, clicks: 0, conversions: 0 });
+    var ads = Object.assign({}, s, {
+      ctr: s.impressions > 0 ? (s.clicks / s.impressions) * 100 : 0,
+      cpc: s.clicks > 0 ? s.spend / s.clicks : 0,
+      cvr: s.clicks > 0 ? (s.conversions / s.clicks) * 100 : 0,
+      cpa: s.conversions > 0 ? s.spend / s.conversions : 0,
+      roas: null,
+    });
+    return Object.assign({}, p, { ads: ads });
+  }
+  if (source === 'meta') {
+    var metaRows = ((p.metaInsightsRows && p.metaInsightsRows.length) ? p.metaInsightsRows : (p.metaRows || [])).filter(matchAll);
+    var ms = metaRows.reduce(function(a, r) { return {
+      spend: a.spend + (+r.spend || 0),
+      impressions: a.impressions + (+r.impressions || 0),
+      reach: a.reach + (+r.reach || 0),
+      clicks: a.clicks + (+(r.link_clicks != null ? r.link_clicks : r.clicks) || 0),
+      landing_page_views: a.landing_page_views + (+r.landing_page_views || 0),
+      leads: a.leads + (+r.leads || 0),
+      complete_registrations: a.complete_registrations + (+r.complete_registrations || 0),
+      messaging_conv_started: a.messaging_conv_started + (+r.messaging_conv_started || 0),
+      contacts: a.contacts + (+r.contacts || 0),
+      ig_profile_visits: a.ig_profile_visits + (+r.ig_profile_visits || 0),
+      post_engagements: a.post_engagements + (+r.post_engagements || 0),
+      content_views: a.content_views + (+r.content_views || 0),
+      purchases: a.purchases + (+r.purchases || 0),
+      purchase_value: a.purchase_value + (+r.purchase_value || 0),
+      add_to_carts: a.add_to_carts + (+r.add_to_carts || 0),
+      add_to_cart_value: a.add_to_cart_value + (+r.add_to_cart_value || 0),
+    }; }, { spend:0,impressions:0,reach:0,clicks:0,landing_page_views:0,leads:0,complete_registrations:0,messaging_conv_started:0,contacts:0,ig_profile_visits:0,post_engagements:0,content_views:0,purchases:0,purchase_value:0,add_to_carts:0,add_to_cart_value:0 });
+    return Object.assign({}, p, { meta: ms });
+  }
+  if (source === 'ga4') {
+    var ga4rows = (p.ga4Rows || []).filter(matchAll);
+    var gs = { sessions:0,total_users:0,new_users:0,returning_users:0,event_count:0,engaged_sessions:0,bounceW:0,durationW:0,engagementW:0 };
+    ga4rows.forEach(function(r) {
+      var sess = +r.sessions || 0;
+      gs.sessions += sess; gs.total_users += +r.total_users||0; gs.new_users += +r.new_users||0;
+      gs.returning_users += +r.returning_users||0; gs.event_count += +r.event_count||0; gs.engaged_sessions += +r.engaged_sessions||0;
+      if (r.bounce_rate != null && sess > 0) gs.bounceW += +r.bounce_rate * sess;
+      if (r.avg_session_duration != null && sess > 0) gs.durationW += +r.avg_session_duration * sess;
+      if (r.engagement_rate != null && sess > 0) gs.engagementW += +r.engagement_rate * sess;
+    });
+    var ga4 = {
+      sessions: gs.sessions, total_users: gs.total_users, new_users: gs.new_users,
+      returning_users: gs.returning_users, event_count: gs.event_count, engaged_sessions: gs.engaged_sessions,
+      bounce_rate:          gs.sessions > 0 ? (gs.bounceW     / gs.sessions) * 100 : 0,
+      avg_session_duration: gs.sessions > 0 ?  gs.durationW   / gs.sessions        : 0,
+      engagement_rate:      gs.sessions > 0 ? (gs.engagementW / gs.sessions) * 100 : 0,
+    };
+    return Object.assign({}, p, { ga4: ga4 });
+  }
+  if (source === 'search') {
+    var queries = (p.gsc && p.gsc.queries ? p.gsc.queries : []).filter(matchAll);
+    var pages   = (p.gsc && p.gsc.pages   ? p.gsc.pages   : []).filter(matchAll);
+    var allRows = queries.length ? queries : pages;
+    var ss = allRows.reduce(function(a, r) { return {
+      impressions: a.impressions + (+r.impressions||0),
+      clicks: a.clicks + (+r.clicks||0),
+      posW: a.posW + (+r.impressions||0) * (+r.position||0),
+    }; }, { impressions:0, clicks:0, posW:0 });
+    var gsc = Object.assign({}, p.gsc, {
+      impressions: ss.impressions,
+      clicks: ss.clicks,
+      ctr: ss.impressions > 0 ? (ss.clicks / ss.impressions) * 100 : 0,
+      position: ss.impressions > 0 ? ss.posW / ss.impressions : 0,
+      queries: queries, pages: pages,
+    });
+    return Object.assign({}, p, { gsc: gsc });
+  }
+  return p;
+}
+
 function getAggValues(source, p) {
   const reg = window.DATA_REGISTRY?.[source] || {};
   const out = {};
   Object.entries(reg).forEach(([k, def]) => { out[k] = def.value ? (def.value(p) ?? 0) : 0; });
+  return out;
+}
+function getAggValuesPrev(source, p) {
+  const reg = window.DATA_REGISTRY?.[source] || {};
+  const out = {};
+  Object.entries(reg).forEach(([k, def]) => { out[k] = def.prev ? (def.prev(p) ?? 0) : 0; });
   return out;
 }
 
@@ -1220,30 +1319,30 @@ function CampaignsTable({ campaigns }) {
     <RCard padding={0} style={{ overflow: 'hidden' }}>
       <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
         <div>
-          <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg }}>Campaigns</div>
-          <div style={{ fontFamily: T.body, fontSize: 11, color: muted, marginTop: 2 }}>{rows.length} kampanye · periode ini</div>
+          <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: fg }}>Campaigns</div>
+          <div style={{ fontFamily: T.body, fontSize: 12, color: muted, marginTop: 2 }}>{rows.length} campaigns · this period</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 10px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 7, minWidth: 180 }}>
           <svg width="11" height="11" fill="none" stroke={muted} strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           <input
             value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Cari kampanye…"
-            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: fg, fontFamily: T.body, fontSize: 11.5 }}
+            placeholder="Search campaigns…"
+            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: fg, fontFamily: T.body, fontSize: 13 }}
           />
-          {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', padding: 0, lineHeight: 1, fontSize: 14 }}>×</button>}
+          {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', padding: 0, lineHeight: 1, fontSize: 16 }}>×</button>}
         </div>
       </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.body, fontSize: 12 }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.body, fontSize: 13 }}>
         <thead>
           <tr style={{ background: 'var(--navy-deep)' }}>
-            <th style={{ padding: '8px 14px', textAlign: 'left', fontFamily: T.mono, fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: muted }}>Kampanye</th>
-            <th style={{ padding: '8px 14px', textAlign: 'left', fontFamily: T.mono, fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: muted }}>Tipe</th>
+            <th style={{ padding: '8px 14px', textAlign: 'left', fontFamily: T.mono, fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: muted }}>Campaign</th>
+            <th style={{ padding: '8px 14px', textAlign: 'left', fontFamily: T.mono, fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: muted }}>Type</th>
             {cols.map(c => <SortTh key={c.key} label={c.label} sortKey={c.key} active={sortKey === c.key} dir={sortDir} onSort={toggleSort}/>)}
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 && (
-            <tr><td colSpan={8} style={{ padding: '20px 14px', textAlign: 'center', fontFamily: T.mono, fontSize: 10, color: muted }}>Tidak ada kampanye yang cocok</td></tr>
+            <tr><td colSpan={8} style={{ padding: '20px 14px', textAlign: 'center', fontFamily: T.mono, fontSize: 11, color: muted }}>No matching campaigns</td></tr>
           )}
           {rows.map((c, i) => (
             <tr key={i} style={{ borderTop: '1px solid rgba(51,71,102,.5)' }}>
@@ -1309,33 +1408,181 @@ function KpiStripWidget({ instance, p, cfg }) {
   );
 }
 
+// Build a daily spark series for any metric key or custom-metric formula.
+// Tries DATA_REGISTRY .series() first, then derives from raw daily rows.
+function buildSparkSeries(source, p, metricKey, formula) {
+  var reg = window.DATA_REGISTRY?.[source] || {};
+
+  // Pre-computed series (google & search have these for main metrics)
+  if (metricKey) {
+    var def0 = reg[metricKey] || {};
+    if (def0.series) { var s0 = def0.series(p); if (s0 && s0.length >= 2) return s0; }
+  }
+
+  // Derive per-day values from raw row data
+  var rawRows = [];
+  var aggregateDay;
+
+  if (source === 'meta') {
+    rawRows = (p?.metaInsightsRows && p.metaInsightsRows.length ? p.metaInsightsRows : p?.metaRows) || [];
+    aggregateDay = function(rows) {
+      var s = rows.reduce(function(a,r) { return {
+        spend:a.spend+(+r.spend||0), impressions:a.impressions+(+r.impressions||0),
+        reach:a.reach+(+r.reach||0),
+        clicks:a.clicks+(+(r.link_clicks!=null?r.link_clicks:r.clicks)||0),
+        landing_page_views:a.landing_page_views+(+r.landing_page_views||0),
+        leads:a.leads+(+r.leads||0),
+        complete_registrations:a.complete_registrations+(+r.complete_registrations||0),
+        messaging_conv_started:a.messaging_conv_started+(+r.messaging_conv_started||0),
+        contacts:a.contacts+(+r.contacts||0),
+        ig_profile_visits:a.ig_profile_visits+(+r.ig_profile_visits||0),
+        post_engagements:a.post_engagements+(+r.post_engagements||0),
+        content_views:a.content_views+(+r.content_views||0),
+        purchases:a.purchases+(+r.purchases||0),
+        purchase_value:a.purchase_value+(+r.purchase_value||0),
+        add_to_carts:a.add_to_carts+(+r.add_to_carts||0),
+        add_to_cart_value:a.add_to_cart_value+(+r.add_to_cart_value||0),
+      }; }, {spend:0,impressions:0,reach:0,clicks:0,landing_page_views:0,leads:0,complete_registrations:0,messaging_conv_started:0,contacts:0,ig_profile_visits:0,post_engagements:0,content_views:0,purchases:0,purchase_value:0,add_to_carts:0,add_to_cart_value:0});
+      return { meta: s };
+    };
+  } else if (source === 'ga4') {
+    rawRows = p?.ga4Rows || [];
+    aggregateDay = function(rows) {
+      var s = {sessions:0,total_users:0,new_users:0,returning_users:0,event_count:0,engaged_sessions:0,bounceW:0,durationW:0,engagementW:0};
+      rows.forEach(function(r) {
+        var sess=+r.sessions||0; s.sessions+=sess; s.total_users+=+r.total_users||0; s.new_users+=+r.new_users||0;
+        s.returning_users+=+r.returning_users||0; s.event_count+=+r.event_count||0; s.engaged_sessions+=+r.engaged_sessions||0;
+        if(r.bounce_rate!=null&&sess>0) s.bounceW+=+r.bounce_rate*sess;
+        if(r.avg_session_duration!=null&&sess>0) s.durationW+=+r.avg_session_duration*sess;
+        if(r.engagement_rate!=null&&sess>0) s.engagementW+=+r.engagement_rate*sess;
+      });
+      return {ga4:{sessions:s.sessions,total_users:s.total_users,new_users:s.new_users,returning_users:s.returning_users,event_count:s.event_count,engaged_sessions:s.engaged_sessions,bounce_rate:s.sessions>0?s.bounceW/s.sessions:0,avg_session_duration:s.sessions>0?s.durationW/s.sessions:0,engagement_rate:s.sessions>0?s.engagementW/s.sessions:0}};
+    };
+  } else {
+    return null; // google/search: rely on pre-computed series only
+  }
+
+  if (!rawRows.length) return null;
+  var byDate = {};
+  rawRows.forEach(function(r) {
+    var dt = r.date || r.Date || ''; if (!dt) return;
+    if (!byDate[dt]) byDate[dt] = [];
+    byDate[dt].push(r);
+  });
+  var dates = Object.keys(byDate).sort();
+  if (dates.length < 2) return null;
+
+  return dates.map(function(dt) {
+    var dayP = aggregateDay(byDate[dt]);
+    if (formula) {
+      var dayVals = {};
+      Object.keys(reg).forEach(function(k) { var d2 = reg[k]; dayVals[k] = d2.value ? (d2.value(dayP)||0) : 0; });
+      return evalFormula(formula, dayVals) || 0;
+    }
+    var defD = reg[metricKey] || {};
+    return defD.value ? (defD.value(dayP)||0) : 0;
+  });
+}
+
 function SingleStatWidget({ instance, p, cfg }) {
-  const d   = fmt.pctChange;
-  const reg = window.DATA_REGISTRY?.[instance.source] || {};
+  const d     = fmt.pctChange;
+  const reg   = window.DATA_REGISTRY?.[instance.source] || {};
   const scale = FONT_SCALES[cfg.fontSize] || 1;
-  const key = cfg.metric;
-  const def = reg[key] || {};
-  const val  = def.value ? def.value(p) : null;
-  const prev = def.prev  ? def.prev(p)  : null;
-  const label = cfg.label || def.label || key;
+  const isDetail = cfg.numberFormat === 'detail';
+
+  function fmtSingleVal(val, fmtKey) {
+    if (val == null || isNaN(val)) return '—';
+    if (fmtKey === 'pct')  return val.toFixed(2) + '%';
+    if (fmtKey === 'roas') return val.toFixed(2) + 'x';
+    if (fmtKey === 'rupiah') {
+      if (isDetail) return 'Rp ' + Math.round(val).toLocaleString('en-US');
+      if (val >= 1000000) return 'Rp ' + (val / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+      if (val >= 1000)    return 'Rp ' + (val / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+      return 'Rp ' + Math.round(val).toLocaleString('en-US');
+    }
+    if (isDetail) return Math.round(val).toLocaleString('en-US');
+    if (val >= 1000000) return (val / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (val >= 1000)    return (val / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    return String(Math.round(val));
+  }
+
+  // "vs Feb 2025" — derived from the active report date range
+  const compareLabel = (function() {
+    var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var dr = window._reportDateRange;
+    if (!dr || !dr.to) return null;
+    var toD  = new Date(dr.to + 'T00:00:00');
+    var prevD = new Date(toD.getFullYear(), toD.getMonth() - 1, 1);
+    return 'vs ' + MONTHS[prevD.getMonth()] + ' ' + prevD.getFullYear();
+  })();
+
+  var numSize = Math.round(22 * scale * 1.4);
+
+  const cm0 = (cfg.customMetrics || [])[0];
+  if (cm0) {
+    const aggVals  = getAggValues(instance.source, p);
+    const aggPrev  = getAggValuesPrev(instance.source, p);
+    const val      = evalFormula(cm0.formula, aggVals);
+    const prevVal  = evalFormula(cm0.formula, aggPrev);
+    const delta    = (val != null && prevVal != null) ? d(val, prevVal) : null;
+    const scaledVal = (cm0.format === 'pct' && val != null && val >= 0 && val <= 1) ? val * 100 : val;
+    const sparkData = buildSparkSeries(instance.source, p, null, cm0.formula);
+    return (
+      <RCard accent={teal} padding={16}>
+        <Eyebrow>{cfg.name || cm0.name}</Eyebrow>
+        <div style={{ marginTop: 6, fontFamily: T.display, fontSize: numSize, fontWeight: 800, color: fg, letterSpacing: '-0.02em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+          {fmtSingleVal(scaledVal, cm0.format)}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {delta != null && <RDelta value={Math.round(delta * 10) / 10}/>}
+            {compareLabel && delta != null && <span style={{ fontFamily: T.body, fontSize: 11, color: muted }}>{compareLabel}</span>}
+          </div>
+          {sparkData && <Spark data={sparkData} color={teal} w={120} h={48}/>}
+        </div>
+      </RCard>
+    );
+  }
+
+  const key     = cfg.metric;
+  const def     = reg[key] || {};
+  const val     = def.value ? def.value(p) : null;
+  const prev    = def.prev  ? def.prev(p)  : null;
+  const label   = cfg.name || cfg.label || def.label || key;
+  const delta   = prev != null && val != null ? d(val, prev) : null;
+  const sparkData = buildSparkSeries(instance.source, p, key, null);
+
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 10 }}>
-        <Kpi
-          label={label}
-          value={fmtMetricVal(val, def.format)}
-          delta={prev != null && val != null ? d(val, prev) : null}
-          accent={teal}
-          scale={scale * 1.4}
-        />
+    <RCard accent={teal} padding={16}>
+      <Eyebrow>{label}</Eyebrow>
+      <div style={{ marginTop: 6, fontFamily: T.display, fontSize: numSize, fontWeight: 800, color: fg, letterSpacing: '-0.02em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+        {fmtSingleVal(val, def.format)}
       </div>
-      <CustomMetricStrip instance={instance} p={p} cfg={cfg} scale={scale}/>
-    </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {delta != null && <RDelta value={Math.round(delta * 10) / 10}/>}
+          {compareLabel && delta != null && <span style={{ fontFamily: T.body, fontSize: 10, color: muted }}>{compareLabel}</span>}
+        </div>
+        {sparkData && <Spark data={sparkData} color={teal} w={120} h={48}/>}
+      </div>
+    </RCard>
   );
 }
 
 function ChartAreaWidget({ instance, p, cfg }) {
   const reg = window.DATA_REGISTRY?.[instance.source] || {};
+  const cm0 = (cfg.customMetrics || [])[0];
+  if (cm0) {
+    const aggVals = getAggValues(instance.source, p);
+    const val = evalFormula(cm0.formula, aggVals);
+    return (
+      <ChartCard title={cm0.name}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 72 }}>
+          <Kpi label={null} value={fmtCustomMetricVal(val, cm0.format)} delta={null} accent={teal} scale={1.6}/>
+        </div>
+      </ChartCard>
+    );
+  }
   const key = cfg.metric;
   const def = reg[key] || {};
   const series = def.series ? (def.series(p) || []) : [];
@@ -1343,25 +1590,75 @@ function ChartAreaWidget({ instance, p, cfg }) {
   const title = cfg.name || def.label || key;
   const totalVal = def.value ? def.value(p) : null;
   const sub = totalVal != null ? `Total: ${fmtMetricVal(totalVal, def.format)}` : null;
+
+  const n = safeSeries.length;
+  const dmax = Math.max(...safeSeries) || 1;
+  const dmin = Math.min(...safeSeries);
+  const vw = 400, vh = 80;
+  const pxF = (i) => (i / (n - 1)) * (vw - 8) + 4;
+  const pyF = (v) => (vh - 6) - ((v - dmin) / (dmax - dmin || 1)) * (vh - 14);
+  const linePath = safeSeries.map((v, i) => `${i === 0 ? 'M' : 'L'} ${pxF(i).toFixed(1)} ${pyF(v).toFixed(1)}`).join(' ');
+  const areaPath = `${linePath} L ${pxF(n - 1).toFixed(1)} ${vh} L ${pxF(0).toFixed(1)} ${vh} Z`;
+  const gradId = `caw-${instance.id}`;
+
   return (
     <ChartCard title={title} sub={sub}>
-      <MiniLine data={safeSeries} w={300} h={72} color={teal} fill id={`uni-area-${instance.id}`}/>
-      <CustomMetricStrip instance={instance} p={p} cfg={cfg}/>
+      <svg viewBox={`0 0 ${vw} ${vh}`} style={{ width: '100%', display: 'block' }}>
+        <defs>
+          <linearGradient id={gradId} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor={teal} stopOpacity="0.28"/>
+            <stop offset="100%" stopColor={teal} stopOpacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill={`url(#${gradId})`}/>
+        <path d={linePath} fill="none" stroke={teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <circle cx={pxF(n - 1)} cy={pyF(safeSeries[n - 1])} r="3.5" fill={teal} stroke="#0A1222" strokeWidth="1.5"/>
+      </svg>
     </ChartCard>
   );
 }
 
 function ChartBarWidget({ instance, p, cfg }) {
   const reg = window.DATA_REGISTRY?.[instance.source] || {};
+  const cm0 = (cfg.customMetrics || [])[0];
+  if (cm0) {
+    const aggVals = getAggValues(instance.source, p);
+    const val = evalFormula(cm0.formula, aggVals);
+    return (
+      <ChartCard title={cm0.name}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 72 }}>
+          <Kpi label={null} value={fmtCustomMetricVal(val, cm0.format)} delta={null} accent={blue} scale={1.6}/>
+        </div>
+      </ChartCard>
+    );
+  }
   const key = cfg.metric;
   const def = reg[key] || {};
   const series = def.series ? (def.series(p) || []) : [];
   const safeSeries = series.length >= 2 ? series : [0, 0];
   const title = cfg.name || def.label || key;
+  const totalVal = def.value ? def.value(p) : null;
+  const sub = totalVal != null ? `Total: ${fmtMetricVal(totalVal, def.format)}` : null;
+
+  const n = safeSeries.length;
+  const dmax = Math.max(...safeSeries) || 1;
+  const vw = 400, vh = 72;
+  const gap = n > 20 ? 1 : n > 10 ? 2 : 3;
+  const bw = (vw - gap * (n - 1)) / n;
+  const bH = (v) => Math.max(2, (v / dmax) * (vh - 4));
+  const bX = (i) => i * (bw + gap);
+
   return (
-    <ChartCard title={title}>
-      <MiniBar data={safeSeries} w={300} h={72} color={blue}/>
-      <CustomMetricStrip instance={instance} p={p} cfg={cfg}/>
+    <ChartCard title={title} sub={sub}>
+      <svg viewBox={`0 0 ${vw} ${vh}`} style={{ width: '100%', display: 'block' }}>
+        {safeSeries.map((v, i) => (
+          <rect key={i}
+            x={bX(i).toFixed(1)} y={(vh - bH(v) - 2).toFixed(1)} width={Math.max(1, bw).toFixed(1)} height={bH(v).toFixed(1)}
+            rx={Math.min(2, bw / 2)}
+            fill={blue} opacity="0.82"
+          />
+        ))}
+      </svg>
     </ChartCard>
   );
 }
@@ -1396,9 +1693,9 @@ function ChartDonutWidget({ instance, p, cfg }) {
             <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: COLORS[i % COLORS.length], flexShrink: 0 }}/>
-                <span style={{ fontFamily: T.mono, fontSize: 9, color: sec }}>{label}</span>
+                <span style={{ fontFamily: T.mono, fontSize: 11, color: sec }}>{label}</span>
               </div>
-              <span style={{ fontFamily: T.mono, fontSize: 9, color: muted }}>
+              <span style={{ fontFamily: T.mono, fontSize: 11, color: muted }}>
                 {((val / total) * 100).toFixed(1)}%
               </span>
             </div>
@@ -1554,21 +1851,118 @@ function TextWidget({ cfg }) {
   );
 }
 
+// ─── Paste sanitizer: keeps bold/italic/underline, strips source styling ──
+function sanitizePastedHTML(html, allowLists) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  function isBold(st) { const v = st.fontWeight || ''; return v === 'bold' || v === 'bolder' || parseInt(v, 10) >= 600; }
+  function isItalic(st) { const v = st.fontStyle || ''; return v === 'italic' || v === 'oblique'; }
+  function isUnder(st) { return (st.textDecoration || st.textDecorationLine || '').includes('underline'); }
+  function applyStyles(inner, st) {
+    if (isUnder(st)) inner = `<u>${inner}</u>`;
+    if (isItalic(st)) inner = `<i>${inner}</i>`;
+    if (isBold(st)) inner = `<b>${inner}</b>`;
+    return inner;
+  }
+  function clean(node) {
+    if (node.nodeType === 3) return node.textContent;
+    if (node.nodeType !== 1) return '';
+    const tag = node.tagName.toLowerCase();
+    // Drop metadata / non-content elements entirely (macOS Pages/Notes put <style> in clipboard)
+    if (['style','script','head','meta','link','title','noscript','svg','img'].includes(tag)) return '';
+    const st  = node.style || {};
+    let inner = Array.from(node.childNodes).map(clean).join('');
+    if (['b', 'strong'].includes(tag)) {
+      // Only strip bold if the inline style EXPLICITLY says non-bold (Google Docs wrapper fix).
+      // Do NOT strip for CSS variables or unrecognised values — parseInt returns NaN for those,
+      // which would cause isBold() to return false and wrongly eat the <b>/<strong>.
+      const fw = st.fontWeight || '';
+      const numFw = parseInt(fw, 10);
+      const explicitNonBold = fw === 'normal' || fw === 'lighter' || (!isNaN(numFw) && numFw < 600);
+      if (explicitNonBold) return applyStyles(inner, st);
+      return `<b>${inner}</b>`;
+    }
+    if (['i', 'em'].includes(tag)) {
+      // Only strip italic if the inline style explicitly says 'normal'
+      if (st.fontStyle === 'normal') return applyStyles(inner, st);
+      inner = `<i>${inner}</i>`;
+      if (isBold(st)) inner = `<b>${inner}</b>`;
+      if (isUnder(st)) inner = `<u>${inner}</u>`;
+      return inner;
+    }
+    if (tag === 'u') {
+      inner = `<u>${inner}</u>`;
+      if (isBold(st)) inner = `<b>${inner}</b>`;
+      if (isItalic(st)) inner = `<i>${inner}</i>`;
+      return inner;
+    }
+    // All other elements: apply inline formatting (covers span, div, p, h1-h6, etc.)
+    inner = applyStyles(inner, st);
+    if (allowLists && ['ul', 'ol', 'li'].includes(tag)) return `<${tag}>${inner}</${tag}>`;
+    if (tag === 'br') return allowLists ? '<br>' : ' ';
+    if (['p','div','h1','h2','h3','h4','h5','h6','blockquote','section','article','header','li'].includes(tag))
+      return inner + (inner.trim() ? ' ' : '');
+    return inner;
+  }
+  return clean(tmp).trim().replace(/  +/g, ' ');
+}
+
+// Insert sanitized HTML at the cursor using direct DOM manipulation.
+// Avoids execCommand('insertHTML') (deprecated, strips tags in some browsers) and
+// createContextualFragment (can sanitize based on context, may block <b>/<i>).
+function insertRichHTML(html) {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  const frag = document.createDocumentFragment();
+  let last = null;
+  while (tmp.firstChild) { last = tmp.firstChild; frag.appendChild(last); }
+  range.insertNode(frag);
+  if (last) {
+    const r = document.createRange();
+    r.setStartAfter(last);
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
+}
+
 // ─── Editable narrative widget renderers ──────────────────────────
 function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
   const [editCell, setEditCell] = React.useState(null);
-  const editorRef     = React.useRef(null); // body contenteditable
-  const headlineRef   = React.useRef(null); // headline contenteditable
-  const switchingRef  = React.useRef(false); // suppress onBlur commit when switching fields
+  const editorRef          = React.useRef(null); // body contenteditable
+  const headlineRef        = React.useRef(null); // headline contenteditable
+  const switchingRef       = React.useRef(false); // suppress onBlur commit when switching fields
+  const onConfigChangeRef  = React.useRef(onConfigChange);
+  React.useEffect(() => { onConfigChangeRef.current = onConfigChange; }, [onConfigChange]);
 
   const fs = cfg.fontSize || 'M';
   const headlinePx = { S: 16, M: 22, L: 30 }[fs] || 22;
   const bodyPx     = { S: 11, M: 12.5, L: 14 }[fs] || 12.5;
   const blocks = cfg.blocks && cfg.blocks.length
     ? cfg.blocks
-    : [{ headline: cfg.title || 'Performa marketing naik 19,7%', body: cfg.body || 'Konversi meningkat seiring shift anggaran ke Google Ads. SEO organik tumbuh 8,1% tanpa tambahan budget.', headlineColor: '', bodyColor: '' }];
+    : [{ headline: cfg.title || 'Marketing performance up 19.7%', body: cfg.body || 'Conversions increased as budget shifted to Google Ads. Organic SEO grew 8.1% with no additional spend.', headlineColor: '', bodyColor: '' }];
 
-  React.useEffect(() => { if (!isEditing) setEditCell(null); }, [isEditing]);
+  React.useEffect(() => {
+    if (!isEditing) {
+      const cb = onConfigChangeRef.current;
+      if (editCell && cb && widgetId) {
+        const ref = editCell.field === 'body' ? editorRef : headlineRef;
+        if (ref.current) {
+          const raw = ref.current.innerHTML || '';
+          const value = editCell.field === 'body'
+            ? raw.replace(/(<(div|p|li)[^>]*>\s*(<br\s*\/?>\s*)?<\/(div|p|li)>\s*)+$/, '').trim()
+            : raw.replace(/<\/?div[^>]*>/gi, '').replace(/<\/?p[^>]*>/gi, '').replace(/<br\s*\/?>/gi, ' ').trim();
+          const next = blocks.map((b, j) => j === editCell.bi ? { ...b, [editCell.field]: value } : b);
+          cb(widgetId, { blocks: next });
+        }
+      }
+      setEditCell(null);
+    }
+  }, [isEditing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Broadcast active field to card-editor.jsx via custom event (no prop drilling needed).
   // Only clear activeField when widget is deselected (isEditing=false). When editCell=null but
@@ -1654,6 +2048,10 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
   };
 
   const handleKeyDown = (field) => (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+      e.preventDefault();
+      return; // do NOT stopPropagation — window undo handler fires
+    }
     e.stopPropagation();
     if (e.key === 'Escape') { setEditCell(null); return; }
     if (field === 'headline' && e.key === 'Enter') { e.preventDefault(); commit(); return; }
@@ -1723,6 +2121,7 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
                     suppressContentEditableWarning
                     onBlur={() => { if (!document.hasFocus()) return; commit(); }}
                     onKeyDown={handleKeyDown('headline')}
+                    onPaste={e => { e.preventDefault(); const h = e.clipboardData.getData('text/html'); insertRichHTML((h ? sanitizePastedHTML(h, false) : '') || e.clipboardData.getData('text/plain')); }}
                     onPointerDown={e => e.stopPropagation()}
                     onClick={e => e.stopPropagation()}
                     style={{ outline: 'none', fontFamily: T.display, fontSize: headlinePx, fontWeight: 700, letterSpacing: '-0.02em', color: block.headlineColor || fg, lineHeight: 1.2, borderBottom: '1px solid rgba(255,255,255,0.25)', paddingBottom: 2, minHeight: headlinePx * 1.4, wordBreak: 'break-word' }}
@@ -1747,6 +2146,7 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
                     suppressContentEditableWarning
                     onBlur={() => { if (!document.hasFocus()) return; commit(); }}
                     onKeyDown={handleKeyDown('body')}
+                    onPaste={e => { e.preventDefault(); const h = e.clipboardData.getData('text/html'); insertRichHTML((h ? sanitizePastedHTML(h, true) : '') || e.clipboardData.getData('text/plain')); }}
                     onPointerDown={e => e.stopPropagation()}
                     onClick={e => e.stopPropagation()}
                     style={{ minHeight: 80, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, outline: 'none', padding: '8px 10px', marginTop: 8, fontFamily: T.body, fontSize: bodyPx, color: block.bodyColor || sec, lineHeight: 1.7, wordBreak: 'break-word' }}
@@ -1772,39 +2172,280 @@ function NarrativeHeroWidget({ cfg, widgetId, onConfigChange, isEditing }) {
   );
 }
 
-function NarrativeNoteWidget({ cfg }) {
-  const eyebrow = cfg.name || 'Analyst note';
-  const beats = [
-    { emoji: cfg.beat1_emoji || '📊', title: cfg.beat1_title || 'What happened',  body: cfg.beat1_body || 'Total spend naik 12,4% MoM, diimbangi kenaikan konversi 19,7%.' },
-    { emoji: cfg.beat2_emoji || '💡', title: cfg.beat2_title || 'Why it matters', body: cfg.beat2_body || 'Google Ads tetap kontributor ROAS terbesar (4,1x). SEO tumbuh tanpa budget.' },
-    { emoji: cfg.beat3_emoji || '🎯', title: cfg.beat3_title || 'Next action',    body: cfg.beat3_body || 'Geser 15% budget retargeting ke brand awareness Google Ads untuk Q2.' },
+function NarrativeNoteWidget({ cfg, widgetId, onConfigChange, isEditing }) {
+  const [editCell, setEditCell] = React.useState(null);
+  const [editEyebrow, setEditEyebrow] = React.useState(false);
+  const titleRef         = React.useRef(null);
+  const bodyRef          = React.useRef(null);
+  const eyebrowRef       = React.useRef(null);
+  const switchingRef     = React.useRef(false);
+  const onConfigChangeRef = React.useRef(onConfigChange);
+  React.useEffect(() => { onConfigChangeRef.current = onConfigChange; }, [onConfigChange]);
+
+  const fs = cfg.fontSize || 'M';
+  const titlePx = { S: 11, M: 12.5, L: 14 }[fs] || 12.5;
+  const bodyPx  = { S: 10.5, M: 11.5, L: 13 }[fs] || 11.5;
+
+  const beatCount = Math.min(6, Math.max(2, cfg.beatCount || 3));
+  const beatDefaults = [
+    { title: 'What happened',  body: 'Total spend up 12.4% MoM, offset by a 19.7% increase in conversions.' },
+    { title: 'Why it matters', body: 'Google Ads remains the largest ROAS contributor (4.1x). SEO grew with no additional budget.' },
+    { title: 'Next action',    body: 'Shift 15% of retargeting budget to Google Ads brand awareness for Q2.' },
+    { title: 'Insight 4', body: '' },
+    { title: 'Insight 5', body: '' },
+    { title: 'Insight 6', body: '' },
   ];
+  const beats = Array.from({ length: beatCount }, (_, i) => ({
+    title:      cfg[`beat${i + 1}_title`]      || beatDefaults[i].title,
+    body:       cfg[`beat${i + 1}_body`]       || beatDefaults[i].body,
+    titleColor: cfg[`beat${i + 1}_titleColor`] || '',
+    bodyColor:  cfg[`beat${i + 1}_bodyColor`]  || '',
+  }));
+
+  React.useEffect(() => {
+    if (!isEditing) {
+      const cb = onConfigChangeRef.current;
+      // Flush any in-progress contenteditable edit before clearing state.
+      // At this point editCell is still set and the contenteditable is still in the DOM.
+      if (editCell && cb && widgetId) {
+        const ref = editCell.field === 'body' ? bodyRef : titleRef;
+        if (ref.current) {
+          const raw = ref.current.innerHTML || '';
+          const value = editCell.field === 'body'
+            ? raw.replace(/(<(div|p|li)[^>]*>\s*(<br\s*\/?>\s*)?<\/(div|p|li)>\s*)+$/, '').trim()
+            : raw.replace(/<\/?div[^>]*>/gi, '').replace(/<\/?p[^>]*>/gi, '').replace(/<br\s*\/?>/gi, ' ').trim();
+          cb(widgetId, { [`beat${editCell.bi + 1}_${editCell.field}`]: value });
+        }
+      }
+      if (editEyebrow && cb && widgetId && eyebrowRef.current) {
+        cb(widgetId, { name: eyebrowRef.current.textContent?.trim() || '' });
+      }
+      setEditCell(null);
+      setEditEyebrow(false);
+    }
+  }, [isEditing]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  React.useEffect(() => {
+    if (!editEyebrow || !eyebrowRef.current) return;
+    eyebrowRef.current.textContent = cfg.name || '';
+    eyebrowRef.current.focus();
+    const sel = window.getSelection();
+    if (sel) {
+      const range = document.createRange();
+      range.selectNodeContents(eyebrowRef.current);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  }, [editEyebrow]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  React.useEffect(() => {
+    if (!isEditing) {
+      window.dispatchEvent(new CustomEvent('narrativeNoteFocus', { detail: null }));
+    } else if (editCell) {
+      window.dispatchEvent(new CustomEvent('narrativeNoteFocus', {
+        detail: { bi: editCell.bi, field: editCell.field },
+      }));
+    }
+  }, [editCell?.bi, editCell?.field, isEditing]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  React.useEffect(() => {
+    if (!editCell) return;
+    const ref = editCell.field === 'body' ? bodyRef : titleRef;
+    if (!ref.current) return;
+    const raw = beats[editCell.bi]?.[editCell.field] || '';
+    ref.current.innerHTML = editCell.field === 'title' ? highlightNumsHtml(raw) : raw;
+    ref.current.focus();
+    const sel = window.getSelection();
+    if (sel) {
+      const range = document.createRange();
+      range.selectNodeContents(ref.current);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  }, [editCell?.bi, editCell?.field]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const highlightNumsHtml = (text) => {
+    if (!text || /<[a-z]/i.test(text)) return text;
+    return text.replace(/(\d[\d.,]*(?:[%x])?)/g, '<span style="color:#F8B400">$1</span>');
+  };
+
+  const cleanBodyHTML = (html) =>
+    html.replace(/(<(div|p|li)[^>]*>\s*(<br\s*\/?>\s*)?<\/(div|p|li)>\s*)+$/, '').trim();
+
+  const cleanTitleHTML = (html) =>
+    html.replace(/<\/?div[^>]*>/gi, '').replace(/<\/?p[^>]*>/gi, '').replace(/<br\s*\/?>/gi, ' ').trim();
+
+  const readValue = () => {
+    if (!editCell) return '';
+    if (editCell.field === 'body') return cleanBodyHTML(bodyRef.current?.innerHTML || '');
+    return cleanTitleHTML(titleRef.current?.innerHTML || '');
+  };
+
+  const startEdit = (bi, field) => {
+    if (!isEditing) return;
+    if (editCell && !(editCell.bi === bi && editCell.field === field)) {
+      switchingRef.current = true;
+      if (onConfigChange) {
+        const curValue = readValue();
+        onConfigChange(widgetId, { [`beat${editCell.bi + 1}_${editCell.field}`]: curValue });
+      }
+    }
+    setEditCell({ bi, field });
+  };
+
+  const commit = () => {
+    if (switchingRef.current) { switchingRef.current = false; return; }
+    if (!editCell || !onConfigChange) { setEditCell(null); return; }
+    const value = readValue();
+    onConfigChange(widgetId, { [`beat${editCell.bi + 1}_${editCell.field}`]: value });
+    setEditCell(null);
+  };
+
+  const handleKeyDown = (field) => (e) => {
+    // Let Ctrl+Z / Ctrl+Shift+Z bubble to the window-level undo handler
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+      e.preventDefault(); // suppress native contenteditable undo
+      return;             // do NOT stopPropagation — window handler fires
+    }
+    e.stopPropagation();
+    if (e.key === 'Escape') { setEditCell(null); return; }
+    if (field === 'title' && e.key === 'Enter') { e.preventDefault(); commit(); return; }
+    if (field === 'title' && e.key === 'Tab') { e.preventDefault(); startEdit(editCell.bi, 'body'); return; }
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === 'b') { e.preventDefault(); document.execCommand('bold'); }
+      if (e.key === 'i') { e.preventDefault(); document.execCommand('italic'); }
+      if (e.key === 'u') { e.preventDefault(); document.execCommand('underline'); }
+    }
+  };
+
+  const highlightNums = (text) => {
+    if (!text) return '';
+    return text.split(/(\d[\d.,]*(?:[%x])?)/).map((part, i) =>
+      /^\d[\d.,]*(?:[%x])?$/.test(part) ? <span key={i} style={{ color: '#F8B400' }}>{part}</span> : part
+    );
+  };
+
+  const renderTitle = (beat) => {
+    if (!beat.title) return null;
+    return /<(b|i|u|strong|em|span)\b/i.test(beat.title)
+      ? <span dangerouslySetInnerHTML={{ __html: beat.title }}/>
+      : highlightNums(beat.title);
+  };
+
+  const eyebrow = cfg.name || 'Analyst note';
+
   return (
     <RCard padding={16} style={{ background: 'linear-gradient(135deg,rgba(0,194,184,.04),rgba(248,180,0,.02))' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}
+        {...(isEditing ? { onPointerDown: e => e.stopPropagation() } : {})}
+      >
         <div style={{ width: 22, height: 22, background: 'rgba(0,194,184,.14)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <svg width="12" height="12" fill="none" stroke={teal} strokeWidth="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </div>
-        <Eyebrow color={teal}>{eyebrow}</Eyebrow>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
-        {beats.map((beat, i) => (
-          <div key={i} style={{ display: 'flex', gap: 10 }}>
-            <span style={{ fontSize: 14 }}>{beat.emoji}</span>
-            <div>
-              <div style={{ fontFamily: T.display, fontSize: 12, fontWeight: 700, color: fg }}>{beat.title}</div>
-              <div style={{ fontFamily: T.body, fontSize: 11.5, color: sec, lineHeight: 1.5, marginTop: 2 }}>{beat.body}</div>
-            </div>
+        {editEyebrow ? (
+          <div
+            ref={eyebrowRef}
+            contentEditable
+            suppressContentEditableWarning
+            onBlur={() => {
+              if (!document.hasFocus()) return;
+              if (onConfigChange) onConfigChange(widgetId, { name: eyebrowRef.current?.textContent?.trim() || '' });
+              setEditEyebrow(false);
+            }}
+            onKeyDown={e => {
+              e.stopPropagation();
+              if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); eyebrowRef.current?.blur(); }
+            }}
+            onPaste={e => { e.preventDefault(); document.execCommand('insertText', false, e.clipboardData.getData('text/plain')); }}
+            onPointerDown={e => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
+            style={{ outline: 'none', fontFamily: T.mono, fontSize: 9.5, fontWeight: 600, color: teal, textTransform: 'uppercase', letterSpacing: '0.12em', borderBottom: '1px solid rgba(0,194,184,0.4)', minWidth: 40 }}
+          />
+        ) : (
+          <div
+            onClick={isEditing ? e => { e.stopPropagation(); setEditEyebrow(true); } : undefined}
+            onPointerDown={isEditing ? e => e.stopPropagation() : undefined}
+            style={{ fontFamily: T.mono, fontSize: 9.5, color: teal, textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 600, cursor: isEditing ? 'text' : 'default' }}>
+            {eyebrow || (isEditing
+              ? <span style={{ opacity: 0.28, fontStyle: 'italic', textTransform: 'none' }}>Click to add label…</span>
+              : null)}
           </div>
-        ))}
+        )}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: beatCount === 2 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 14 }}>
+        {beats.map((beat, i) => {
+          const isEditT = editCell?.bi === i && editCell?.field === 'title';
+          const isEditB = editCell?.bi === i && editCell?.field === 'body';
+          const accentColor = beat.titleColor || teal;
+          return (
+            <div key={i}
+              style={{ cursor: isEditing ? 'text' : 'default' }}
+              {...(isEditing ? { onPointerDown: e => e.stopPropagation() } : {})}
+            >
+              {isEditT ? (
+                <div
+                  key={`edit-t-${i}`}
+                  ref={titleRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onBlur={() => { if (!document.hasFocus()) return; commit(); }}
+                  onKeyDown={handleKeyDown('title')}
+                  onPaste={e => { e.preventDefault(); const h = e.clipboardData.getData('text/html'); insertRichHTML((h ? sanitizePastedHTML(h, false) : '') || e.clipboardData.getData('text/plain')); }}
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={e => e.stopPropagation()}
+                  style={{ outline: 'none', fontFamily: T.display, fontSize: titlePx, fontWeight: 700, color: beat.titleColor || fg, lineHeight: 1.3, borderBottom: '1px solid rgba(255,255,255,0.25)', paddingBottom: 2, minHeight: titlePx * 1.4, wordBreak: 'break-word' }}
+                />
+              ) : (
+                <div
+                  key={`display-t-${i}`}
+                  onClick={isEditing ? (e => { e.stopPropagation(); startEdit(i, 'title'); }) : undefined}
+                  onPointerDown={isEditing ? (e => e.stopPropagation()) : undefined}
+                  style={{ fontFamily: T.display, fontSize: titlePx, fontWeight: 700, color: beat.titleColor || fg, lineHeight: 1.3, cursor: isEditing ? 'text' : 'default', minHeight: titlePx * 1.4 }}>
+                  {beat.title
+                    ? renderTitle(beat)
+                    : isEditing && <span style={{ opacity: 0.28, fontStyle: 'italic', fontWeight: 400, fontSize: titlePx * 0.85 }}>Click to add title…</span>
+                  }
+                </div>
+              )}
+              <div style={{ height: 2, background: accentColor, margin: '6px 0' }}/>
+              {isEditB ? (
+                <div
+                  key={`edit-b-${i}`}
+                  ref={bodyRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onBlur={() => { if (!document.hasFocus()) return; commit(); }}
+                  onKeyDown={handleKeyDown('body')}
+                  onPaste={e => { e.preventDefault(); const h = e.clipboardData.getData('text/html'); insertRichHTML((h ? sanitizePastedHTML(h, true) : '') || e.clipboardData.getData('text/plain')); }}
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={e => e.stopPropagation()}
+                  style={{ minHeight: 56, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, outline: 'none', padding: '6px 8px', marginTop: 0, fontFamily: T.body, fontSize: bodyPx, color: beat.bodyColor || sec, lineHeight: 1.5, wordBreak: 'break-word' }}
+                />
+              ) : (
+                <div
+                  key={`display-b-${i}`}
+                  onClick={isEditing ? (e => { e.stopPropagation(); startEdit(i, 'body'); }) : undefined}
+                  onPointerDown={isEditing ? (e => e.stopPropagation()) : undefined}
+                  style={{ cursor: isEditing ? 'text' : 'default', minHeight: isEditing ? 32 : undefined }}>
+                  {beat.body
+                    ? <div style={{ fontFamily: T.body, fontSize: bodyPx, color: beat.bodyColor || sec, lineHeight: 1.5 }} dangerouslySetInnerHTML={{ __html: beat.body }}/>
+                    : isEditing && <p style={{ fontFamily: T.body, fontSize: bodyPx, color: sec, lineHeight: 1.5, margin: 0, opacity: 0.3, fontStyle: 'italic', padding: 0 }}>Click to add body…</p>
+                  }
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </RCard>
   );
 }
 
 function NarrativeCalloutWidget({ cfg }) {
-  const title = cfg.title || '3 halaman berpotensi naik ke top-3';
-  const body  = cfg.body  || 'Halaman dengan posisi #4–#7 dapat diangkat dengan internal linking dan backlink.';
+  const title = cfg.title || '3 pages could reach top-3';
+  const body  = cfg.body  || 'Pages ranked #4–#7 can be lifted with internal linking and backlinks.';
   const cta   = cfg.cta   || 'Create action plan →';
   return (
     <RCard padding={16} style={{ borderLeft: `3px solid ${gold}` }}>
@@ -1822,7 +2463,7 @@ function NarrativeCalloutWidget({ cfg }) {
 }
 
 function NarrativeQuoteWidget({ cfg }) {
-  const quote  = cfg.quote  || '"Laporan bulanan jadi jauh lebih cepat disiapkan. Tim klien langsung dapat insight."';
+  const quote  = cfg.quote  || '"Monthly reports are now prepared much faster. The client team gets insights right away."';
   const author = cfg.author || 'Dimas Pratama';
   const role   = cfg.role   || 'Client · PT Kopi Senja Nusantara';
   const initials = (author || '').split(' ').slice(0,2).map(w => w[0] || '').join('').toUpperCase() || 'DP';
@@ -1841,28 +2482,51 @@ function NarrativeQuoteWidget({ cfg }) {
   );
 }
 
-function UniversalWidget({ instance, p, widgetConfig, editState }) {
+function UniversalWidget({ instance, p, widgetConfig, editState, psiUrl, psiApiKey, savePsiApiKey }) {
   const src  = instance.source;
   const type = instance.type;
   const cfg  = window.getWidgetCfg ? window.getWidgetCfg(type, src, widgetConfig) : (widgetConfig || {});
+  const pf   = applyKpiFilters(p, src, cfg.filters);
 
   const inner = (() => {
     switch (type) {
-      case 'kpi-strip':    return <KpiStripWidget    instance={instance} p={p} cfg={cfg}/>;
-      case 'single-stat':  return <SingleStatWidget  instance={instance} p={p} cfg={cfg}/>;
-      case 'chart-area':   return <ChartAreaWidget   instance={instance} p={p} cfg={cfg}/>;
-      case 'chart-bar':    return <ChartBarWidget    instance={instance} p={p} cfg={cfg}/>;
-      case 'chart-donut':  return <ChartDonutWidget  instance={instance} p={p} cfg={cfg}/>;
-      case 'chart-heatmap':return <ChartHeatmapWidget instance={instance} p={p} cfg={cfg}/>;
+      case 'kpi-strip':    return <KpiStripWidget    instance={instance} p={pf} cfg={cfg}/>;
+      case 'single-stat':  return <SingleStatWidget  instance={instance} p={pf} cfg={cfg}/>;
+      case 'chart-area':   return <ChartAreaWidget   instance={instance} p={pf} cfg={cfg}/>;
+      case 'chart-bar':    return <ChartBarWidget    instance={instance} p={pf} cfg={cfg}/>;
+      case 'chart-donut':  return <ChartDonutWidget  instance={instance} p={pf} cfg={cfg}/>;
+      case 'chart-heatmap':return <ChartHeatmapWidget instance={instance} p={pf} cfg={cfg}/>;
       case 'table':             return <UniversalTableWidget  instance={instance} p={p} cfg={cfg}/>;
       case 'text':              return <TextWidget            cfg={cfg}/>;
       case 'narrative-hero':    return <NarrativeHeroWidget   cfg={cfg} widgetId={instance.id} isEditing={editState?.selected?.includes(instance.id)} onConfigChange={editState?.onConfigChange}/>;
-      case 'narrative-note':    return <NarrativeNoteWidget   cfg={cfg}/>;
+      case 'narrative-note':    return <NarrativeNoteWidget   cfg={cfg} widgetId={instance.id} isEditing={editState?.selected?.includes(instance.id)} onConfigChange={editState?.onConfigChange}/>;
       case 'narrative-callout': return <NarrativeCalloutWidget cfg={cfg}/>;
       case 'narrative-quote':   return <NarrativeQuoteWidget  cfg={cfg}/>;
+      case 'kpi-compare': {
+        const cardDef = (window.CARDS || []).find(c => c.id === 'kpi-compare');
+        if (!cardDef?.render) return null;
+        const cm0 = (cfg.customMetrics || [])[0];
+        let overrideProps = {};
+        if (cm0) {
+          const aggCur  = getAggValues(instance.source, pf);
+          const aggPrev = getAggValuesPrev(instance.source, pf);
+          overrideProps = {
+            overrideLabel:      cm0.name,
+            overrideCurrentVal: evalFormula(cm0.formula, aggCur),
+            overridePrevVal:    evalFormula(cm0.formula, aggPrev),
+            overrideFormat:     cm0.format,
+          };
+        }
+        return React.createElement(cardDef.render, { instance, p: pf, cfg, ...overrideProps });
+      }
+      case 'progress-psi': {
+        const cardDef = (window.CARDS || []).find(c => c.id === 'progress-psi');
+        if (cardDef?.render) return React.createElement(cardDef.render, { p: pf, cfg, psiUrl, psiApiKey, savePsiApiKey, isEditor: !!editState });
+        return null;
+      }
       default: {
         const cardDef = (window.CARDS || []).find(c => c.id === type);
-        if (cardDef?.render) return React.createElement(cardDef.render, {});
+        if (cardDef?.render) return React.createElement(cardDef.render, { cfg });
         return <div style={{ padding: 20, color: muted, fontFamily: T.mono, fontSize: 11 }}>Unknown type: {type}</div>;
       }
     }
@@ -1925,7 +2589,7 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
 
     map['google-clicks'] = (
       <SelectableWidget id="google-clicks" cardId="chart-bar" editState={editState}>
-        <ChartCard title={wn('google-clicks') || "Click Volume · Pacing"} sub="Bulan ini vs target">
+        <ChartCard title={wn('google-clicks') || "Click Volume · Pacing"} sub="This month vs target">
           <MiniBar data={safeClicks} w={300} h={72} color={blue} activeUntil={paceIdx}/>
         </ChartCard>
       </SelectableWidget>
@@ -1933,7 +2597,7 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
 
     map['google-budget'] = (
       <SelectableWidget id="google-budget" cardId="chart-donut" editState={editState}>
-        <ChartCard title={wn('google-budget') || "Budget per Tipe Kampanye"}>
+        <ChartCard title={wn('google-budget') || "Budget by Campaign Type"}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <MiniDonut
               segments={donutSegs.length ? donutSegs : [{ value: 1, color: '#243350' }]}
@@ -1946,9 +2610,9 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
                 <div key={ch.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     <div style={{ width: 7, height: 7, borderRadius: '50%', background: TYPE_COLORS[i % TYPE_COLORS.length], flexShrink: 0 }}/>
-                    <span style={{ fontFamily: T.mono, fontSize: 9, color: sec }}>{ch.name}</span>
+                    <span style={{ fontFamily: T.mono, fontSize: 11, color: sec }}>{ch.name}</span>
                   </div>
-                  <span style={{ fontFamily: T.mono, fontSize: 9, color: muted }}>
+                  <span style={{ fontFamily: T.mono, fontSize: 11, color: muted }}>
                     {((ch.spend / totalSpend) * 100).toFixed(1)}%
                   </span>
                 </div>
@@ -2047,7 +2711,7 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
 
       map['meta-donut'] = (
         <SelectableWidget id="meta-donut" cardId="chart-donut" editState={editState}>
-          <ChartCard title={wn('meta-donut') || "Impresi per Tipe Iklan"}>
+          <ChartCard title={wn('meta-donut') || "Impressions by Ad Type"}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <MiniDonut
                 segments={donutSegs.length ? donutSegs : [{ value: 1, color: '#243350' }]}
@@ -2060,9 +2724,9 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
                   <div key={ch.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                       <div style={{ width: 7, height: 7, borderRadius: '50%', background: META_COLORS[i % META_COLORS.length], flexShrink: 0 }}/>
-                      <span style={{ fontFamily: T.mono, fontSize: 9, color: sec }}>{ch.name}</span>
+                      <span style={{ fontFamily: T.mono, fontSize: 11, color: sec }}>{ch.name}</span>
                     </div>
-                    <span style={{ fontFamily: T.mono, fontSize: 9, color: muted }}>
+                    <span style={{ fontFamily: T.mono, fontSize: 11, color: muted }}>
                       {((ch.impressions / totalImpr) * 100).toFixed(1)}%
                     </span>
                   </div>
@@ -2115,7 +2779,7 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
             delta={d(ga4.bounce_rate, ga4Prev.bounce_rate) != null ? -d(ga4.bounce_rate, ga4Prev.bounce_rate) : null}
             scale={kpiScale}/>
           <Kpi label="Pages / Session"   value={pagesPerSession.toFixed(1)} sub="rata-rata" scale={kpiScale}/>
-          <Kpi label="Engagement Rate"   value={engageRate.toFixed(1) + '%'} sub="dari total sessions" scale={kpiScale}/>
+          <Kpi label="Engagement Rate"   value={engageRate.toFixed(1) + '%'} sub="of total sessions" scale={kpiScale}/>
         </div>
       </SelectableWidget>
     );
@@ -2157,7 +2821,7 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
         <ChartCard title={wn('ga4-conversion') || "Volume Konversi Harian"}>
           <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 700, color: fg, marginBottom: 8 }}>
             {fmt.num(ga4.engaged_sessions)}{' '}
-            <span style={{ fontFamily: T.mono, fontSize: 10, color: muted, fontWeight: 400 }}>engaged sessions</span>
+            <span style={{ fontFamily: T.mono, fontSize: 11, color: muted, fontWeight: 400 }}>engaged sessions</span>
           </div>
           <MiniBar data={safeConv.length >= 2 ? safeConv : [1, 2]} w={800} h={56} color={teal} gap={3}/>
         </ChartCard>
@@ -2170,7 +2834,7 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
     const { gsc } = p;
     const { impressions, clicks, ctr, position, queries, series } = gsc;
     const posColor = position <= 3 ? '#16A34A' : position <= 7 ? gold : '#E3170A';
-    const posLabel = position <= 3 ? 'Excellent · Top 3' : position <= 7 ? 'Good · Page 1' : 'Perlu Optimasi';
+    const posLabel = position <= 3 ? 'Excellent · Top 3' : position <= 7 ? 'Good · Page 1' : 'Needs Optimization';
     const gscPrev  = p.gscPrev;
     const kpiScale = FONT_SCALES[wcfg('search-kpi').fontSize] || 1;
 
@@ -2201,7 +2865,7 @@ function buildWidgetMap(p, connected, widgetConfigs, editState) {
         <ChartCard title={wn('search-ctr') || "CTR Organik Harian"}>
           <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 700, color: fg, marginBottom: 8 }}>
             {ctr.toFixed(2)}%
-            <span style={{ fontFamily: T.mono, fontSize: 10, color: muted, fontWeight: 400, marginLeft: 6 }}>avg CTR</span>
+            <span style={{ fontFamily: T.mono, fontSize: 11, color: muted, fontWeight: 400, marginLeft: 6 }}>avg CTR</span>
           </div>
           <MiniLine data={safeCtr.length >= 2 ? safeCtr : [ctr, ctr]} w={260} h={66} color={blue} fill id="sc-ctr"/>
         </ChartCard>
@@ -2286,12 +2950,12 @@ function PointerRowZone({ insertAt, active, onPointerEnter, onPointerLeave, inne
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
     >
-      {active && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: teal }}>+ baris baru</span>}
+      {active && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: teal }}>+ new row</span>}
     </div>
   );
 }
 
-function buildUniversalMap(p, widgetConfigs, layouts, editState) {
+function buildUniversalMap(p, widgetConfigs, layouts, editState, psiUrl, psiApiKey, savePsiApiKey) {
   const map = {};
   (layouts?.rows || []).forEach(row => {
     row.forEach(entry => {
@@ -2302,6 +2966,9 @@ function buildUniversalMap(p, widgetConfigs, layouts, editState) {
           p={p}
           widgetConfig={widgetConfigs?.[entry.id] || {}}
           editState={editState}
+          psiUrl={psiUrl}
+          psiApiKey={psiApiKey}
+          savePsiApiKey={savePsiApiKey}
         />
       );
     });
@@ -2310,7 +2977,7 @@ function buildUniversalMap(p, widgetConfigs, layouts, editState) {
 }
 
 // ─── Drag canvas ───────────────────────────────────────────────────
-function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutChange, widgetElemRefs }) {
+function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutChange, widgetElemRefs, scrollContainerRef, psiUrl, psiApiKey, savePsiApiKey }) {
   const [dragId,           setDragId]           = React.useState(null);
   const [hintDismissed,    setHintDismissed]    = React.useState(false);
   const [dropTarget,       setDropTarget]        = React.useState(null);
@@ -2323,6 +2990,8 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
   const justDropped  = React.useRef(false);
   const widgetEls    = React.useRef({});     // id -> { el, rowIdx } for zone detection
   const pointerRowZoneRefs = React.useRef({});  // insertAt -> DOM element, for flicker-free detection
+  const dragScrollRaf   = React.useRef(null);  // RAF handle for drag auto-scroll
+  const dragScrollSpeed = React.useRef(0);     // px/frame; 0 = stopped
   dragIdRef.current  = dragId;               // keep in sync every render
 
   // Wrap onSelect so a click fired immediately after a drop is suppressed
@@ -2359,6 +3028,8 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
   React.useEffect(() => {
     const cancelIfOutside = e => {
       pendingDrag.current = null;          // always clear on any pointer release
+      dragScrollSpeed.current = 0;
+      if (dragScrollRaf.current) { cancelAnimationFrame(dragScrollRaf.current); dragScrollRaf.current = null; }
       if (!dragIdRef.current) return;
       if (containerRef.current && containerRef.current.contains(e.target)) return;
       setDragId(null);
@@ -2373,7 +3044,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
   }, []);
 
   // Build widget map from live data, then augment with Browse overrides / browse-* IDs
-  const widgetMap = buildUniversalMap(p, widgetConfigs, layouts, _es);
+  const widgetMap = buildUniversalMap(p, widgetConfigs, layouts, _es, psiUrl, psiApiKey, savePsiApiKey);
   const _cards = window.CARDS || [];
   layouts.rows.forEach(row => row.forEach(entry => {
     if (entry.cardTypeOverride) {
@@ -2399,6 +3070,15 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
     }
   }));
 
+  // RAF loop: scrolls the canvas while the user drags near the top/bottom edge
+  const scrollDragFrame = React.useCallback(() => {
+    const speed  = dragScrollSpeed.current;
+    const canvas = scrollContainerRef?.current;
+    if (!canvas || speed === 0 || !dragIdRef.current) { dragScrollRaf.current = null; return; }
+    canvas.scrollTop = Math.max(0, canvas.scrollTop + speed);
+    dragScrollRaf.current = requestAnimationFrame(scrollDragFrame);
+  }, []); // all state accessed via refs — no stale-closure risk
+
   // ── Pointer drag (reorder existing widgets) ──────────────────────
   const handlePointerDown = (id, e) => {
     if (!editState || browseDragActive) return;
@@ -2420,6 +3100,18 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
     }
     if (dragId) {
       setGhostPos({ x: e.clientX, y: e.clientY });
+      // Auto-scroll when cursor is within 80px of the canvas top/bottom edge
+      const canvas = scrollContainerRef?.current;
+      if (canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const ZONE = 80, MAX_SPEED = 14;
+        const relY = e.clientY - rect.top;
+        let speed = 0;
+        if (relY < ZONE)                    speed = -Math.round((ZONE - relY) / ZONE * MAX_SPEED);
+        else if (relY > rect.height - ZONE) speed =  Math.round((relY - (rect.height - ZONE)) / ZONE * MAX_SPEED);
+        dragScrollSpeed.current = speed;
+        if (speed !== 0 && !dragScrollRaf.current) dragScrollRaf.current = requestAnimationFrame(scrollDragFrame);
+      }
       // Zone detection: find which sibling the cursor is over and which zone
       let found = null;
       for (const [wid, meta] of Object.entries(widgetEls.current)) {
@@ -2518,6 +3210,8 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
 
   const handlePointerUp = () => {
     pendingDrag.current = null;
+    dragScrollSpeed.current = 0;
+    if (dragScrollRaf.current) { cancelAnimationFrame(dragScrollRaf.current); dragScrollRaf.current = null; }
     if (!dragId) return;
     applyDrop(dragId, dropTarget);
     setDragId(null);
@@ -2653,7 +3347,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
         }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           <span style={{ fontFamily: T.mono, fontSize: 9, color: teal, letterSpacing: '0.05em' }}>
-            Edit Mode · Klik untuk pilih · Ctrl+Klik multi-pilih / hapus pilihan · Drag untuk pindahkan · Toolbar di atas widget · Ctrl+Z undo · Ctrl+Shift+Z redo
+            Edit Mode · Click to select · Ctrl+Click multi-select / deselect · Drag to move · Toolbar above widget · Ctrl+Z undo · Ctrl+Shift+Z redo
           </span>
         </div>
       )}
@@ -2754,8 +3448,8 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
                       >
                         {/* Move left within row */}
                         {[
-                          { title: 'Geser kiri dalam baris', disabled: colIdx === 0, onClick: () => swapInRow(rowIdx, id, visible[colIdx - 1].id), icon: <path d="M15 18l-6-6 6-6"/> },
-                          { title: 'Geser kanan dalam baris', disabled: colIdx === visible.length - 1, onClick: () => swapInRow(rowIdx, id, visible[colIdx + 1].id), icon: <path d="M9 18l6-6-6-6"/> },
+                          { title: 'Move left in row', disabled: colIdx === 0, onClick: () => swapInRow(rowIdx, id, visible[colIdx - 1].id), icon: <path d="M15 18l-6-6 6-6"/> },
+                          { title: 'Move right in row', disabled: colIdx === visible.length - 1, onClick: () => swapInRow(rowIdx, id, visible[colIdx + 1].id), icon: <path d="M9 18l6-6-6-6"/> },
                         ].map(({ title, disabled, onClick, icon }) => (
                           <button key={title} title={title} disabled={disabled}
                             onClick={e => { e.stopPropagation(); if (!disabled) onClick(); }}
@@ -2771,8 +3465,8 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
 
                         {/* Move row up / down */}
                         {[
-                          { title: 'Pindah baris ke atas', disabled: rowIdx === 0, onClick: () => swapRows(rowIdx, rowIdx - 1), icon: <><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></> },
-                          { title: 'Pindah baris ke bawah', disabled: rowIdx === layouts.rows.length - 1, onClick: () => swapRows(rowIdx, rowIdx + 1), icon: <><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></> },
+                          { title: 'Move row up', disabled: rowIdx === 0, onClick: () => swapRows(rowIdx, rowIdx - 1), icon: <><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></> },
+                          { title: 'Move row down', disabled: rowIdx === layouts.rows.length - 1, onClick: () => swapRows(rowIdx, rowIdx + 1), icon: <><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></> },
                         ].map(({ title, disabled, onClick, icon }) => (
                           <button key={title} title={title} disabled={disabled}
                             onClick={e => { e.stopPropagation(); if (!disabled) onClick(); }}
@@ -2811,7 +3505,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
                         <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,.1)', margin: '0 2px' }}/>
 
                         {/* Delete */}
-                        <button title="Hapus widget (Del)" onClick={e => { e.stopPropagation(); editState.onDelete(id); }}
+                        <button title="Delete widget (Del)" onClick={e => { e.stopPropagation(); editState.onDelete(id); }}
                           style={{ width: 26, height: 26, padding: 0, border: 'none', borderRadius: 6, cursor: 'pointer', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E3170A', transition: 'background .1s' }}
                           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(227,23,10,.12)'; }}
                           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
@@ -2929,7 +3623,7 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
             <rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/>
           </svg>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(0,194,184,.5)', textAlign: 'center', lineHeight: 1.6 }}>
-            Tidak ada widget.<br/>Drag widget dari sidebar atau gunakan Ctrl+V untuk paste.
+            No widgets yet.<br/>Drag a widget from the sidebar or use Ctrl+V to paste.
           </span>
         </div>
       )}
@@ -2999,13 +3693,13 @@ function GoogleAdsSection({ p, editState, widgetConfigs }) {
         </SelectableWidget>
 
         <SelectableWidget id="google-clicks" cardId="chart-bar" editState={editState}>
-          <ChartCard title={wn('google-clicks') || "Click Volume · Pacing"} sub="Bulan ini vs target">
+          <ChartCard title={wn('google-clicks') || "Click Volume · Pacing"} sub="This month vs target">
             <MiniBar data={safeClicks} w={300} h={72} color={blue} activeUntil={paceIdx}/>
           </ChartCard>
         </SelectableWidget>
 
         <SelectableWidget id="google-budget" cardId="chart-donut" editState={editState}>
-          <ChartCard title={wn('google-budget') || "Budget per Tipe Kampanye"}>
+          <ChartCard title={wn('google-budget') || "Budget by Campaign Type"}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <MiniDonut
                 segments={donutSegs.length ? donutSegs : [{ value: 1, color: '#243350' }]}
@@ -3018,9 +3712,9 @@ function GoogleAdsSection({ p, editState, widgetConfigs }) {
                   <div key={ch.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                       <div style={{ width: 7, height: 7, borderRadius: '50%', background: TYPE_COLORS[i % TYPE_COLORS.length], flexShrink: 0 }}/>
-                      <span style={{ fontFamily: T.mono, fontSize: 9, color: sec }}>{ch.name}</span>
+                      <span style={{ fontFamily: T.mono, fontSize: 11, color: sec }}>{ch.name}</span>
                     </div>
-                    <span style={{ fontFamily: T.mono, fontSize: 9, color: muted }}>
+                    <span style={{ fontFamily: T.mono, fontSize: 11, color: muted }}>
                       {((ch.spend / totalSpend) * 100).toFixed(1)}%
                     </span>
                   </div>
@@ -3086,7 +3780,7 @@ function AdGroupsTable({ adGroups }) {
       >
         <div>
           <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg }}>Ad Groups</div>
-          <div style={{ fontFamily: T.body, fontSize: 11, color: muted, marginTop: 2 }}>{adGroups.length} ad groups · klik untuk {show ? 'sembunyikan' : 'tampilkan'}</div>
+          <div style={{ fontFamily: T.body, fontSize: 11, color: muted, marginTop: 2 }}>{adGroups.length} ad groups · click to {show ? 'hide' : 'show'}</div>
         </div>
         <svg width="14" height="14" fill="none" stroke={muted} strokeWidth="2" viewBox="0 0 24 24" style={{ transform: show ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6"/></svg>
       </div>
@@ -3155,7 +3849,7 @@ function KeywordsTable({ keywords }) {
       >
         <div>
           <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg }}>Keywords</div>
-          <div style={{ fontFamily: T.body, fontSize: 11, color: muted, marginTop: 2 }}>{keywords.length} keywords · klik untuk {show ? 'sembunyikan' : 'tampilkan'}</div>
+          <div style={{ fontFamily: T.body, fontSize: 11, color: muted, marginTop: 2 }}>{keywords.length} keywords · click to {show ? 'hide' : 'show'}</div>
         </div>
         <svg width="14" height="14" fill="none" stroke={muted} strokeWidth="2" viewBox="0 0 24 24" style={{ transform: show ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="M6 9l6 6 6-6"/></svg>
       </div>
@@ -3254,7 +3948,7 @@ function MetaAdsSection({ p, editState, widgetConfigs }) {
         </SelectableWidget>
 
         <SelectableWidget id="meta-donut" cardId="chart-donut" editState={editState}>
-          <ChartCard title={wn('meta-donut') || "Impresi per Tipe Iklan"}>
+          <ChartCard title={wn('meta-donut') || "Impressions by Ad Type"}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <MiniDonut
                 segments={donutSegs.length ? donutSegs : [{ value: 1, color: '#243350' }]}
@@ -3267,9 +3961,9 @@ function MetaAdsSection({ p, editState, widgetConfigs }) {
                   <div key={ch.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                       <div style={{ width: 7, height: 7, borderRadius: '50%', background: META_COLORS[i % META_COLORS.length], flexShrink: 0 }}/>
-                      <span style={{ fontFamily: T.mono, fontSize: 9, color: sec }}>{ch.name}</span>
+                      <span style={{ fontFamily: T.mono, fontSize: 11, color: sec }}>{ch.name}</span>
                     </div>
-                    <span style={{ fontFamily: T.mono, fontSize: 9, color: muted }}>
+                    <span style={{ fontFamily: T.mono, fontSize: 11, color: muted }}>
                       {((ch.impressions / totalImpr) * 100).toFixed(1)}%
                     </span>
                   </div>
@@ -3328,7 +4022,7 @@ function GA4Section({ p, editState, widgetConfigs }) {
             delta={d(ga4.bounce_rate, ga4Prev.bounce_rate) != null ? -d(ga4.bounce_rate, ga4Prev.bounce_rate) : null}
             scale={kpiScale}/>
           <Kpi label="Pages / Session"   value={pagesPerSession.toFixed(1)} sub="rata-rata" scale={kpiScale}/>
-          <Kpi label="Engagement Rate"   value={engageRate.toFixed(1) + '%'} sub="dari total sessions" scale={kpiScale}/>
+          <Kpi label="Engagement Rate"   value={engageRate.toFixed(1) + '%'} sub="of total sessions" scale={kpiScale}/>
         </div>
       </SelectableWidget>
 
@@ -3366,7 +4060,7 @@ function GA4Section({ p, editState, widgetConfigs }) {
         <ChartCard title={wn('ga4-conversion') || "Volume Konversi Harian"}>
           <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 700, color: fg, marginBottom: 8 }}>
             {fmt.num(ga4.engaged_sessions)}{' '}
-            <span style={{ fontFamily: T.mono, fontSize: 10, color: muted, fontWeight: 400 }}>engaged sessions</span>
+            <span style={{ fontFamily: T.mono, fontSize: 11, color: muted, fontWeight: 400 }}>engaged sessions</span>
           </div>
           <MiniBar data={safeConv.length >= 2 ? safeConv : [1, 2]} w={800} h={56} color={teal} gap={3}/>
         </ChartCard>
@@ -3415,7 +4109,7 @@ function QueriesTable({ queries }) {
           </tr>
         </thead>
         <tbody>
-          {rows.length === 0 && <tr><td colSpan={5} style={{ padding: '20px', textAlign: 'center', fontFamily: T.mono, fontSize: 10, color: muted }}>Tidak ada hasil</td></tr>}
+          {rows.length === 0 && <tr><td colSpan={5} style={{ padding: '20px', textAlign: 'center', fontFamily: T.mono, fontSize: 10, color: muted }}>No results</td></tr>}
           {rows.map((kw, i) => {
             const pc = kw.position;
             const pc_color = pc <= 3 ? '#16A34A' : pc <= 7 ? gold : '#E3170A';
@@ -3480,7 +4174,7 @@ function PagesTable({ pages }) {
           </tr>
         </thead>
         <tbody>
-          {rows.length === 0 && <tr><td colSpan={5} style={{ padding: '20px', textAlign: 'center', fontFamily: T.mono, fontSize: 10, color: muted }}>Tidak ada hasil</td></tr>}
+          {rows.length === 0 && <tr><td colSpan={5} style={{ padding: '20px', textAlign: 'center', fontFamily: T.mono, fontSize: 10, color: muted }}>No results</td></tr>}
           {rows.map((pg, i) => {
             const pc = pg.position || 0;
             const pc_color = pc <= 3 ? '#16A34A' : pc <= 7 ? gold : '#E3170A';
@@ -3511,10 +4205,10 @@ function SearchSection({ p, editState, widgetConfigs }) {
         <SectionHead channel="search" title="Search Console" subtitle="Organic impressions, clicks & ranking"/>
         <RCard padding={20}>
           <div style={{ fontFamily: T.mono, fontSize: 10, color: muted, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-            Belum ada data Search Console untuk periode ini
+            No Search Console data for this period
           </div>
           <div style={{ fontFamily: T.body, fontSize: 12, color: sec, marginTop: 6 }}>
-            Pastikan property sudah terhubung dan data sudah disinkronisasi ke tabel <strong style={{ color: fg }}>search_console</strong>.
+            Make sure the property is connected and data has been synced to the <strong style={{ color: fg }}>search_console</strong> table.
           </div>
         </RCard>
       </Section>
@@ -3523,7 +4217,7 @@ function SearchSection({ p, editState, widgetConfigs }) {
 
   const { impressions, clicks, ctr, position, queries, series } = gsc;
   const posColor = position <= 3 ? '#16A34A' : position <= 7 ? gold : '#E3170A';
-  const posLabel = position <= 3 ? 'Excellent · Top 3' : position <= 7 ? 'Good · Page 1' : 'Perlu Optimasi';
+  const posLabel = position <= 3 ? 'Excellent · Top 3' : position <= 7 ? 'Good · Page 1' : 'Needs Optimization';
 
   const safeCtr    = series.clicks.length >= 2
     ? series.clicks.map((v, i) => {
@@ -3570,7 +4264,7 @@ function SearchSection({ p, editState, widgetConfigs }) {
           <ChartCard title={wn('search-ctr') || "CTR Organik Harian"}>
             <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 700, color: fg, marginBottom: 8 }}>
               {ctr.toFixed(2)}%
-              <span style={{ fontFamily: T.mono, fontSize: 10, color: muted, fontWeight: 400, marginLeft: 6 }}>avg CTR</span>
+              <span style={{ fontFamily: T.mono, fontSize: 11, color: muted, fontWeight: 400, marginLeft: 6 }}>avg CTR</span>
             </div>
             <MiniLine data={safeCtr.length >= 2 ? safeCtr : [ctr, ctr]} w={260} h={66} color={blue} fill id="sc-ctr"/>
           </ChartCard>
@@ -3608,303 +4302,176 @@ function SearchSection({ p, editState, widgetConfigs }) {
 }
 
 // ─── PageSpeed Section ─────────────────────────────────────────────
-// psi  = aggregated PSI data from Supabase (may be null if no history)
-// psiUrl = URL being tracked (for live measurement trigger)
-function PageSpeedSection({ psi, psiUrl }) {
-  const [liveData,     setLiveData]     = useState(null);
+// Slim measurement control panel — scores are displayed via the progress-psi canvas widget
+function PageSpeedSection({ psiUrl, psiApiKey, savePsiApiKey }) {
   const [measuring,    setMeasuring]    = useState(false);
   const [measureError, setMeasureError] = useState(null);
-  const [retryIn,      setRetryIn]      = useState(0); // countdown seconds after 429
+  const [retryIn,      setRetryIn]      = useState(0);
+  const [lastMeasured, setLastMeasured] = useState(null);
+  const autoRetryCount = React.useRef(0);
+  const [keyDraft,     setKeyDraft]     = useState('');
+  const [showKeyInput, setShowKeyInput] = useState(false);
 
-  const effectivePsi = liveData || psi;
+  const runMeasurementRef = React.useRef(null);
 
-  // Countdown tick when rate-limited
   useEffect(() => {
     if (retryIn <= 0) return;
     const t = setTimeout(() => {
-      setRetryIn(s => {
-        if (s <= 1) { runLiveMeasurement(); return 0; }
-        return s - 1;
-      });
+      if (retryIn <= 1) { setRetryIn(0); runMeasurementRef.current?.(true); }
+      else { setRetryIn(s => s - 1); }
     }, 1000);
     return () => clearTimeout(t);
   }, [retryIn]);
 
-  // Normalize: safety net in case DB stores 0-1 (Lighthouse format)
-  const ns = v => {
-    const n = +(v) || 0;
-    return n > 0 && n <= 1 ? Math.round(n * 100) : Math.round(n);
-  };
+  function _parseCats(cats) {
+    return {
+      performance_score:    Math.round((cats.performance       && cats.performance.score       || 0) * 100),
+      seo_score:            Math.round((cats.seo               && cats.seo.score               || 0) * 100),
+      accessibility_score:  Math.round((cats.accessibility     && cats.accessibility.score     || 0) * 100),
+      best_practices_score: Math.round((cats['best-practices'] && cats['best-practices'].score || 0) * 100),
+    };
+  }
+  function _scoresToPsi(s, today) {
+    return { performance: s.performance_score, seo: s.seo_score, accessibility: s.accessibility_score, best_practices: s.best_practices_score, latestDay: today, recordCount: 1, history: [], _isLive: true };
+  }
 
-  async function runLiveMeasurement() {
+  async function runLiveMeasurement(isAutoRetry = false) {
     if (!psiUrl || measuring) return;
     setMeasuring(true);
     setMeasureError(null);
     setRetryIn(0);
     try {
-      const apiEndpoint = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed'
+      const base = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed'
         + '?url=' + encodeURIComponent(psiUrl)
-        + '&strategy=mobile'
-        + '&fields=lighthouseResult.categories';
-      const resp = await fetch(apiEndpoint);
-      if (resp.status === 429) {
-        // Google PSI rate-limits to ~25 req/100 s; wait 65 s then auto-retry
+        + '&category=performance&category=accessibility&category=best-practices&category=seo'
+        + (psiApiKey ? '&key=' + encodeURIComponent(psiApiKey) : '');
+      const [mResp, dResp] = await Promise.all([
+        fetch(base + '&strategy=mobile'),
+        fetch(base + '&strategy=desktop'),
+      ]);
+      // Rate-limit / quota check on mobile response (primary)
+      if (mResp.status === 429 || mResp.status === 403) {
         setMeasuring(false);
-        setRetryIn(65);
+        let errBody = null;
+        try { errBody = await mResp.json(); } catch {}
+        const errDetail = errBody?.error?.message || '';
+        const isQuotaDaily = errDetail.includes('per day') || errDetail.includes('Queries per day');
+        if (isQuotaDaily) { setMeasureError('quota_exceeded'); return; }
+        if (isAutoRetry && autoRetryCount.current >= 3) {
+          setMeasureError('quota_exceeded'); autoRetryCount.current = 0; return;
+        }
+        autoRetryCount.current += 1;
+        setRetryIn(105);
         setMeasureError('rate_limited');
         return;
       }
-      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' dari Google API. Coba lagi beberapa saat.');
-      const json = await resp.json();
-      const cats = json.lighthouseResult && json.lighthouseResult.categories;
-      if (!cats) throw new Error('Tidak ada data kategori dalam respons PSI.');
-      setLiveData({
-        performance:    Math.round((cats.performance    && cats.performance.score    || 0) * 100),
-        seo:            Math.round((cats.seo            && cats.seo.score            || 0) * 100),
-        accessibility:  Math.round((cats.accessibility  && cats.accessibility.score  || 0) * 100),
-        best_practices: Math.round((cats['best-practices'] && cats['best-practices'].score || 0) * 100),
-        latestDay: new Date().toISOString().slice(0, 10),
-        recordCount: 1, history: [], _isLive: true,
-      });
+      if (!mResp.ok) {
+        let errMsg = 'HTTP ' + mResp.status + ' from Google API.';
+        try { const j = await mResp.json(); errMsg = j?.error?.message || errMsg; } catch {}
+        throw new Error(errMsg);
+      }
+      const today = new Date().toISOString().slice(0, 10);
+      const mJson = await mResp.json();
+      const mCats = mJson.lighthouseResult && mJson.lighthouseResult.categories;
+      if (!mCats) throw new Error('No category data in PSI response.');
+      autoRetryCount.current = 0;
+      const mScores = _parseCats(mCats);
+
+      // Parse desktop (best-effort; don't fail the whole measurement if it errors)
+      let dScores = null;
+      try {
+        if (dResp.ok) {
+          const dJson = await dResp.json();
+          const dCats = dJson.lighthouseResult && dJson.lighthouseResult.categories;
+          if (dCats) dScores = _parseCats(dCats);
+        }
+      } catch (_) {}
+
+      setLastMeasured(today);
+      // Persist both to Supabase
+      try {
+        const ga4Supa = window.LIVE._ga4Supa;
+        if (ga4Supa) {
+          const rows = [{ url: psiUrl, strategy: 'mobile', day: today, ...mScores }];
+          if (dScores) rows.push({ url: psiUrl, strategy: 'desktop', day: today, ...dScores });
+          await ga4Supa.from('pagespeed').insert(rows);
+        }
+      } catch (_) {}
     } catch (e) {
-      setMeasureError(e.message || 'Gagal menjalankan pengukuran.');
+      setMeasureError(e.message || 'Measurement failed. Please try again.');
     } finally {
       setMeasuring(false);
     }
   }
+  runMeasurementRef.current = runLiveMeasurement;
 
-  // ── Empty / no-data state ─────────────────────────────────────────
-  if (!effectivePsi) {
-    return (
-      <Section>
-        <SectionHead title="PageSpeed Insights" subtitle="Core Web Vitals · Mobile · Lighthouse"/>
-        <RCard padding={24}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div>
-              <div style={{ fontFamily: T.mono, fontSize: 10, color: muted, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>
-                Belum ada data pengukuran tersimpan
-              </div>
-              {psiUrl && (
-                <div style={{ fontFamily: T.body, fontSize: 11.5, color: sec }}>
-                  URL: <span style={{ color: fg, fontFamily: T.mono, fontSize: 10 }}>{psiUrl}</span>
-                </div>
-              )}
-              {!psiUrl && (
-                <div style={{ fontFamily: T.body, fontSize: 11.5, color: sec }}>
-                  Hubungkan URL di Configure untuk memulai.
-                </div>
-              )}
-            </div>
-
-            {psiUrl && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                <button
-                  onClick={runLiveMeasurement}
-                  disabled={measuring}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '9px 18px',
-                    background: measuring ? 'rgba(0,194,184,.15)' : 'linear-gradient(135deg,#00C2B8,#009E96)',
-                    border: measuring ? '1px solid rgba(0,194,184,.3)' : 'none',
-                    borderRadius: 8, cursor: measuring ? 'not-allowed' : 'pointer',
-                    color: measuring ? teal : '#0C182C',
-                    fontFamily: T.display, fontSize: 12, fontWeight: 700,
-                    boxShadow: measuring ? 'none' : '0 4px 14px rgba(0,194,184,.25)',
-                    transition: 'all .2s',
-                  }}
-                >
-                  {measuring
-                    ? <>
-                        <span style={{ width: 12, height: 12, border: '2px solid rgba(0,194,184,.3)', borderTopColor: teal, borderRadius: '50%', display: 'inline-block', animation: 'bootPulse 0.8s linear infinite' }}/>
-                        Mengukur halaman…
-                      </>
-                    : <>
-                        <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.3" viewBox="0 0 24 24" strokeLinecap="round">
-                          <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                        Jalankan Pengukuran Sekarang
-                      </>
-                  }
-                </button>
-                {measuring && (
-                  <div style={{ fontFamily: T.mono, fontSize: 9.5, color: muted }}>
-                    Menghubungi Google PageSpeed API… (~10–30 detik)
-                  </div>
-                )}
-              </div>
-            )}
-
-            {measureError === 'rate_limited' ? (
-              <div style={{
-                fontFamily: T.mono, fontSize: 10, color: '#F8B400',
-                background: 'rgba(248,180,0,.08)', border: '1px solid rgba(248,180,0,.25)',
-                borderRadius: 6, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10,
-              }}>
-                <svg width="13" height="13" fill="none" stroke="#F8B400" strokeWidth="2" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-                </svg>
-                <span>
-                  Google PSI membatasi permintaan.{' '}
-                  {retryIn > 0
-                    ? <>Mencoba ulang otomatis dalam <strong style={{ color: fg }}>{retryIn}s</strong>…</>
-                    : 'Mencoba ulang…'
-                  }
-                </span>
-              </div>
-            ) : measureError ? (
-              <div style={{
-                fontFamily: T.mono, fontSize: 10, color: '#E3170A',
-                background: 'rgba(227,23,10,.08)', border: '1px solid rgba(227,23,10,.2)',
-                borderRadius: 6, padding: '8px 12px',
-              }}>
-                {measureError}
-              </div>
-            ) : null}
-          </div>
-        </RCard>
-      </Section>
-    );
-  }
-
-  // ── Full data display ─────────────────────────────────────────────
-  const scores = [
-    { key: 'performance',    label: 'Performance',    value: ns(effectivePsi.performance)    },
-    { key: 'seo',            label: 'SEO',            value: ns(effectivePsi.seo)            },
-    { key: 'accessibility',  label: 'Accessibility',  value: ns(effectivePsi.accessibility)  },
-    { key: 'best_practices', label: 'Best Practices', value: ns(effectivePsi.best_practices) },
-  ];
-
-  const overall = Math.round(scores.reduce((s, sc) => s + sc.value, 0) / scores.length);
-
-  const hist = effectivePsi.history && effectivePsi.history.length >= 2 ? effectivePsi.history : null;
-  const heatRows = hist ? Math.min(hist.length, 4) : 4;
-  const heatValues = hist
-    ? Array.from({ length: heatRows }, (_, r) => scores.map(sc => {
-        const row = hist[Math.floor(r * hist.length / heatRows)];
-        const v = row ? ns(row[sc.key] !== undefined ? row[sc.key] : (row.performance || 0)) : sc.value;
-        return v / 100;
-      }))
-    : [
-        scores.map(s => Math.max(0, (s.value - 20) / 80)),
-        scores.map(s => Math.max(0, (s.value - 5)  / 80)),
-        scores.map(s => Math.max(0, (s.value - 10) / 80)),
-        scores.map(s => s.value / 100),
-      ];
-
-  const perfSpark = hist ? hist.map(h => ns(h.performance) || 0) : [];
-
-  const latestLabel = effectivePsi.latestDay
-    ? new Date(effectivePsi.latestDay + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-    : null;
+  if (!psiUrl) return null;
 
   return (
     <Section>
-      <SectionHead title="PageSpeed Insights" subtitle="Core Web Vitals · Mobile · Lighthouse"/>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-        {latestLabel && (
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            fontFamily: T.mono, fontSize: 9, color: muted,
-            background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)',
-            borderRadius: 5, padding: '4px 10px',
-          }}>
-            <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round">
-              <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-            </svg>
-            {effectivePsi._isLive ? 'Diukur sekarang' : 'Snapshot terbaru'}: {latestLabel}
-            {!effectivePsi._isLive && effectivePsi.recordCount > 1 && ` · ${effectivePsi.recordCount} pengukuran`}
+      <SectionHead title="PageSpeed Insights" subtitle="Measurement Control"/>
+      <RCard padding={16}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 10, color: sec }}>
+            URL: <span style={{ color: fg }}>{psiUrl}</span>
           </div>
-        )}
-        {effectivePsi._isLive && (
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            fontFamily: T.mono, fontSize: 9, color: teal,
-            background: 'rgba(0,194,184,.08)', border: '1px solid rgba(0,194,184,.2)',
-            borderRadius: 5, padding: '4px 10px',
-          }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal, display: 'inline-block' }}/>
-            Live Measurement
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <button onClick={runLiveMeasurement} disabled={measuring || retryIn > 0} style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px',
+              background: measuring ? 'rgba(0,194,184,.15)' : 'linear-gradient(135deg,#00C2B8,#009E96)',
+              border: measuring ? '1px solid rgba(0,194,184,.3)' : 'none',
+              borderRadius: 8, cursor: (measuring || retryIn > 0) ? 'not-allowed' : 'pointer',
+              color: measuring ? teal : '#0C182C', fontFamily: T.display, fontSize: 12, fontWeight: 700,
+              boxShadow: measuring ? 'none' : '0 4px 14px rgba(0,194,184,.25)',
+              transition: 'all .2s', opacity: retryIn > 0 ? 0.5 : 1,
+            }}>
+              {measuring
+                ? <><span style={{ width: 12, height: 12, border: '2px solid rgba(0,194,184,.3)', borderTopColor: teal, borderRadius: '50%', display: 'inline-block', animation: 'bootPulse 0.8s linear infinite' }}/> Measuring…</>
+                : <><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.3" viewBox="0 0 24 24" strokeLinecap="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Run Measurement</>}
+            </button>
+            {lastMeasured && !measuring && (
+              <span style={{ fontFamily: T.mono, fontSize: 9, color: teal }}>
+                Saved · {lastMeasured} · Refresh to update widget scores
+              </span>
+            )}
+            {measuring && <span style={{ fontFamily: T.mono, fontSize: 9.5, color: muted }}>Contacting Google API… (~10–30 sec)</span>}
           </div>
-        )}
-        {psiUrl && !measuring && retryIn <= 0 && (
-          <button onClick={runLiveMeasurement} style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            padding: '4px 10px', borderRadius: 5, cursor: 'pointer',
-            background: 'transparent', border: '1px solid rgba(255,255,255,.1)',
-            color: muted, fontFamily: T.mono, fontSize: 9,
-            transition: 'border-color .15s, color .15s',
-          }}>
-            <svg width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2.3" viewBox="0 0 24 24" strokeLinecap="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            Ukur Ulang
-          </button>
-        )}
-        {measureError === 'rate_limited' && (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: T.mono, fontSize: 9, color: '#F8B400', background: 'rgba(248,180,0,.08)', border: '1px solid rgba(248,180,0,.25)', borderRadius: 5, padding: '4px 10px' }}>
-            <svg width="10" height="10" fill="none" stroke="#F8B400" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            {retryIn > 0 ? `Retry dalam ${retryIn}s…` : 'Mencoba ulang…'}
-          </div>
-        )}
-        {measureError && measureError !== 'rate_limited' && (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: T.mono, fontSize: 9, color: '#E3170A', background: 'rgba(227,23,10,.08)', border: '1px solid rgba(227,23,10,.2)', borderRadius: 5, padding: '4px 10px' }}>
-            {measureError}
-          </div>
-        )}
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 1fr', gap: 14, alignItems: 'start' }}>
-        <ChartCard style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <Eyebrow>Overall Score</Eyebrow>
-          <Ring value={overall} max={100} size={108} thickness={9} color={scoreColor(overall)} label="SCORE"/>
-          <div style={{ fontFamily: T.mono, fontSize: 9, color: scoreColor(overall) }}>
-            {overall >= 90 ? 'Excellent' : overall >= 50 ? 'Needs Improvement' : 'Poor'}
-          </div>
-          {perfSpark.length >= 2 && (
-            <div style={{ width: '100%', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,.06)' }}>
-              <div style={{ fontFamily: T.mono, fontSize: 8, color: muted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Tren Performance</div>
-              <MiniLine data={perfSpark} w={120} h={32} color={scoreColor(effectivePsi.performance)} fill id="psi-perf-spark"/>
+          {measureError === 'rate_limited' && (
+            <div style={{ fontFamily: T.mono, fontSize: 10, color: '#F8B400', background: 'rgba(248,180,0,.08)', border: '1px solid rgba(248,180,0,.25)', borderRadius: 6, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <svg width="13" height="13" fill="none" stroke="#F8B400" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              Google PSI is rate-limited.{' '}{retryIn > 0 ? <>Auto-retrying in <strong style={{ color: fg }}>{retryIn}s</strong>…</> : 'Retrying…'}
             </div>
           )}
-        </ChartCard>
-
-        <ChartCard title="Skor per Kategori">
-          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', justifyContent: 'space-around', paddingTop: 8 }}>
-            {scores.map(sc => (
-              <div key={sc.key} style={{ textAlign: 'center' }}>
-                <Ring value={sc.value} max={100} size={80} thickness={7} color={scoreColor(sc.value)}/>
-                <div style={{ fontFamily: T.mono, fontSize: 8, color: muted, marginTop: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{sc.label}</div>
-                <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: scoreColor(sc.value), marginTop: 2 }}>{sc.value}</div>
+          {measureError === 'quota_exceeded' && (
+            <div style={{ background: 'rgba(227,23,10,.08)', border: '1px solid rgba(227,23,10,.2)', borderRadius: 6, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontFamily: T.mono, fontSize: 10, color: '#E3170A', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <svg width="13" height="13" fill="none" stroke="#E3170A" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+                Daily Google PSI quota exceeded. Add an API Key to continue.
               </div>
-            ))}
-          </div>
-        </ChartCard>
-
-        <ChartCard title="Score Consistency" sub={hist ? `${heatRows} snapshot terakhir` : (effectivePsi._isLive ? 'Live measurement' : 'Estimasi dari skor saat ini')}>
-          <MiniHeatmap
-            rows={heatRows} cols={4}
-            values={heatValues}
-            labelsRow={hist
-              ? hist.slice(0, heatRows).map((h, i) => h.day ? h.day.slice(5) : ('S' + (i + 1)))
-              : ['', '', '', '']}
-            labelsCol={['Perf', 'SEO', 'A11y', 'BP']}
-            cell={22} color={teal}
-          />
-        </ChartCard>
-      </div>
-
-      <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-        {[
-          { range: '90–100', label: 'Fast',              color: '#16A34A' },
-          { range: '50–89',  label: 'Needs Improvement', color: gold },
-          { range: '0–49',   label: 'Slow',              color: '#E3170A' },
-        ].map(item => (
-          <div key={item.range} style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: T.mono, fontSize: 9, color: muted }}>
-            <div style={{ width: 8, height: 8, borderRadius: 2, background: item.color }}/>
-            <span style={{ color: item.color, fontWeight: 600 }}>{item.range}</span>
-            <span>{item.label}</span>
-          </div>
-        ))}
-      </div>
+              {!showKeyInput ? (
+                <button onClick={() => { setKeyDraft(psiApiKey); setShowKeyInput(true); }}
+                  style={{ alignSelf: 'flex-start', padding: '5px 12px', background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.15)', borderRadius: 6, color: fg, fontFamily: T.display, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                  {psiApiKey ? 'Change API Key' : 'Enter Google API Key'}
+                </button>
+              ) : (
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input value={keyDraft} onChange={e => setKeyDraft(e.target.value)} placeholder="AIza..."
+                    style={{ flex: 1, padding: '6px 10px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)', borderRadius: 6, color: fg, fontFamily: T.mono, fontSize: 11, outline: 'none' }}/>
+                  <button onClick={() => { savePsiApiKey(keyDraft.trim()); setShowKeyInput(false); setMeasureError(null); }}
+                    style={{ padding: '6px 12px', background: 'linear-gradient(135deg,#00C2B8,#009E96)', border: 'none', borderRadius: 6, color: '#0C182C', fontFamily: T.display, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                  <button onClick={() => setShowKeyInput(false)} style={{ padding: '6px 10px', background: 'transparent', border: '1px solid rgba(255,255,255,.12)', borderRadius: 6, color: sec, fontFamily: T.display, fontSize: 12, cursor: 'pointer' }}>Cancel</button>
+                </div>
+              )}
+              <div style={{ fontFamily: T.mono, fontSize: 11, color: muted, lineHeight: 1.5 }}>
+                Create an API key at <span style={{ color: teal }}>console.cloud.google.com</span> → APIs &amp; Services → PageSpeed Insights API → Credentials
+              </div>
+            </div>
+          )}
+          {measureError && measureError !== 'rate_limited' && measureError !== 'quota_exceeded' && (
+            <div style={{ fontFamily: T.mono, fontSize: 10, color: '#E3170A', background: 'rgba(227,23,10,.08)', border: '1px solid rgba(227,23,10,.2)', borderRadius: 6, padding: '8px 12px' }}>{measureError}</div>
+          )}
+        </div>
+      </RCard>
     </Section>
   );
 }
@@ -3939,16 +4506,16 @@ function FirstTimeEmptyState({ client, onBack }) {
         }}>{client.initials || '?'}</div>
         <div>
           <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 800, color: fg, letterSpacing: '-0.02em', marginBottom: 4 }}>
-            Report pertama untuk {client.name}
+            First report for {client.name}
           </div>
-          <div style={{ fontFamily: T.body, fontSize: 12.5, color: sec, lineHeight: 1.6 }}>
-            Belum ada data source yang terhubung. Hubungkan minimal satu sumber data untuk generate report secara otomatis.
+          <div style={{ fontFamily: T.body, fontSize: 15, color: sec, lineHeight: 1.6 }}>
+            No data sources connected yet. Connect at least one data source to automatically generate your report.
           </div>
         </div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        {[['1','Pilih & Hubungkan Data'],['2','Lihat Report Otomatis']].map(([n, label], i) => (
+        {[['1','Connect Data Sources'],['2','View Automatic Report']].map(([n, label], i) => (
           <React.Fragment key={n}>
             {i > 0 && <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,.08)' }}/>}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
@@ -3956,10 +4523,10 @@ function FirstTimeEmptyState({ client, onBack }) {
                 width: 24, height: 24, borderRadius: '50%',
                 background: i === 0 ? teal : 'rgba(255,255,255,.08)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: T.mono, fontSize: 10, fontWeight: 700,
+                fontFamily: T.mono, fontSize: 12, fontWeight: 700,
                 color: i === 0 ? '#0C182C' : muted,
               }}>{n}</div>
-              <span style={{ fontFamily: T.mono, fontSize: 9, color: i === 0 ? fg : muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</span>
+              <span style={{ fontFamily: T.mono, fontSize: 11, color: i === 0 ? fg : muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</span>
             </div>
           </React.Fragment>
         ))}
@@ -3983,8 +4550,8 @@ function FirstTimeEmptyState({ client, onBack }) {
               }
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: T.display, fontSize: 12, fontWeight: 700, color: fg, marginBottom: 3 }}>{src.label}</div>
-              <div style={{ fontFamily: T.mono, fontSize: 8.5, color: muted, lineHeight: 1.5, letterSpacing: '0.05em' }}>{src.desc}</div>
+              <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 700, color: fg, marginBottom: 3 }}>{src.label}</div>
+              <div style={{ fontFamily: T.mono, fontSize: 10.5, color: muted, lineHeight: 1.5, letterSpacing: '0.05em' }}>{src.desc}</div>
             </div>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,.12)', flexShrink: 0 }}/>
           </div>
@@ -3997,24 +4564,24 @@ function FirstTimeEmptyState({ client, onBack }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
       }}>
         <div>
-          <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg, marginBottom: 4 }}>
-            Hubungkan data source sekarang
+          <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: fg, marginBottom: 4 }}>
+            Connect a data source now
           </div>
-          <div style={{ fontFamily: T.body, fontSize: 11.5, color: muted, lineHeight: 1.5 }}>
-            Kembali ke Home → klik <strong style={{ color: gold }}>Configure</strong> di baris project ini,
-            lalu klik <strong style={{ color: teal }}>Simpan & Buka Report</strong>.
+          <div style={{ fontFamily: T.body, fontSize: 13.5, color: muted, lineHeight: 1.5 }}>
+            Go back to Home → click <strong style={{ color: gold }}>Configure</strong> on this project row,
+            then click <strong style={{ color: teal }}>Save & Open Report</strong>.
           </div>
         </div>
         <button onClick={onBack} style={{
           padding: '10px 20px', background: 'linear-gradient(135deg,#00C2B8,#009E96)',
           border: 'none', borderRadius: 9, color: '#0C182C',
-          fontFamily: T.display, fontSize: 12, fontWeight: 700,
+          fontFamily: T.display, fontSize: 14, fontWeight: 700,
           cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap',
           boxShadow: '0 4px 14px rgba(0,194,184,.25)',
           display: 'flex', alignItems: 'center', gap: 6,
         }}>
           <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.3" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          Atur di Home
+          Go to Home
         </button>
       </div>
     </div>
@@ -4066,21 +4633,21 @@ function PresentMode({ client, p, isMock, onExit }) {
       borderRadius: 14, padding: '18px 20px 16px', position: 'relative', overflow: 'hidden',
     }}>
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: acc }}/>
-      <div style={{ fontFamily: T.mono, fontSize: 10, color: muted, textTransform: 'uppercase', letterSpacing: '.1em', fontWeight: 600, marginBottom: 10 }}>{label}</div>
+      <div style={{ fontFamily: T.mono, fontSize: 12, color: muted, textTransform: 'uppercase', letterSpacing: '.1em', fontWeight: 600, marginBottom: 10 }}>{label}</div>
       <div style={{ fontFamily: T.display, fontSize: 30, fontWeight: 800, color: fg, letterSpacing: '-.025em', lineHeight: 1, marginBottom: 12, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ color: deltaUp ? '#16A34A' : '#DC2626', fontFamily: T.mono, fontSize: 11, fontWeight: 600 }}>
+          <span style={{ color: deltaUp ? '#16A34A' : '#DC2626', fontFamily: T.mono, fontSize: 13, fontWeight: 600 }}>
             {deltaUp ? '↑' : '↓'} {delta}
           </span>
-          <span style={{ fontFamily: T.body, fontSize: 10, color: muted }}>{comparison}</span>
+          <span style={{ fontFamily: T.body, fontSize: 12, color: muted }}>{comparison}</span>
         </div>
         {progress != null && (
           <>
             <div style={{ height: 3, background: 'var(--navy-deep)', borderRadius: 2, overflow: 'hidden' }}>
               <div style={{ width: `${progress}%`, height: '100%', background: acc }}/>
             </div>
-            <div style={{ fontFamily: T.mono, fontSize: 9.5, color: muted, textAlign: 'right' }}>{progressLabel}</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11.5, color: muted, textAlign: 'right' }}>{progressLabel}</div>
           </>
         )}
       </div>
@@ -4099,10 +4666,10 @@ function PresentMode({ client, p, isMock, onExit }) {
       return (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-            <span style={{ fontFamily: T.mono, fontSize: 10, color: teal, background: 'rgba(0,194,184,.1)', padding: '3px 10px', borderRadius: 4, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 600 }}>01 Executive Summary</span>
-            <span style={{ fontFamily: T.mono, fontSize: 10, color: muted, textTransform: 'uppercase', letterSpacing: '.12em', fontWeight: 600 }}>Periode · {p.labelLong}</span>
+            <span style={{ fontFamily: T.mono, fontSize: 12, color: teal, background: 'rgba(0,194,184,.1)', padding: '3px 10px', borderRadius: 4, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 600 }}>01 Executive Summary</span>
+            <span style={{ fontFamily: T.mono, fontSize: 12, color: muted, textTransform: 'uppercase', letterSpacing: '.12em', fontWeight: 600 }}>Periode · {p.labelLong}</span>
             {sources.length > 0 && (
-              <span style={{ marginLeft: 'auto', fontFamily: T.mono, fontSize: 10, color: teal, background: 'rgba(0,194,184,.1)', border: '1px solid rgba(0,194,184,.3)', padding: '3px 9px', borderRadius: 5 }}>
+              <span style={{ marginLeft: 'auto', fontFamily: T.mono, fontSize: 12, color: teal, background: 'rgba(0,194,184,.1)', border: '1px solid rgba(0,194,184,.3)', padding: '3px 9px', borderRadius: 5 }}>
                 {sources.length} sources live
               </span>
             )}
@@ -4124,14 +4691,14 @@ function PresentMode({ client, p, isMock, onExit }) {
           </div>
 
           <div style={{ background: 'var(--navy-surface)', border: '1px solid var(--navy-edge)', borderRadius: 14, padding: '24px 28px' }}>
-            <div style={{ fontFamily: T.mono, fontSize: 10, color: teal, textTransform: 'uppercase', letterSpacing: '.12em', fontWeight: 700, marginBottom: 12 }}>Analyst Note</div>
+            <div style={{ fontFamily: T.mono, fontSize: 12, color: teal, textTransform: 'uppercase', letterSpacing: '.12em', fontWeight: 700, marginBottom: 12 }}>Analyst Note</div>
             <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 700, color: fg, lineHeight: 1.35, letterSpacing: '-.01em', marginBottom: 12 }}>
               {client.name} · {p.labelShort}
             </div>
-            <div style={{ fontFamily: T.body, fontSize: 13, color: sec, lineHeight: 1.65 }}>
-              Periode {p.labelLong}. Total spend {fmt.rupiahShort(ads.spend)} dengan {fmt.num(ads.conversions)} konversi.
-              ROAS mencapai {fmt.roas(ads.roas)}, organic sessions {fmt.num(ga4.sessions)}.
-              {isMock && ' (Data demo — hubungkan sumber data nyata untuk insight aktual.)'}
+            <div style={{ fontFamily: T.body, fontSize: 15, color: sec, lineHeight: 1.65 }}>
+              Period {p.labelLong}. Total spend {fmt.rupiahShort(ads.spend)} with {fmt.num(ads.conversions)} conversions.
+              ROAS reached {fmt.roas(ads.roas)}, organic sessions {fmt.num(ga4.sessions)}.
+              {isMock && ' (Demo data — connect real data sources for actual insights.)'}
             </div>
           </div>
         </div>
@@ -4143,7 +4710,7 @@ function PresentMode({ client, p, isMock, onExit }) {
       return (
         <div>
           <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
-            <span style={{ fontFamily: T.mono, fontSize: 10, color: blue, background: 'rgba(66,133,244,.1)', padding: '3px 10px', borderRadius: 4, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 600 }}>02 Google Ads</span>
+            <span style={{ fontFamily: T.mono, fontSize: 12, color: blue, background: 'rgba(66,133,244,.1)', padding: '3px 10px', borderRadius: 4, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 600 }}>02 Google Ads</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
             <KpiCard acc={gold} label="Total Spend" value={fmt.rupiahShort(ads.spend)} delta={d(ads.spend, adsPrev.spend) != null ? Math.abs(d(ads.spend, adsPrev.spend)).toFixed(1) + '%' : '—'} deltaUp={(d(ads.spend, adsPrev.spend) || 0) >= 0} comparison="vs prev"/>
@@ -4152,7 +4719,7 @@ function PresentMode({ client, p, isMock, onExit }) {
             <KpiCard acc={gold} label="ROAS" value={fmt.roas(ads.roas)} delta={d(ads.roas, adsPrev.roas) != null ? Math.abs(d(ads.roas, adsPrev.roas)).toFixed(1) + '%' : '—'} deltaUp={(d(ads.roas, adsPrev.roas) || 0) >= 0} comparison="vs prev"/>
           </div>
           <div style={{ background: 'var(--navy-surface)', border: '1px solid var(--navy-edge)', borderRadius: 14, padding: '18px 20px' }}>
-            <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg, marginBottom: 12 }}>Spend Trend · {p.labelShort}</div>
+            <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: fg, marginBottom: 12 }}>Spend Trend · {p.labelShort}</div>
             <MiniLine data={safeSpend} w={800} h={100} color={blue} fill id="pres-gads"/>
           </div>
         </div>
@@ -4165,7 +4732,7 @@ function PresentMode({ client, p, isMock, onExit }) {
       return (
         <div>
           <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
-            <span style={{ fontFamily: T.mono, fontSize: 10, color: gold, background: 'rgba(248,180,0,.1)', padding: '3px 10px', borderRadius: 4, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 600 }}>GA4 Analytics</span>
+            <span style={{ fontFamily: T.mono, fontSize: 12, color: gold, background: 'rgba(248,180,0,.1)', padding: '3px 10px', borderRadius: 4, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 600 }}>GA4 Analytics</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
             <KpiCard acc={gold} label="Sessions" value={fmt.num(ga4.sessions)} delta={d(ga4.sessions, ga4Prev.sessions) != null ? Math.abs(d(ga4.sessions, ga4Prev.sessions)).toFixed(1) + '%' : '—'} deltaUp={(d(ga4.sessions, ga4Prev.sessions) || 0) >= 0} comparison="vs prev"/>
@@ -4174,7 +4741,7 @@ function PresentMode({ client, p, isMock, onExit }) {
             <KpiCard acc={teal} label="Engaged Sessions" value={fmt.num(ga4.engaged_sessions)} delta={d(ga4.engaged_sessions, ga4Prev.engaged_sessions) != null ? Math.abs(d(ga4.engaged_sessions, ga4Prev.engaged_sessions)).toFixed(1) + '%' : '—'} deltaUp={(d(ga4.engaged_sessions, ga4Prev.engaged_sessions) || 0) >= 0} comparison="vs prev"/>
           </div>
           <div style={{ background: 'var(--navy-surface)', border: '1px solid var(--navy-edge)', borderRadius: 14, padding: '18px 20px' }}>
-            <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: fg, marginBottom: 12 }}>Sessions vs Users</div>
+            <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: fg, marginBottom: 12 }}>Sessions vs Users</div>
             <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
               <LegendDot color={gold} label="Sessions"/>
               <LegendDot color={teal} label="Users"/>
@@ -4196,7 +4763,7 @@ function PresentMode({ client, p, isMock, onExit }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400 }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontFamily: T.display, fontSize: 22, color: fg, marginBottom: 8 }}>{cur.title}</div>
-          <div style={{ fontFamily: T.body, fontSize: 13, color: muted }}>Lihat detail di halaman report.</div>
+          <div style={{ fontFamily: T.body, fontSize: 15, color: muted }}>See details on the report page.</div>
         </div>
       </div>
     );
@@ -4221,7 +4788,7 @@ function PresentMode({ client, p, isMock, onExit }) {
         display: 'flex', alignItems: 'center', padding: '0 24px', gap: 14, flexShrink: 0, position: 'relative', zIndex: 1,
       }}>
         <img src="assets/img/logo-mark.png" alt="" style={{ width: 26, height: 26, opacity: 0.9 }}/>
-        <div style={{ fontFamily: T.display, fontSize: 13.5, fontWeight: 700, color: fg, letterSpacing: '-.01em', flex: 1 }}>
+        <div style={{ fontFamily: T.display, fontSize: 16, fontWeight: 700, color: fg, letterSpacing: '-.01em', flex: 1 }}>
           {client.name} · {p.labelShort} Report
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -4235,7 +4802,7 @@ function PresentMode({ client, p, isMock, onExit }) {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 7,
             padding: '5px 12px', background: 'var(--navy-surface)', border: '1px solid var(--navy-edge)',
-            borderRadius: 7, fontFamily: T.mono, fontSize: 11, color: fg,
+            borderRadius: 7, fontFamily: T.mono, fontSize: 13, color: fg,
           }}>
             <span style={{ width: 5, height: 5, background: teal, borderRadius: '50%' }}/>
             {slide + 1} / {total}
@@ -4284,7 +4851,7 @@ function PresentMode({ client, p, isMock, onExit }) {
         </div>
 
         <span style={{
-          fontFamily: T.mono, fontSize: 11, color: fg,
+          fontFamily: T.mono, fontSize: 13, color: fg,
           background: 'var(--navy-elevated)', borderRadius: 100,
           padding: '4px 10px', minWidth: 48, textAlign: 'center',
         }}>{slide + 1} / {total}</span>
@@ -4303,7 +4870,7 @@ function PresentMode({ client, p, isMock, onExit }) {
         <button onClick={onExit} style={{
           padding: '0 14px', height: 32, border: 'none', borderRadius: 100,
           background: 'var(--navy-elevated)', color: sec,
-          fontFamily: T.display, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+          fontFamily: T.display, fontSize: 13, fontWeight: 600, cursor: 'pointer',
         }}>Exit</button>
       </div>
     </div>
@@ -4365,6 +4932,10 @@ function ScreenReport({ clientId, onBack }) {
   const [widgetConfigs, setWidgetConfigs] = useState({});
   const [widgetLayouts, setWidgetLayouts] = useState(null);
   const [savedFlash, setSavedFlash] = useState(false);
+  // Refs used to suppress the saved-flash on initial load from localStorage
+  const initConfigRef = React.useRef(null);
+  const initLayoutRef = React.useRef(null);
+  const clientIdRef   = React.useRef(clientId);
   // Unified undo/redo stacks — each entry: { configs: snapshot|null, layout: snapshot|null }
   // null means "this operation did not change that field".
   // Paste and source-change store both; config edits store only configs; layout-only ops store only layout.
@@ -4373,8 +4944,13 @@ function ScreenReport({ clientId, onBack }) {
   // Current-state refs — kept in sync so undoLast/redoLast can capture "now" inside useCallback
   const widgetConfigsRef = React.useRef({});
   const widgetLayoutsRef = React.useRef(null);
+  // Effective layout ref — always the displayed layout (state OR smart default)
+  const effectiveLayoutsRef = React.useRef(null);
   const [historyLen, setHistoryLen] = useState(0);
   const [redoLen, setRedoLen] = useState(0);
+  const [localConnected, setLocalConnected] = useState(null);
+  const [toastMsg, setToastMsg] = useState(null);
+  const toastTimerRef = React.useRef(null);
 
   const updateWidgetConfig = useCallback((id, changes) => {
     setWidgetConfigs(prev => {
@@ -4455,41 +5031,56 @@ function ScreenReport({ clientId, onBack }) {
     setRedoLen(0);
   }, [clientId]);
 
+  // Keep clientIdRef in sync so persist effects can read current clientId without it as a dep
+  useEffect(() => { clientIdRef.current = clientId; }, [clientId]);
+
   // Load persisted configs + layouts when switching clients
   useEffect(() => {
     setSelectedWidgets([]);
     setClipboard(null);
     setMarquee(null);
+    let configs = {};
     try {
       const saved = localStorage.getItem('widgetConfigs_' + clientId);
-      setWidgetConfigs(saved ? JSON.parse(saved) : {});
-    } catch { setWidgetConfigs({}); }
+      configs = saved ? JSON.parse(saved) : {};
+    } catch {}
+    initConfigRef.current = configs;
+    setWidgetConfigs(configs);
+    let layouts = null;
     try {
       const savedLayouts = localStorage.getItem('widgetLayouts_' + clientId);
       const parsed = savedLayouts ? JSON.parse(savedLayouts) : null;
-      setWidgetLayouts(parsed ? migrateLegacyLayout(parsed) : null);
-    } catch { setWidgetLayouts(null); }
+      layouts = parsed ? migrateLegacyLayout(parsed) : null;
+    } catch {}
+    initLayoutRef.current = layouts;
+    setWidgetLayouts(layouts);
   }, [clientId]);
 
-  // Persist configs on every change
+  // Persist configs on every change (clientId intentionally excluded from deps — accessed via ref)
   useEffect(() => {
-    if (!clientId || Object.keys(widgetConfigs).length === 0) return;
+    if (!clientIdRef.current || Object.keys(widgetConfigs).length === 0) return;
     try {
-      localStorage.setItem('widgetConfigs_' + clientId, JSON.stringify(widgetConfigs));
-      setSavedFlash(true);
-      setTimeout(() => setSavedFlash(false), 1800);
+      localStorage.setItem('widgetConfigs_' + clientIdRef.current, JSON.stringify(widgetConfigs));
+      // Skip the flash when this is just the initial load from localStorage
+      if (widgetConfigs !== initConfigRef.current) {
+        setSavedFlash(true);
+        setTimeout(() => setSavedFlash(false), 1800);
+      }
     } catch {}
-  }, [widgetConfigs, clientId]);
+  }, [widgetConfigs]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Persist layouts on every change
+  // Persist layouts on every change (clientId intentionally excluded from deps — accessed via ref)
   useEffect(() => {
-    if (!clientId || !widgetLayouts) return;
+    if (!clientIdRef.current || !widgetLayouts) return;
     try {
-      localStorage.setItem('widgetLayouts_' + clientId, JSON.stringify(widgetLayouts));
-      setSavedFlash(true);
-      setTimeout(() => setSavedFlash(false), 1800);
+      localStorage.setItem('widgetLayouts_' + clientIdRef.current, JSON.stringify(widgetLayouts));
+      // Skip the flash when this is just the initial load from localStorage
+      if (widgetLayouts !== initLayoutRef.current) {
+        setSavedFlash(true);
+        setTimeout(() => setSavedFlash(false), 1800);
+      }
     } catch {}
-  }, [widgetLayouts, clientId]);
+  }, [widgetLayouts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep current-state refs in sync so undo/redo can capture "now" without stale closures
   useEffect(() => { widgetConfigsRef.current = widgetConfigs; }, [widgetConfigs]);
@@ -4667,20 +5258,24 @@ function ScreenReport({ clientId, onBack }) {
   }, [updateWidgetLayouts]);
 
   const handleSourceChange = useCallback((widgetId, newSource) => {
-    const widget = widgetLayouts?.rows?.flat()?.find(w => w.id === widgetId);
+    // Always use the effective layout ref — handles the case where widgetLayouts is still null
+    // (user hasn't dragged yet, smart default is in use) and avoids a null.rows crash.
+    const baseLayouts = effectiveLayoutsRef.current;
+    if (!baseLayouts) return;
+    const widget = baseLayouts.rows.flat().find(w => w.id === widgetId);
     const widgetType = widget?.type || editorCardId;
     const defaults = window.WIDGET_DEFAULTS?.[widgetType]?.[newSource] || {};
     // Push ONE combined entry so Ctrl+Z reverts both the layout source and the config together.
-    undoHistory.current = [...undoHistory.current.slice(-19), { configs: widgetConfigs, layout: widgetLayouts }];
+    undoHistory.current = [...undoHistory.current.slice(-19), { configs: widgetConfigsRef.current, layout: baseLayouts }];
     redoHistory.current = [];
     setHistoryLen(l => l + 1);
     setRedoLen(0);
-    setWidgetLayouts(prev => ({
-      ...(prev || widgetLayouts),
-      rows: (prev || widgetLayouts).rows.map(row => row.map(w => w.id === widgetId ? { ...w, source: newSource } : w)),
+    setWidgetLayouts(() => ({
+      ...baseLayouts,
+      rows: baseLayouts.rows.map(row => row.map(w => w.id === widgetId ? { ...w, source: newSource } : w)),
     }));
     setWidgetConfigs(prev => ({ ...prev, [widgetId]: defaults }));
-  }, [widgetLayouts, editorCardId, widgetConfigs]);
+  }, [editorCardId]);
   const editState = showEditor && !_IS_VIEWER ? {
     selected: selectedWidgets,
     onSelect: handleSelectWidget,
@@ -4693,6 +5288,7 @@ function ScreenReport({ clientId, onBack }) {
 
   // Count how many widgets in the current layout share the same widget type as the selected widget
   const _layouts = widgetLayouts || getSmartDefaultLayout(client?.connected);
+  effectiveLayoutsRef.current = _layouts; // keep ref fresh for callbacks (avoids stale-closure / null crash)
   const _primarySelected = selectedWidgets[0] || null;
   const sharedWidgetCount = (_primarySelected && editorCardId && _layouts)
     ? _layouts.rows.flat().filter(w => w.type === editorCardId || WIDGET_CARD_TYPES[w.id] === editorCardId).length
@@ -4715,53 +5311,74 @@ function ScreenReport({ clientId, onBack }) {
 
   if (!live) {
     return (
-      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--navy-base)', color: muted, fontFamily: T.mono, fontSize: 12 }}>
-        Context not found — pastikan data-bridge.jsx dimuat sebelum screen-report.jsx.
+      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--navy-base)', color: muted, fontFamily: T.mono, fontSize: 14 }}>
+        Context not found — make sure data-bridge.jsx is loaded before screen-report.jsx.
       </div>
     );
   }
 
-  const { currentPeriod, dateRange, setDateRange, loading, _isMock, fetchError, setAccount, setMetaAccount, setGa4Property, setGscProperty, psiUrl, setPsiUrl, _setAnySourceConnected } = live;
+  const { currentPeriod, dateRange, setDateRange, loading, _isMock, fetchError, setAccount, setMetaAccount, setGa4Property, setGscProperty, psiUrl, setPsiUrl, psiApiKey, savePsiApiKey, _setAnySourceConnected } = live;
   const allClients = [...(window._avo_clients || []), ...(window.HOME_CLIENTS || [])];
   const client = allClients.find(c => c.id === clientId);
+  const effectiveConnected = localConnected ?? client?.connected ?? {};
+
+  // Reset localConnected when navigating to a different client
+  useEffect(() => { setLocalConnected(null); }, [clientId]);
+
+  const handleConnectedChange = useCallback(async (newConnected) => {
+    const prev = localConnected ?? client?.connected ?? {};
+    setLocalConnected(newConnected);
+    if (clientId && window._saveClientConnected) {
+      const { error } = await window._saveClientConnected(clientId, newConnected);
+      if (error) {
+        setLocalConnected(prev);
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        setToastMsg('Failed to save — changes were not saved.');
+        toastTimerRef.current = setTimeout(() => setToastMsg(null), 4000);
+      }
+    }
+  }, [clientId, localConnected, client?.connected]);
+
+  // Expose current date range globally so widgets (e.g. KpiCompare) can read it
+  useEffect(() => { window._reportDateRange = dateRange; }, [dateRange]);
 
   // Sync Google Ads account filter — re-fires via retry once _avo_clients loads
   useEffect(() => {
     if (!setAccount || !client) return;
-    const g = client.connected?.google;
+    const g = effectiveConnected?.google;
     const accountName = (g && typeof g === 'object') ? (g.name || g.id) : (typeof g === 'string' ? g : '');
     setAccount(accountName || '');
-  }, [clientId, retry]);
+  }, [clientId, retry, localConnected]);
 
   // Sync Meta Ads account filter
   // null → not connected (skip fetch); '' → connected, fetch all; 'name' → filtered
   useEffect(() => {
     if (!setMetaAccount || !client) return;
-    const m = client.connected?.meta;
+    const m = effectiveConnected?.meta;
     if (!m) { setMetaAccount(null); return; }
     const accountName = (typeof m === 'object') ? (m.name || m.id) : (typeof m === 'string' ? m : '');
     setMetaAccount(accountName || '');
-  }, [clientId, retry]);
+  }, [clientId, retry, localConnected]);
 
   // Sync GA4 property filter
   // null → not connected (skip fetch); '' → connected, fetch all; 'name' → filtered
   useEffect(() => {
     if (!setGa4Property || !client) return;
-    const g = client.connected?.ga4;
+    const g = effectiveConnected?.ga4;
     if (!g) { setGa4Property(null); return; }
     const prop = (typeof g === 'object') ? (g.name || g.id) : (typeof g === 'string' ? g : '');
     setGa4Property(prop || '');
-  }, [clientId, retry]);
+  }, [clientId, retry, localConnected]);
 
   // Sync Search Console property filter
   // null → not connected (skip fetch); '' → connected, fetch all; 'prop' → filtered
   useEffect(() => {
     if (!setGscProperty || !client) return;
-    const s = client.connected?.search;
+    const s = effectiveConnected?.search;
     if (!s) { setGscProperty(null); return; }
     const prop = (typeof s === 'object') ? (s.name || s.id) : (typeof s === 'string' ? s : '');
     setGscProperty(prop || '');
-  }, [clientId, retry]);
+  }, [clientId, retry, localConnected]);
 
   // Sync PageSpeed URL filter
   useEffect(() => {
@@ -4774,9 +5391,9 @@ function ScreenReport({ clientId, onBack }) {
   // Signal to LiveProvider that at least one source is connected for this client
   useEffect(() => {
     if (!_setAnySourceConnected || !client) return;
-    const c = client.connected || {};
+    const c = effectiveConnected;
     _setAnySourceConnected(!!(c.google || c.meta || c.ga4 || c.search || c.pagespeed));
-  }, [clientId, client?.connected]);
+  }, [clientId, client?.connected, localConnected]);
 
   // Default date: this month to yesterday
   useEffect(() => {
@@ -4808,11 +5425,11 @@ function ScreenReport({ clientId, onBack }) {
         background: 'var(--navy-base)', gap: 14,
       }}>
         <div style={{ fontFamily: T.display, fontSize: 18, color: fg }}>Client tidak ditemukan</div>
-        <div style={{ fontFamily: T.mono, fontSize: 10, color: muted }}>ID: {clientId}</div>
+        <div style={{ fontFamily: T.mono, fontSize: 12, color: muted }}>ID: {clientId}</div>
         <button onClick={onBack} style={{
           padding: '9px 18px', background: 'linear-gradient(135deg,#00C2B8,#009E96)',
           border: 'none', borderRadius: 8, color: '#0C182C',
-          fontFamily: T.display, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          fontFamily: T.display, fontSize: 14, fontWeight: 700, cursor: 'pointer',
         }}>← Kembali ke Home</button>
       </div>
     );
@@ -4912,13 +5529,13 @@ function ScreenReport({ clientId, onBack }) {
           {loading && (
             <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
               <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,#00C2B8,#009E96)', animation: 'bootPulse 1.4s ease-in-out infinite' }}/>
-              <div style={{ fontFamily: T.mono, fontSize: 10, color: muted, textTransform: 'uppercase', letterSpacing: '0.14em' }}>Memuat data…</div>
+              <div style={{ fontFamily: T.mono, fontSize: 12, color: muted, textTransform: 'uppercase', letterSpacing: '0.14em' }}>Loading data…</div>
             </div>
           )}
 
           {!loading && !p && (
             <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontFamily: T.mono, fontSize: 11, color: muted }}>Tidak ada data untuk periode ini.</div>
+              <div style={{ fontFamily: T.mono, fontSize: 13, color: muted }}>No data for this period.</div>
             </div>
           )}
 
@@ -4928,7 +5545,7 @@ function ScreenReport({ clientId, onBack }) {
                 <div style={{
                   margin: '8px 16px 0', padding: '8px 14px',
                   background: 'rgba(220,38,38,.1)', border: '1px solid rgba(220,38,38,.3)',
-                  borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11,
+                  borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 13,
                   color: '#F87171', display: 'flex', gap: 8, alignItems: 'flex-start',
                 }}>
                   <span>⚠</span>
@@ -4941,7 +5558,7 @@ function ScreenReport({ clientId, onBack }) {
                 <h1 style={{ margin: 0, fontFamily: T.display, fontSize: 24, fontWeight: 800, color: fg, letterSpacing: '-0.02em' }}>
                   Laporan Performa
                 </h1>
-                <div style={{ fontFamily: T.mono, fontSize: 10, color: muted, marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+                <div style={{ fontFamily: T.mono, fontSize: 12, color: muted, marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.14em' }}>
                   {p.labelLong} · {client.name}
                 </div>
               </div>
@@ -4959,10 +5576,11 @@ function ScreenReport({ clientId, onBack }) {
                     layouts={_layouts}
                     onLayoutChange={updateWidgetLayouts}
                     widgetElemRefs={widgetElemRefs}
+                    scrollContainerRef={canvasRef}
+                    psiUrl={psiUrl}
+                    psiApiKey={psiApiKey}
+                    savePsiApiKey={savePsiApiKey}
                   />
-                  {connected && connected.pagespeed && (
-                    <PageSpeedSection psi={p && p.psi} psiUrl={psiUrl}/>
-                  )}
                 </>
               ) : null}
             </>
@@ -5001,7 +5619,7 @@ function ScreenReport({ clientId, onBack }) {
               background: 'rgba(8,16,34,.95)', border: '1px solid rgba(0,194,184,.5)',
               borderRadius: 20, cursor: 'pointer',
               boxShadow: '0 4px 16px rgba(0,0,0,.5)',
-              fontFamily: 'var(--font-mono)', fontSize: 10, color: teal,
+              fontFamily: 'var(--font-mono)', fontSize: 12, color: teal,
               letterSpacing: '0.04em', backdropFilter: 'blur(8px)',
             }}
           >
@@ -5023,12 +5641,14 @@ function ScreenReport({ clientId, onBack }) {
             widgetConfig={_primarySelected ? (widgetConfigs[_primarySelected] || {}) : {}}
             onConfigChange={handleWidgetConfigChange}
             onUndo={historyLen > 0 ? undoLast : null}
-            connectedSources={client?.connected || {}}
+            connectedSources={effectiveConnected}
             onClose={() => setShowEditor(false)}
             sharedWidgetCount={sharedWidgetCount}
             instanceSource={instanceSource}
             onSourceChange={handleSourceChange}
+            onConnectedChange={handleConnectedChange}
             pageData={p}
+            layoutRows={_layouts?.rows?.flat() || []}
             style={{ flexShrink: 0 }}
           />
         )}
@@ -5038,13 +5658,13 @@ function ScreenReport({ clientId, onBack }) {
             background: 'rgba(10,18,34,.97)', borderLeft: '1px solid var(--navy-edge)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12,
           }}>
-            <div style={{ fontFamily: T.mono, fontSize: 10, color: muted, textAlign: 'center', padding: '0 24px', lineHeight: 1.6 }}>
-              Card editor tidak tersedia.<br/>Pastikan card-editor.jsx dimuat.
+            <div style={{ fontFamily: T.mono, fontSize: 12, color: muted, textAlign: 'center', padding: '0 24px', lineHeight: 1.6 }}>
+              Card editor unavailable.<br/>Make sure card-editor.jsx is loaded.
             </div>
             <button onClick={() => setShowEditor(false)} style={{
               padding: '6px 16px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)',
-              borderRadius: 6, color: sec, fontFamily: T.display, fontSize: 11, cursor: 'pointer',
-            }}>Tutup</button>
+              borderRadius: 6, color: sec, fontFamily: T.display, fontSize: 13, cursor: 'pointer',
+            }}>Close</button>
           </div>
         )}
       </div>
@@ -5057,6 +5677,18 @@ function ScreenReport({ clientId, onBack }) {
           isMock={_isMock}
           onExit={() => setShowPresent(false)}
         />
+      )}
+
+      {/* Save-error toast */}
+      {toastMsg && (
+        <div style={{
+          position: 'fixed', bottom: 24, right: showEditor ? 340 : 20, zIndex: 8000,
+          background: '#DC2626', color: '#fff', borderRadius: 8, padding: '10px 16px',
+          fontFamily: 'var(--font-body)', fontSize: 14, lineHeight: 1.4,
+          boxShadow: '0 4px 16px rgba(0,0,0,.4)', maxWidth: 280,
+        }}>
+          {toastMsg}
+        </div>
       )}
 
     </div>

@@ -9,7 +9,7 @@ const RSidebar = ({ active = 'dashboard' }) => {
   return (
     <aside style={{ width: 240, minWidth: 240, background: 'rgba(10,20,38,.93)', borderRight: '1px solid var(--navy-edge)', display: 'flex', flexDirection: 'column', height: '100%', backdropFilter: 'blur(24px)', boxSizing: 'border-box' }}>
       <div style={{ height: 80, minHeight: 80, padding: '0 16px', borderBottom: '1px solid var(--navy-edge)', display: 'flex', alignItems: 'center', gap: 10, boxSizing: 'border-box', flexShrink: 0 }}>
-        <img src="assets/logo-mark.png" style={{ width: 62, height: 62 }} />
+        <img src="assets/logo-mark.png" style={{ width: 100, height: 100 }} />
         <div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#FCFCFC', letterSpacing: '-0.01em' }}>Reportive</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>by Avonetiq</div>
