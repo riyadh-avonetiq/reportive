@@ -1061,7 +1061,10 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
     return () => document.removeEventListener('mousedown', handler);
   }, [menuOpen]);
 
-  const handlePDF = () => {};
+  const handlePDF = () => {
+    sessionStorage.setItem('_avo_print', client.id);
+    window.location.hash = 'client/' + client.id;
+  };
 
   const enter = () => { clearTimeout(leaveTimer.current); setHovered(true); };
   const leave = () => { leaveTimer.current = setTimeout(() => setHovered(false), 40); };

@@ -506,7 +506,7 @@ function DateRangePicker({ dateRange, onApply, onCancel }) {
 }
 
 // ─── Top bar ──────────────────────────────────────────────────────
-function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPresent, onEdit, showEditor, savedFlash }) {
+function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPresent, onEdit, showEditor, savedFlash, onPrint }) {
   const [showPicker, setShowPicker] = useState(false);
 
   const rangeLabel = useMemo(() => {
@@ -530,7 +530,7 @@ function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPrese
 
   return (
     <>
-      <div style={{
+      <div data-print-hide="" style={{
         height: 56, display: 'flex', alignItems: 'center', gap: 12,
         padding: '0 24px', flexShrink: 0,
         borderBottom: '1px solid rgba(255,255,255,.06)',
@@ -622,6 +622,18 @@ function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPrese
             Edit
           </button>
         )}
+
+        {/* Print / Export PDF */}
+        <button onClick={onPrint} title="Export PDF" style={{
+          padding: '6px 12px', borderRadius: 7, cursor: 'pointer',
+          background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.12)',
+          color: sec, fontFamily: T.display, fontSize: 12, fontWeight: 600,
+          display: 'flex', alignItems: 'center', gap: 5,
+          transition: 'background .15s',
+        }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
+          PDF
+        </button>
 
         {/* Present */}
         <button onClick={onPresent} style={{
@@ -5421,6 +5433,16 @@ function ScreenReport({ clientId, onBack }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!client) return;
+    const flag = sessionStorage.getItem('_avo_print');
+    if (flag !== client.id) return;
+    sessionStorage.removeItem('_avo_print');
+    if (loading) return;
+    const t = setTimeout(() => window.print(), 600);
+    return () => clearTimeout(t);
+  }, [client, loading]);
+
   if (!client) {
     if (retry < 10) {
       return (
@@ -5452,6 +5474,14 @@ function ScreenReport({ clientId, onBack }) {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--navy-base)', overflow: 'hidden' }}>
+      <style>{`
+        @media print {
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          html, body, #root { height: auto !important; overflow: visible !important; }
+          [data-print-hide] { display: none !important; }
+          [data-print-canvas] { overflow: visible !important; height: auto !important; padding: 0 !important; }
+        }
+      `}</style>
       <ReportTopBar
         client={client}
         dateRange={dateRange || { from: null, to: null }}
@@ -5462,12 +5492,14 @@ function ScreenReport({ clientId, onBack }) {
         onEdit={() => setShowEditor(v => !v)}
         showEditor={showEditor}
         savedFlash={savedFlash}
+        onPrint={() => window.print()}
       />
 
       {/* Main area: report + optional editor panel */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
         {/* Report content */}
         <div
+          data-print-canvas=""
           ref={canvasRef}
           style={{ flex: 1, overflowY: 'auto', padding: loading || !p ? 0 : '28px 36px 56px', position: 'relative' }}
           onPointerDown={editState ? (e) => {
