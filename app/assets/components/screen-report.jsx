@@ -1767,10 +1767,15 @@ function ChartAreaWidget({ instance, p, cfg }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           {hasDual && (
             <div style={{ display: 'flex', gap: 8 }}>
-              {[{ color: colorA, label: labelA, unit: unitA }, { color: colorB, label: labelB, unit: unitB }].map(({ color, label, unit }) => (
+              {[
+                { color: colorA, label: labelA, unit: unitA, noSeries: false },
+                { color: colorB, label: labelB, unit: unitB, noSeries: !defB?.series },
+              ].map(({ color, label, unit, noSeries }) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }}/>
-                  <span style={{ fontFamily: T.mono, fontSize: 9, color: muted, whiteSpace: 'nowrap' }}>{label}{unit ? ` (${unit})` : ''}</span>
+                  <div style={{ width: 8, height: 8, borderRadius: 2, background: noSeries ? '#F8B400' : color, flexShrink: 0 }}/>
+                  <span style={{ fontFamily: T.mono, fontSize: 9, color: noSeries ? '#F8B400' : muted, whiteSpace: 'nowrap' }}>
+                    {label}{noSeries ? ' (no trend)' : unit ? ` (${unit})` : ''}
+                  </span>
                 </div>
               ))}
             </div>

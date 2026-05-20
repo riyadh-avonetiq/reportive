@@ -1707,6 +1707,90 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
           </>
         )}
         {availM.length === 0 && renderCustomMetrics()}
+        {widgetType === 'chart-area' && availM.length > 0 && (
+          <>
+            <EDivider/>
+            <ESection label="Second metric (B)">
+              {(() => {
+                const activeKeyB = cfg.metricB || null;
+                const isOpen = metPickerOpen === 'single-b';
+                const btnLabel = activeKeyB ? (availM.find(m => m.key === activeKeyB)?.label || activeKeyB) : 'None — single series';
+                const toggle = () => setMetPickerOpen(isOpen ? null : 'single-b');
+                return (
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ display: 'flex', width: '100%', background: EP.elevated, border: `1px solid ${EP.edge}`, borderRadius: 6, overflow: 'hidden' }}>
+                      <button onClick={toggle}
+                        style={{ flex: 1, minWidth: 0, padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                        <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 14, color: activeKeyB ? EP.fg : EP.muted, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{btnLabel}</span>
+                      </button>
+                      {activeKeyB && (
+                        <>
+                          <div style={{ width: 1, background: EP.edge, alignSelf: 'stretch' }}/>
+                          <button onClick={() => up({ metricB: null })}
+                            style={{ width: 32, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: EP.muted }}>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                          </button>
+                        </>
+                      )}
+                      <div style={{ width: 1, background: EP.edge, alignSelf: 'stretch' }}/>
+                      <button onClick={toggle}
+                        style={{ width: 32, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={EP.muted} strokeWidth="2" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>
+                      </button>
+                    </div>
+                    {isOpen && (
+                      <>
+                        <div style={{ position: 'fixed', inset: 0, zIndex: 1999 }} onClick={() => setMetPickerOpen(null)}/>
+                        <MetricPickerDropdown
+                          availMetrics={availM.filter(m => window.DATA_REGISTRY?.[srcKey]?.[m.key]?.series)}
+                          selectedKeys={activeKeyB ? [activeKeyB] : []}
+                          showCustom={false}
+                          singleSelect={true}
+                          onAdd={key => { up({ metricB: key }); setMetPickerOpen(null); }}
+                          onClose={() => setMetPickerOpen(null)}
+                        />
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+            </ESection>
+          </>
+        )}
+        {widgetType === 'chart-area' && (
+          <>
+            <EDivider/>
+            <ESection label="Number format">
+              <div style={{ display: 'flex', background: EP.elevated, borderRadius: 100, padding: 3, border: `1px solid ${EP.edge}` }}>
+                {[['auto', 'Auto'], ['detail', 'Detail']].map(([val, label]) => (
+                  <button key={val} onClick={() => up({ numFmt: val })}
+                    style={{ flex: 1, padding: '5px 8px', border: 'none', borderRadius: 100, cursor: 'pointer', textAlign: 'center',
+                      background: (cfg.numFmt||'auto') === val ? EP.teal : 'transparent',
+                      color: (cfg.numFmt||'auto') === val ? '#0C182C' : EP.muted,
+                      fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 600,
+                      transition: 'background .12s, color .12s' }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </ESection>
+            <EDivider/>
+            <ESection label="Chart size">
+              <div style={{ display: 'flex', background: EP.elevated, borderRadius: 100, padding: 3, border: `1px solid ${EP.edge}` }}>
+                {['S', 'M', 'L'].map(s => (
+                  <button key={s} onClick={() => up({ fontSize: s })}
+                    style={{ flex: 1, padding: '5px 0', border: 'none', borderRadius: 100, cursor: 'pointer', textAlign: 'center',
+                      background: (cfg.fontSize || 'M') === s ? EP.teal : 'transparent',
+                      color: (cfg.fontSize || 'M') === s ? '#0C182C' : EP.sec,
+                      fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
+                      transition: 'background .12s, color .12s' }}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </ESection>
+          </>
+        )}
         {widgetType === 'single-stat' && (
           <>
             <EDivider/>
