@@ -6,16 +6,17 @@
 
 window.DATA_REGISTRY = {
   google: {
-    spend:       { label: 'Total Spend',  format: 'rupiah', value: p => p?.ads?.spend,       prev: p => p?.adsPrev?.spend,       series: p => p?.series?.spend },
-    impressions: { label: 'Impressions',  format: 'num',    value: p => p?.ads?.impressions, prev: p => p?.adsPrev?.impressions, series: p => p?.series?.impressions },
-    clicks:      { label: 'Clicks',       format: 'num',    value: p => p?.ads?.clicks,      prev: p => p?.adsPrev?.clicks,      series: p => p?.series?.clicks },
-    conversions: { label: 'Conversions',  format: 'num',    value: p => p?.ads?.conversions, prev: p => p?.adsPrev?.conversions, series: p => p?.series?.conversions },
+    spend:       { label: 'Total Spend',  format: 'rupiah', value: p => p?.ads?.spend,       prev: p => p?.adsPrev?.spend,       series: p => p?.series?.spend,       labels: p => p?.series?.labels },
+    impressions: { label: 'Impressions',  format: 'num',    value: p => p?.ads?.impressions, prev: p => p?.adsPrev?.impressions, series: p => p?.series?.impressions, labels: p => p?.series?.labels },
+    clicks:      { label: 'Clicks',       format: 'num',    value: p => p?.ads?.clicks,      prev: p => p?.adsPrev?.clicks,      series: p => p?.series?.clicks,      labels: p => p?.series?.labels },
+    conversions: { label: 'Conversions',  format: 'num',    value: p => p?.ads?.conversions, prev: p => p?.adsPrev?.conversions, series: p => p?.series?.conversions, labels: p => p?.series?.labels },
   },
   meta: {
-    spend:                  { label: 'Spend',                   format: 'rupiah', value: p => p?.meta?.spend,                  prev: p => p?.metaPrev?.spend,                  series: p => p?.metaSeries?.spend },
-    impressions:            { label: 'Impressions',             format: 'num',    value: p => p?.meta?.impressions,            prev: p => p?.metaPrev?.impressions,            series: p => p?.metaSeries?.impressions },
+    spend:                  { label: 'Spend',                   format: 'rupiah', value: p => p?.meta?.spend,                  prev: p => p?.metaPrev?.spend,                  series: p => p?.metaSeries?.spend,       labels: p => p?.metaSeries?.labels },
+    impressions:            { label: 'Impressions',             format: 'num',    value: p => p?.meta?.impressions,            prev: p => p?.metaPrev?.impressions,            series: p => p?.metaSeries?.impressions, labels: p => p?.metaSeries?.labels },
     reach:                  { label: 'Reach',                   format: 'num',    value: p => p?.meta?.reach,                  prev: p => p?.metaPrev?.reach },
-    clicks:                 { label: 'Link Clicks',             format: 'num',    value: p => p?.meta?.clicks,                 prev: p => p?.metaPrev?.clicks,                 series: p => p?.metaSeries?.clicks },
+    clicks:                 { label: 'Link Clicks',             format: 'num',    value: p => p?.meta?.clicks,                 prev: p => p?.metaPrev?.clicks,                 series: p => p?.metaSeries?.clicks,       labels: p => p?.metaSeries?.labels },
+    conversions:            { label: 'Conversions',            format: 'num',    value: p => p?.meta?.conversions,            prev: p => p?.metaPrev?.conversions,            series: p => p?.metaSeries?.conversions,  labels: p => p?.metaSeries?.labels },
     landing_page_views:     { label: 'Landing Page Views',      format: 'num',    value: p => p?.meta?.landing_page_views,     prev: p => p?.metaPrev?.landing_page_views },
     leads:                  { label: 'Leads',                   format: 'num',    value: p => p?.meta?.leads,                  prev: p => p?.metaPrev?.leads },
     complete_registrations: { label: 'Complete Registrations',  format: 'num',    value: p => p?.meta?.complete_registrations, prev: p => p?.metaPrev?.complete_registrations },
@@ -30,19 +31,26 @@ window.DATA_REGISTRY = {
     add_to_cart_value:      { label: 'Add to Cart Value',       format: 'rupiah', value: p => p?.meta?.add_to_cart_value,      prev: p => p?.metaPrev?.add_to_cart_value },
   },
   ga4: {
-    sessions:                 { label: 'Sessions',             format: 'num', value: p => p?.ga4?.sessions,                 prev: p => p?.ga4Prev?.sessions },
-    total_users:              { label: 'Total Users',          format: 'num', value: p => p?.ga4?.total_users,              prev: p => p?.ga4Prev?.total_users },
-    new_users:                { label: 'New Users',            format: 'num', value: p => p?.ga4?.new_users,                prev: p => p?.ga4Prev?.new_users },
-    engaged_sessions:         { label: 'Engaged Sessions',     format: 'num', value: p => p?.ga4?.engaged_sessions,         prev: p => p?.ga4Prev?.engaged_sessions },
-    event_count:              { label: 'Events',               format: 'num', value: p => p?.ga4?.event_count,              prev: p => p?.ga4Prev?.event_count },
-    bounce_rate:              { label: 'Bounce Rate',          format: 'pct', value: p => p?.ga4?.bounce_rate,              prev: p => p?.ga4Prev?.bounce_rate },
-    engagement_rate:          { label: 'Engagement Rate',      format: 'pct', value: p => p?.ga4?.engagement_rate,          prev: p => p?.ga4Prev?.engagement_rate },
-    avg_session_duration:     { label: 'Avg Duration (s)',     format: 'num', value: p => p?.ga4?.avg_session_duration,     prev: p => p?.ga4Prev?.avg_session_duration },
+    sessions:             { label: 'Sessions',         format: 'num', value: p => p?.ga4?.sessions,             prev: p => p?.ga4Prev?.sessions,             series: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.sessions ?? 0),             labels: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.date) },
+    total_users:          { label: 'Total Users',       format: 'num', value: p => p?.ga4?.total_users,          prev: p => p?.ga4Prev?.total_users,          series: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.total_users ?? 0),          labels: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.date) },
+    new_users:            { label: 'New Users',         format: 'num', value: p => p?.ga4?.new_users,            prev: p => p?.ga4Prev?.new_users,            series: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.new_users ?? 0),            labels: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.date) },
+    engaged_sessions:     { label: 'Engaged Sessions',  format: 'num', value: p => p?.ga4?.engaged_sessions,     prev: p => p?.ga4Prev?.engaged_sessions,     series: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.engaged_sessions ?? 0),     labels: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.date) },
+    event_count:          { label: 'Events',            format: 'num', value: p => p?.ga4?.event_count,          prev: p => p?.ga4Prev?.event_count,          series: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.event_count ?? 0),          labels: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.date) },
+    bounce_rate:          { label: 'Bounce Rate',       format: 'pct', value: p => p?.ga4?.bounce_rate,          prev: p => p?.ga4Prev?.bounce_rate,          series: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.bounce_rate ?? 0),          labels: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.date) },
+    engagement_rate:      { label: 'Engagement Rate',   format: 'pct', value: p => p?.ga4?.engagement_rate,      prev: p => p?.ga4Prev?.engagement_rate,      series: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.engagement_rate ?? 0),      labels: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.date) },
+    avg_session_duration: { label: 'Avg Duration (s)',  format: 'num', value: p => p?.ga4?.avg_session_duration, prev: p => p?.ga4Prev?.avg_session_duration, series: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.avg_session_duration ?? 0), labels: p => (p?.ga4Rows || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).map(r => r.date) },
   },
   search: {
-    impressions: { label: 'Impressions',     format: 'num',    value: p => p?.gsc?.impressions,       prev: p => p?.gscPrev?.impressions,    series: p => p?.gsc?.series?.impressions },
-    clicks:      { label: 'Organic Clicks',  format: 'num',    value: p => p?.gsc?.clicks,            prev: p => p?.gscPrev?.clicks,         series: p => p?.gsc?.series?.clicks },
-    ctr:         { label: 'CTR',             format: 'pct',    value: p => p?.gsc?.ctr,               prev: p => p?.gscPrev?.ctr },
+    impressions: { label: 'Impressions',     format: 'num',    value: p => p?.gsc?.impressions,       prev: p => p?.gscPrev?.impressions,    series: p => p?.gsc?.series?.impressions, labels: p => p?.gsc?.series?.labels },
+    clicks:      { label: 'Organic Clicks',  format: 'num',    value: p => p?.gsc?.clicks,            prev: p => p?.gscPrev?.clicks,         series: p => p?.gsc?.series?.clicks,      labels: p => p?.gsc?.series?.labels },
+    ctr:         { label: 'CTR',             format: 'pct',    value: p => p?.gsc?.ctr,               prev: p => p?.gscPrev?.ctr,
+      series: p => {
+        const clicks = p?.gsc?.series?.clicks || [];
+        const impr   = p?.gsc?.series?.impressions || [];
+        return clicks.map((c, i) => impr[i] > 0 ? (c / impr[i]) * 100 : 0);
+      },
+      labels: p => p?.gsc?.series?.labels,
+    },
     position:    { label: 'Avg Position',    format: 'num',    value: p => p?.gsc?.position,          prev: p => p?.gscPrev?.position },
   },
 };
