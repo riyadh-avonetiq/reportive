@@ -5064,31 +5064,30 @@ function ScreenReport({ clientId, onBack }) {
       });
   }, [clientId]);
 
-  // Persist configs on every change (clientId intentionally excluded from deps — accessed via ref)
+  // Debounced save to Supabase — fires 1500ms after last layout or config change
   useEffect(() => {
-    if (!clientIdRef.current || Object.keys(widgetConfigs).length === 0) return;
-    try {
-      localStorage.setItem('widgetConfigs_' + clientIdRef.current, JSON.stringify(widgetConfigs));
-      // Skip the flash when this is just the initial load from localStorage
-      if (widgetConfigs !== initConfigRef.current) {
+    const configsUnchanged = widgetConfigs === initConfigRef.current;
+    const layoutsUnchanged = widgetLayouts === initLayoutRef.current;
+    if (configsUnchanged && layoutsUnchanged) return;
+    if (!clientIdRef.current) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      if (!window._layoutSupa) return;
+      const { error } = await window._layoutSupa
+        .from('report_layouts')
+        .upsert({
+          client_id: clientIdRef.current,
+          layouts: widgetLayoutsRef.current,
+          configs: widgetConfigsRef.current,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'client_id' });
+      if (!error) {
         setSavedFlash(true);
         setTimeout(() => setSavedFlash(false), 1800);
       }
-    } catch {}
-  }, [widgetConfigs]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Persist layouts on every change (clientId intentionally excluded from deps — accessed via ref)
-  useEffect(() => {
-    if (!clientIdRef.current || !widgetLayouts) return;
-    try {
-      localStorage.setItem('widgetLayouts_' + clientIdRef.current, JSON.stringify(widgetLayouts));
-      // Skip the flash when this is just the initial load from localStorage
-      if (widgetLayouts !== initLayoutRef.current) {
-        setSavedFlash(true);
-        setTimeout(() => setSavedFlash(false), 1800);
-      }
-    } catch {}
-  }, [widgetLayouts]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, 1500);
+    return () => clearTimeout(saveTimerRef.current);
+  }, [widgetConfigs, widgetLayouts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep current-state refs in sync so undo/redo can capture "now" without stale closures
   useEffect(() => { widgetConfigsRef.current = widgetConfigs; }, [widgetConfigs]);
