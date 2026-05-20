@@ -5437,9 +5437,9 @@ function ScreenReport({ clientId, onBack }) {
     if (!client) return;
     const flag = sessionStorage.getItem('_avo_print');
     if (flag !== client.id) return;
-    sessionStorage.removeItem('_avo_print');
     if (loading) return;
-    const t = setTimeout(() => window.print(), 600);
+    sessionStorage.removeItem('_avo_print');
+    const t = setTimeout(() => window.print(), 1200);
     return () => clearTimeout(t);
   }, [client, loading]);
 
@@ -5677,37 +5677,41 @@ function ScreenReport({ clientId, onBack }) {
         )}
 
         {/* Card editor panel (slide in from right) */}
-        {showEditor && window.CardEditorPanel && (
-          <window.CardEditorPanel
-            cardId={editorCardId}
-            widgetId={_primarySelected}
-            widgetConfig={_primarySelected ? (widgetConfigs[_primarySelected] || {}) : {}}
-            onConfigChange={handleWidgetConfigChange}
-            onUndo={historyLen > 0 ? undoLast : null}
-            connectedSources={effectiveConnected}
-            onClose={() => setShowEditor(false)}
-            sharedWidgetCount={sharedWidgetCount}
-            instanceSource={instanceSource}
-            onSourceChange={handleSourceChange}
-            onConnectedChange={handleConnectedChange}
-            pageData={p}
-            layoutRows={_layouts?.rows?.flat() || []}
-            style={{ flexShrink: 0 }}
-          />
-        )}
-        {showEditor && !window.CardEditorPanel && (
-          <div style={{
-            width: 320, flexShrink: 0,
-            background: 'rgba(10,18,34,.97)', borderLeft: '1px solid var(--navy-edge)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12,
-          }}>
-            <div style={{ fontFamily: T.mono, fontSize: 12, color: muted, textAlign: 'center', padding: '0 24px', lineHeight: 1.6 }}>
-              Card editor unavailable.<br/>Make sure card-editor.jsx is loaded.
-            </div>
-            <button onClick={() => setShowEditor(false)} style={{
-              padding: '6px 16px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)',
-              borderRadius: 6, color: sec, fontFamily: T.display, fontSize: 13, cursor: 'pointer',
-            }}>Close</button>
+        {showEditor && (
+          <div data-print-hide="" style={{ display: 'contents' }}>
+            {window.CardEditorPanel && (
+              <window.CardEditorPanel
+                cardId={editorCardId}
+                widgetId={_primarySelected}
+                widgetConfig={_primarySelected ? (widgetConfigs[_primarySelected] || {}) : {}}
+                onConfigChange={handleWidgetConfigChange}
+                onUndo={historyLen > 0 ? undoLast : null}
+                connectedSources={effectiveConnected}
+                onClose={() => setShowEditor(false)}
+                sharedWidgetCount={sharedWidgetCount}
+                instanceSource={instanceSource}
+                onSourceChange={handleSourceChange}
+                onConnectedChange={handleConnectedChange}
+                pageData={p}
+                layoutRows={_layouts?.rows?.flat() || []}
+                style={{ flexShrink: 0 }}
+              />
+            )}
+            {!window.CardEditorPanel && (
+              <div style={{
+                width: 320, flexShrink: 0,
+                background: 'rgba(10,18,34,.97)', borderLeft: '1px solid var(--navy-edge)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12,
+              }}>
+                <div style={{ fontFamily: T.mono, fontSize: 12, color: muted, textAlign: 'center', padding: '0 24px', lineHeight: 1.6 }}>
+                  Card editor unavailable.<br/>Make sure card-editor.jsx is loaded.
+                </div>
+                <button onClick={() => setShowEditor(false)} style={{
+                  padding: '6px 16px', background: 'var(--navy-elevated)', border: '1px solid var(--navy-edge)',
+                  borderRadius: 6, color: sec, fontFamily: T.display, fontSize: 13, cursor: 'pointer',
+                }}>Close</button>
+              </div>
+            )}
           </div>
         )}
       </div>
