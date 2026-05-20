@@ -291,8 +291,9 @@ const RichAreaChart = ({
         const i = A.peakIdx, x = A.px(i), y = A.py(A.values[i]);
         const label = fmt_(A.values[i]) + (unitA ? ' ' + unitA : '');
         const bw = Math.max(20, label.length * 4 + 6);
+        const bx = Math.max(m.l + bw / 2, Math.min(x, m.l + iw - bw / 2));
         return (
-          <g transform={`translate(${x} ${y - 6})`}>
+          <g transform={`translate(${bx} ${y - 6})`}>
             <rect x={-bw / 2} y="-8" width={bw} height="9" rx="2" fill={colorA}/>
             <text x="0" y="-1" fontFamily="DM Mono" fontWeight="600" fontSize="5.5" fill="#0C182C" textAnchor="middle">{label}</text>
           </g>

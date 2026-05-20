@@ -1767,8 +1767,8 @@ function ChartAreaWidget({ instance, p, cfg }) {
     );
   }
 
-  const colorA = hasDual ? gold : teal;
-  const colorB = teal;
+  const colorA = teal;
+  const colorB = gold;
   const TABS = [{ id: 'daily', label: 'Daily' }, { id: 'weekly', label: 'Weekly' }, { id: 'monthly', label: 'Monthly' }];
   const aggLabel = TABS.find(t => t.id === agg)?.label || '';
   const title = labelB ? `${labelA} vs ${labelB} · ${aggLabel}` : labelA;
