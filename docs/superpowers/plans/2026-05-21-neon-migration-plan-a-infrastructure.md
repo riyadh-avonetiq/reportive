@@ -4,7 +4,7 @@
 
 **Goal:** Create the Neon database schema and all Vercel API Function endpoints that replace the 4 Supabase clients, fully testable via Postman before any frontend or AppScript changes.
 
-**Architecture:** Neon PostgreSQL (single DB, 19 tables) accessed server-side only via Vercel API Functions. Browser GET endpoints return current + previous period data. AppScript POST endpoints accept SYNC_KEY-authenticated batch upserts using unnest for efficiency. Static site served from `app/` directory, API functions from `api/` directory.
+**Architecture:** Neon PostgreSQL (single DB, 18 tables) accessed server-side only via Vercel API Functions. Browser GET endpoints return current + previous period data. AppScript POST endpoints accept SYNC_KEY-authenticated batch upserts using unnest for efficiency. Static site served from `app/` directory, API functions from `api/` directory.
 
 **Tech Stack:** Neon PostgreSQL, `@neondatabase/serverless` (HTTP mode), Vercel Serverless Functions (Node.js 20, ES modules), no ORM.
 
@@ -15,7 +15,7 @@
 ## File Map
 
 ```
-neon_schema.sql                     CREATE — 19 tables + indexes
+neon_schema.sql                     CREATE — 18 tables + indexes
 package.json                        CREATE — ES module config + @neondatabase/serverless
 vercel.json                         CREATE — output dir + function runtime
 api/
@@ -335,7 +335,7 @@ SELECT table_name FROM information_schema.tables
 WHERE table_schema = 'public' ORDER BY table_name;
 ```
 
-Expected output — exactly 19 rows:
+Expected output — exactly 18 rows:
 ```
 clients, datasource_config, ga4_acquisition, ga4_audience, ga4_pages, ga4_totals,
 gads_conversions, gads_detail, gads_gender, gads_totals,
@@ -1306,16 +1306,12 @@ export default async function handler(req, res) {
     const { client_id, layouts, configs, name, logo_url, share_token } = req.body;
     if (!client_id) return res.status(400).json({ error: 'client_id required' });
 
-    const updates = [];
-    if (layouts !== undefined) updates.push(sql`layouts = ${JSON.stringify(layouts)}`);
-    if (configs !== undefined) updates.push(sql`configs = ${JSON.stringify(configs)}`);
-    if (name !== undefined) updates.push(sql`name = ${name}`);
-    if (logo_url !== undefined) updates.push(sql`logo_url = ${logo_url}`);
-    if (share_token !== undefined) updates.push(sql`share_token = ${share_token}`);
+    if (layouts !== undefined) await sql`UPDATE clients SET layouts = ${JSON.stringify(layouts)} WHERE id = ${client_id}`;
+    if (configs !== undefined) await sql`UPDATE clients SET configs = ${JSON.stringify(configs)} WHERE id = ${client_id}`;
+    if (name !== undefined) await sql`UPDATE clients SET name = ${name} WHERE id = ${client_id}`;
+    if (logo_url !== undefined) await sql`UPDATE clients SET logo_url = ${logo_url} WHERE id = ${client_id}`;
+    if (share_token !== undefined) await sql`UPDATE clients SET share_token = ${share_token} WHERE id = ${client_id}`;
 
-    if (!updates.length) return res.status(400).json({ error: 'No fields to update' });
-
-    await sql`UPDATE clients SET ${sql(updates.join(', '))} WHERE id = ${client_id}`;
     return res.json({ ok: true });
   }
 
