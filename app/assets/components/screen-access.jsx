@@ -1067,7 +1067,7 @@ const ScreenAccess = ({ onNavigate }) => {
         console.error('[handleInvite]', error);
         return false;
       }
-      if (data) { addedUser = _rowToUser(data); setUsers(prev => [...prev, addedUser]); }
+      if (data) { addedUser = _rowToUser({ ...data, status: 'active' }); setUsers(prev => [...prev, addedUser]); }
     } else {
       addedUser = _rowToUser(newUser);
       setUsers(prev => [...prev, addedUser]);
