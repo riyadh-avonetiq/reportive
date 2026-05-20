@@ -119,14 +119,6 @@ function _nameGrad(name) {
   return `linear-gradient(135deg,${a},${b})`;
 }
 
-// ── Supabase app client — clients CRUD + Realtime ─────────────────
-const _APP_SUPA = (window.supabase && window.supabase.createClient)
-  ? window.supabase.createClient(
-      'https://swklfolveiilajdmuenu.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3a2xmb2x2ZWlpbGFqZG11ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NDEwMDAsImV4cCI6MjA5MzAxNzAwMH0.ZuxBQkHGwpY82XwA0NQzjqnvCeJH0WUIcp0Bux2K-84'
-    )
-  : null;
-
 function _relTime(ts) {
   if (!ts) return '—';
   const diff = Date.now() - new Date(ts).getTime();
@@ -142,44 +134,28 @@ function _relTime(ts) {
 }
 
 function _mapRow(row) {
+  const c = row.configs || {};
   return {
     id: row.id,
     name: row.name,
-    logo: row.logo || null,
-    initials: row.initials || row.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
-    avatarGrad: row.avatar_grad || _nameGrad(row.name),
-    status: row.status || 'active',
-    period: row.period || 'Apr 2026',
-    featured: row.featured || false,
-    connected: row.connected || {},
-    info: row.info || {},
-    alert: row.alert || null,
-    lastEdited: _relTime(row.last_edited),
-    lastEditedTs: row.last_edited ? new Date(row.last_edited).getTime() : 0,
-    _ts: row.last_edited,
-    _createdAt: row.created_at,
-  };
-}
-
-async function _seedClients() {
-  if (!_APP_SUPA) return;
-  const rows = HOME_CLIENTS.map((c, i) => ({
-    id: c.id,
-    name: c.name,
-    logo: c.logo || null,
-    initials: c.initials,
-    avatar_grad: c.avatarGrad,
+    logo: row.logo_url || null,
+    initials: c.initials || row.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
+    avatarGrad: c.avatar_grad || _nameGrad(row.name),
     status: c.status || 'active',
-    period: c.period,
+    period: c.period || 'Apr 2026',
     featured: c.featured || false,
     connected: c.connected || {},
     info: c.info || {},
     alert: c.alert || null,
-    last_edited: new Date(Date.now() - (i + 1) * 7200000).toISOString(),
-    created_at: new Date(Date.now() - (i + 1) * 7200000).toISOString(),
-  }));
-  await _APP_SUPA.from('clients').insert(rows);
+    lastEdited: _relTime(c.last_edited),
+    lastEditedTs: c.last_edited ? new Date(c.last_edited).getTime() : 0,
+    _ts: c.last_edited,
+    _createdAt: row.created_at,
+    _configs: c,
+  };
 }
+
+async function _seedClients() {}
 
 // ─── Viewer role helpers ──────────────────────────────────────────
 const _VIEWER_ROLE = sessionStorage.getItem('avo_role') === 'viewer';
@@ -291,12 +267,12 @@ async function _fetchAccounts(srcId) {
 window._fetchAccounts = _fetchAccounts;
 
 window._saveClientConnected = async function(clientId, newConnected) {
-  if (!_APP_SUPA) return { error: null };
-  const { error } = await _APP_SUPA.from('clients').update({
-    connected: newConnected,
-    last_edited: new Date().toISOString()
-  }).eq('id', clientId);
-  return { error };
+  await fetch('/api/app/client', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_id: clientId, configs: { connected: newConnected, last_edited: new Date().toISOString() } }),
+  });
+  return { error: null };
 };
 
 // ─── New Report Modal ─────────────────────────────────────────────
@@ -1070,13 +1046,15 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
   };
 
   const handleShare = async () => {
-    const supa = window._layoutSupa;
-    if (!supa) return;
     let token = shareTokenRef.current;
     if (!token) {
       token = crypto.randomUUID();
-      const { error } = await supa.from('clients').update({ share_token: token }).eq('id', client.id);
-      if (!error) shareTokenRef.current = token;
+      const r = await fetch('/api/app/client', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: client.id, share_token: token }),
+      });
+      if (r.ok) shareTokenRef.current = token;
     }
     const url = window.location.origin + window.location.pathname + '#share/' + token;
     try { await navigator.clipboard.writeText(url); } catch {}
@@ -1234,9 +1212,6 @@ const ViewerProfileModal = ({ onClose }) => {
     setSaving(true);
     const update = { name: name.trim() };
     if (newPw.trim()) update.password_hash = await _homeHashPw(newPw.trim());
-    if (_APP_SUPA) {
-      await _APP_SUPA.from('team_members').update(update).eq('email', email);
-    }
     sessionStorage.setItem('avo_name', name.trim());
     setSaving(false);
     setDone(true);
@@ -1394,36 +1369,15 @@ const ScreenHome = ({ onOpenClient, onNavigate }) => {
 
   // ── Fetch + Realtime ────────────────────────────────────────────
   React.useEffect(() => {
-    let channel;
     async function init() {
-      if (!_APP_SUPA) { setClients(HOME_CLIENTS); setLoading(false); return; }
-      const { data, error } = await _APP_SUPA
-        .from('clients').select('*').order('created_at', { ascending: false });
-      if (error || !data) { setClients(HOME_CLIENTS); setLoading(false); return; }
-      if (data.length === 0) {
-        await _seedClients();
-        const { data: seeded } = await _APP_SUPA.from('clients').select('*').order('created_at', { ascending: false });
-        setClients((seeded || []).map(_mapRow));
-      } else {
-        setClients(data.map(_mapRow));
-      }
+      const r = await fetch('/api/app/client');
+      if (!r.ok) { setClients(HOME_CLIENTS); setLoading(false); return; }
+      const d = await r.json();
+      const data = d.clients || [];
+      setClients(data.length === 0 ? HOME_CLIENTS : data.map(_mapRow));
       setLoading(false);
-      // Subscribe to realtime changes so all users see updates instantly
-      channel = _APP_SUPA
-        .channel('clients-live')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setClients(prev => prev.find(c => c.id === payload.new.id) ? prev : [_mapRow(payload.new), ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setClients(prev => prev.map(c => c.id === payload.new.id ? _mapRow(payload.new) : c));
-          } else if (payload.eventType === 'DELETE') {
-            setClients(prev => prev.filter(c => c.id !== payload.old.id));
-          }
-        })
-        .subscribe();
     }
     init();
-    return () => { if (channel && _APP_SUPA) _APP_SUPA.removeChannel(channel); };
   }, []);
 
   // ── Keyboard shortcuts ──────────────────────────────────────────
@@ -1480,35 +1434,33 @@ const ScreenHome = ({ onOpenClient, onNavigate }) => {
   // ── Handlers (optimistic update + Supabase persist) ─────────────
   const handleQuickEdit = async (id, name, logo) => {
     setClients(prev => prev.map(c => c.id === id ? { ...c, name, ...(logo !== undefined ? { logo } : {}), lastEdited: 'Just now' } : c));
-    if (_APP_SUPA) await _APP_SUPA.from('clients').update({ name, ...(logo !== undefined ? { logo } : {}), last_edited: new Date().toISOString() }).eq('id', id);
+    const body = { client_id: id, name, configs: { last_edited: new Date().toISOString() } };
+    if (logo !== undefined) body.logo_url = logo;
+    fetch('/api/app/client', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   };
 
   const handleDuplicate = async (c) => {
     const newId = `${c.id}-copy-${Date.now()}`;
     const dup = { ...c, id: newId, name: c.name + ' (copy)', featured: false, lastEdited: 'Just now' };
     setClients(prev => [...prev, dup]);
-    if (_APP_SUPA) await _APP_SUPA.from('clients').insert({
-      id: newId, name: dup.name, logo: dup.logo || null, initials: dup.initials,
-      avatar_grad: dup.avatarGrad, status: dup.status || 'active', period: dup.period,
-      featured: false, connected: dup.connected || {}, info: dup.info || {}, alert: dup.alert || null,
-      last_edited: new Date().toISOString(), created_at: new Date().toISOString(),
-    });
+    const configs = { ...(c._configs || {}), avatar_grad: c.avatarGrad, initials: c.initials, status: c.status || 'active', period: c.period, featured: false, connected: c.connected || {}, info: c.info || {}, alert: c.alert || null, last_edited: new Date().toISOString() };
+    fetch('/api/app/client', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: newId, name: dup.name, logo_url: dup.logo || null, configs }) });
   };
 
   const handleDelete = async (id) => {
     setClients(prev => prev.filter(c => c.id !== id));
-    if (_APP_SUPA) await _APP_SUPA.from('clients').delete().eq('id', id);
+    fetch('/api/app/client', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: id }) });
   };
 
   const handleConfigureSave = async (id, newConnected) => {
     setClients(prev => prev.map(c => c.id === id ? { ...c, connected: newConnected, lastEdited: 'Just now' } : c));
-    if (_APP_SUPA) await _APP_SUPA.from('clients').update({ connected: newConnected, last_edited: new Date().toISOString() }).eq('id', id);
+    fetch('/api/app/client', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: id, configs: { connected: newConnected, last_edited: new Date().toISOString() } }) });
   };
 
   const handleSaveEdit = async (id, form) => {
     const info = { pic: form.pic, email: form.email, website: form.website, notes: form.notes };
     setClients(prev => prev.map(c => c.id === id ? { ...c, name: form.name, period: form.period, info, lastEdited: 'Just now' } : c));
-    if (_APP_SUPA) await _APP_SUPA.from('clients').update({ name: form.name, period: form.period, info, last_edited: new Date().toISOString() }).eq('id', id);
+    fetch('/api/app/client', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: id, name: form.name, configs: { period: form.period, info, last_edited: new Date().toISOString() } }) });
   };
 
   const handleCreateReport = async (form) => {
@@ -1518,21 +1470,16 @@ const ScreenHome = ({ onOpenClient, onNavigate }) => {
     const newId = `client-${Date.now()}`;
     const initials = form.clientName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
     const grad = _nameGrad(form.clientName);
+    const info = { pic: '', email: '', website: psEntry ? psEntry.name : '', notes: '' };
     const newClient = {
       id: newId, name: form.clientName, initials, logo: form.logo || null,
       avatarGrad: grad, period: 'Apr 2026',
       alert: null, featured: false, status: 'active',
-      info: { pic: '', email: '', website: psEntry ? psEntry.name : '', notes: '' },
-      connected: connectedMap, lastEdited: 'Just now',
+      info, connected: connectedMap, lastEdited: 'Just now',
     };
     setClients(prev => [newClient, ...prev]);
-    if (_APP_SUPA) await _APP_SUPA.from('clients').insert({
-      id: newId, name: form.clientName, logo: form.logo || null, initials,
-      avatar_grad: grad, period: 'Apr 2026',
-      status: 'active', featured: false, connected: connectedMap,
-      info: { pic: '', email: '', website: psEntry ? psEntry.name : '', notes: '' },
-      alert: null, last_edited: new Date().toISOString(), created_at: new Date().toISOString(),
-    });
+    const configs = { avatar_grad: grad, initials, period: 'Apr 2026', status: 'active', featured: false, connected: connectedMap, info, alert: null, last_edited: new Date().toISOString() };
+    fetch('/api/app/client', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: newId, name: form.clientName, logo_url: form.logo || null, configs }) });
   };
 
   if (loading) return (

@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       if (!client_id) return res.status(400).json({ error: 'client_id required' });
 
       if (layouts !== undefined) await sql`UPDATE clients SET layouts = ${JSON.stringify(layouts)} WHERE id = ${client_id}`;
-      if (configs !== undefined) await sql`UPDATE clients SET configs = ${JSON.stringify(configs)} WHERE id = ${client_id}`;
+      if (configs !== undefined) await sql`UPDATE clients SET configs = COALESCE(configs, '{}'::jsonb) || ${JSON.stringify(configs)}::jsonb WHERE id = ${client_id}`;
       if (name !== undefined) await sql`UPDATE clients SET name = ${name} WHERE id = ${client_id}`;
       if (logo_url !== undefined) await sql`UPDATE clients SET logo_url = ${logo_url} WHERE id = ${client_id}`;
       if (share_token !== undefined) await sql`UPDATE clients SET share_token = ${share_token} WHERE id = ${client_id}`;
@@ -41,9 +41,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { id, name, logo_url } = req.body;
+      const { id, name, logo_url, configs } = req.body;
       if (!id || !name) return res.status(400).json({ error: 'id and name required' });
-      await sql`INSERT INTO clients (id, name, logo_url) VALUES (${id}, ${name}, ${logo_url || null}) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, logo_url = EXCLUDED.logo_url`;
+      await sql`INSERT INTO clients (id, name, logo_url, configs) VALUES (${id}, ${name}, ${logo_url || null}, ${configs ? JSON.stringify(configs) : null}) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, logo_url = EXCLUDED.logo_url, configs = COALESCE(EXCLUDED.configs, clients.configs)`;
       return res.json({ ok: true });
     }
 
