@@ -1722,7 +1722,7 @@ function ChartAreaWidget({ instance, p, cfg }) {
         const d = ls[i]; if (!d) return '';
         const pts = d.split('-'); return pts.length >= 3 ? String(parseInt(pts[2], 10)) : d;
       });
-      return { values: vs, labels: sparseLabels };
+      return { values: vs, labels: sparseLabels, fullLabels: ls };
     }
     if (mode === 'weekly') {
       const buckets = [], bLabels = [];
@@ -1745,7 +1745,7 @@ function ChartAreaWidget({ instance, p, cfg }) {
     }) };
   };
 
-  const { values: aggVals, labels: aggLabels } = aggregate(alignedSeries, alignedLabels, agg);
+  const { values: aggVals, labels: aggLabels, fullLabels: fullAggLabels = [] } = aggregate(alignedSeries, alignedLabels, agg);
   const aggB = alignedSeriesB ? aggregate(alignedSeriesB, alignedLabels, agg) : null;
   const safeSeries  = aggVals.length >= 2 ? aggVals.map(v => v / scaleA) : null;
   const safeSeriesB = aggB && aggB.values.length >= 2 ? aggB.values.map(v => v / scaleB) : null;
@@ -1808,6 +1808,7 @@ function ChartAreaWidget({ instance, p, cfg }) {
         </div>
       </div>
       <RichArea seriesA={safeSeries} seriesB={safeSeriesB} labelsX={aggLabels}
+        tooltipLabels={fullAggLabels}
         colorA={colorA} colorB={colorB} unitA={unitA} unitB={unitB} fmtY={fmtY} w={460} h={chartH}/>
       {(totalA != null || (hasDual && totalB != null)) && (
         <div style={{ display: 'flex', gap: 20, marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,.07)' }}>

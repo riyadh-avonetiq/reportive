@@ -180,6 +180,7 @@ const RichAreaChart = ({
   unitA = '', unitB = '',
   colorA = '#00C2B8', colorB = '#F8B400',
   fmtY = null,
+  tooltipLabels = [],
   w = 540, h = 220,
 }) => {
   const fmt_ = fmtY || fmtNum;
@@ -311,8 +312,8 @@ const RichAreaChart = ({
                 <text x={tipX + 12} y={tipY + 25} fontFamily="DM Mono" fontSize="6" fill="#FCFCFC" style={{ fontVariantNumeric: 'tabular-nums' }}>{labelB}</text>
               </>);
             })()}
-            {labelsX[hoverIdx] && (
-              <text x={tipX + 62} y={tipY + tipH - 2} fontFamily="DM Mono" fontSize="6" fill="#64748B" textAnchor="middle">{labelsX[hoverIdx]}</text>
+            {(tooltipLabels[hoverIdx] || labelsX[hoverIdx]) && (
+              <text x={tipX + 62} y={tipY + tipH - 2} fontFamily="DM Mono" fontSize="6" fill="#64748B" textAnchor="middle">{tooltipLabels[hoverIdx] || labelsX[hoverIdx]}</text>
             )}
           </>
         );
