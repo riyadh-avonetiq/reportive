@@ -858,7 +858,7 @@ async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, met
     const ga4Q = (_ga4Supa && ga4Property !== null)
       ? (() => {
           let q = _ga4Supa.from('ga4_totals')
-            .select('date, property_name, sessions, total_users, new_users, bounce_rate, engaged_sessions, engagement_rate, avg_session_duration, user_engagement_duration, event_count')
+            .select('date, property_name, sessions, total_users, new_users, bounce_rate, engaged_sessions, engagement_rate, avg_session_duration, event_count')
             .order('date', { ascending: true })
             .limit(10000);
           if (ga4Property) q = q.eq('property_name', ga4Property);
