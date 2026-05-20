@@ -1,25 +1,26 @@
 {
-  "outputDirectory": "app",
-  "installCommand": "npm install",
-  "cleanUrls": false,
-  "trailingSlash": false,
-  "rewrites": [
-    { "source": "/", "destination": "/index.html" }
+  "version": 2,
+  "builds": [
+    { "src": "api/ga4.js",        "use": "@vercel/node" },
+    { "src": "api/gads.js",       "use": "@vercel/node" },
+    { "src": "api/gsc.js",        "use": "@vercel/node" },
+    { "src": "api/meta.js",       "use": "@vercel/node" },
+    { "src": "api/app/client.js", "use": "@vercel/node" },
+    { "src": "api/app/team.js",   "use": "@vercel/node" },
+    { "src": "api/sync/ga4.js",   "use": "@vercel/node" },
+    { "src": "api/sync/gads.js",  "use": "@vercel/node" },
+    { "src": "api/sync/gsc.js",   "use": "@vercel/node" },
+    { "src": "api/sync/meta.js",  "use": "@vercel/node" },
+    { "src": "app/**",            "use": "@vercel/static" }
   ],
-  "headers": [
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/", "dest": "/app/index.html" },
     {
-      "source": "/(index|login)\\.html",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
-        { "key": "Pragma",        "value": "no-cache" },
-        { "key": "Expires",       "value": "0" }
-      ]
+      "src": "/(index|login)\\.html",
+      "headers": { "cache-control": "no-cache, no-store, must-revalidate" },
+      "dest": "/app/$1.html"
     },
-    {
-      "source": "/assets/:path*",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    }
+    { "src": "/(.*)", "dest": "/app/$1" }
   ]
 }
