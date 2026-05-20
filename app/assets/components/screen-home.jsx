@@ -1051,6 +1051,7 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
   const [menuOpen, setMenuOpen] = React.useState(false);
   const menuRef = React.useRef(null);
   const leaveTimer = React.useRef(null);
+  const [shareLabel, setShareLabel] = React.useState('Share');
 
   React.useEffect(() => {
     if (!menuOpen) return;
@@ -1064,6 +1065,21 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
   const handlePDF = () => {
     sessionStorage.setItem('_avo_print', client.id);
     window.location.hash = 'client/' + client.id;
+  };
+
+  const handleShare = async () => {
+    const supa = window._layoutSupa;
+    if (!supa) return;
+    let token = client.share_token;
+    if (!token) {
+      token = crypto.randomUUID();
+      await supa.from('clients').update({ share_token: token }).eq('id', client.id);
+      client.share_token = token;
+    }
+    const url = window.location.origin + window.location.pathname + '#share/' + token;
+    try { await navigator.clipboard.writeText(url); } catch {}
+    setShareLabel('Copied!');
+    setTimeout(() => setShareLabel('Share'), 2000);
   };
 
   const enter = () => { clearTimeout(leaveTimer.current); setHovered(true); };
@@ -1176,6 +1192,8 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
               }}>
                 <MenuItem icon="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z|M14 2v6h6M9 13h6M9 17h4"
                   label="Export PDF" onClick={() => { handlePDF(); setMenuOpen(false); }} />
+                <MenuItem icon="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
+                  label={shareLabel} onClick={() => { handleShare(); setMenuOpen(false); }} />
                 <div style={{ height: 1, background: 'var(--navy-edge)', margin: '4px 0' }} />
                 <MenuItem icon="M8 17H5a2 2 0 01-2-2V5a2 2 0 012-2h8a2 2 0 012 2v3M11 21h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                   label="Duplicate" onClick={() => { onDuplicate(client); setMenuOpen(false); }} />

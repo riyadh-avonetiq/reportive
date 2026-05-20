@@ -508,6 +508,22 @@ function DateRangePicker({ dateRange, onApply, onCancel }) {
 // ─── Top bar ──────────────────────────────────────────────────────
 function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPresent, onEdit, showEditor, savedFlash, onPrint }) {
   const [showPicker, setShowPicker] = useState(false);
+  const [shareLabel, setShareLabel] = useState('Share');
+
+  const handleShare = async () => {
+    const supa = window._layoutSupa;
+    if (!supa || !client) return;
+    let token = client.share_token;
+    if (!token) {
+      token = crypto.randomUUID();
+      await supa.from('clients').update({ share_token: token }).eq('id', client.id);
+      client.share_token = token;
+    }
+    const url = window.location.origin + window.location.pathname + '#share/' + token;
+    try { await navigator.clipboard.writeText(url); } catch {}
+    setShareLabel('Copied!');
+    setTimeout(() => setShareLabel('Share'), 2000);
+  };
 
   const rangeLabel = useMemo(() => {
     const from = dateRange && dateRange.from;
@@ -620,6 +636,22 @@ function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPrese
           }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
             Edit
+          </button>
+        )}
+
+        {/* Share link */}
+        {!_IS_VIEWER && (
+          <button onClick={handleShare} style={{
+            padding: '6px 12px', borderRadius: 7, cursor: 'pointer',
+            background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.12)',
+            color: sec, fontFamily: T.display, fontSize: 12, fontWeight: 600,
+            display: 'flex', alignItems: 'center', gap: 5,
+            transition: 'background .15s',
+          }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+            </svg>
+            {shareLabel}
           </button>
         )}
 
