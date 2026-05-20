@@ -5016,10 +5016,12 @@ function ScreenReport({ clientId, onBack }) {
     setClipboard(null);
     setMarquee(null);
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    // Reset immediately while fetch is in-flight
-    initConfigRef.current = {};
+    // Reset immediately while fetch is in-flight — use shared references so save guard
+    // doesn't see a mismatch and queue a spurious empty save before the fetch resolves
+    const blankConfigs = {};
+    initConfigRef.current = blankConfigs;
     initLayoutRef.current = null;
-    setWidgetConfigs({});
+    setWidgetConfigs(blankConfigs);
     setWidgetLayouts(null);
     if (!window._layoutSupa || !clientId) return;
     const capturedClientId = clientId;
@@ -5028,7 +5030,8 @@ function ScreenReport({ clientId, onBack }) {
       .select('layouts, configs')
       .eq('client_id', capturedClientId)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) { console.error('[Reportive] Layout load failed:', error); }
         if (clientIdRef.current !== capturedClientId) return;
         const layouts = data?.layouts ? migrateLegacyLayout(data.layouts) : null;
         const configs = data?.configs || {};
@@ -5054,7 +5057,6 @@ function ScreenReport({ clientId, onBack }) {
           client_id: clientIdRef.current,
           layouts: widgetLayoutsRef.current,
           configs: widgetConfigsRef.current,
-          updated_at: new Date().toISOString(),
         }, { onConflict: 'client_id' });
       if (!error) {
         setSavedFlash(true);
@@ -5076,7 +5078,6 @@ function ScreenReport({ clientId, onBack }) {
         client_id: clientIdRef.current,
         layouts: widgetLayoutsRef.current,
         configs: widgetConfigsRef.current,
-        updated_at: new Date().toISOString(),
       }, { onConflict: 'client_id' });
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
