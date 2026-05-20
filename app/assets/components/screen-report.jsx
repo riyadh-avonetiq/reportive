@@ -509,21 +509,26 @@ function DateRangePicker({ dateRange, onApply, onCancel }) {
 function ReportTopBar({ client, dateRange, setDateRange, onBack, isMock, onPresent, onEdit, showEditor, savedFlash, onPrint }) {
   const [showPicker, setShowPicker] = useState(false);
   const [shareLabel, setShareLabel] = useState('Share');
+  const shareTimerRef = React.useRef(null);
+  const shareTokenRef = React.useRef((client && client.share_token) || null);
 
   const handleShare = async () => {
     const supa = window._layoutSupa;
     if (!supa || !client) return;
-    let token = client.share_token;
+    let token = shareTokenRef.current;
     if (!token) {
       token = crypto.randomUUID();
       await supa.from('clients').update({ share_token: token }).eq('id', client.id);
-      client.share_token = token;
+      shareTokenRef.current = token;
     }
     const url = window.location.origin + window.location.pathname + '#share/' + token;
     try { await navigator.clipboard.writeText(url); } catch {}
+    clearTimeout(shareTimerRef.current);
     setShareLabel('Copied!');
-    setTimeout(() => setShareLabel('Share'), 2000);
+    shareTimerRef.current = setTimeout(() => setShareLabel('Share'), 2000);
   };
+
+  useEffect(() => () => clearTimeout(shareTimerRef.current), []);
 
   const rangeLabel = useMemo(() => {
     const from = dateRange && dateRange.from;

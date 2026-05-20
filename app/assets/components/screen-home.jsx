@@ -1051,6 +1051,8 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
   const [menuOpen, setMenuOpen] = React.useState(false);
   const menuRef = React.useRef(null);
   const leaveTimer = React.useRef(null);
+  const shareTimerRef = React.useRef(null);
+  const shareTokenRef = React.useRef(client.share_token || null);
   const [shareLabel, setShareLabel] = React.useState('Share');
 
   React.useEffect(() => {
@@ -1070,17 +1072,20 @@ const ClientRow = ({ client, onOpen, onEdit, onConfigure, onDuplicate, onDelete,
   const handleShare = async () => {
     const supa = window._layoutSupa;
     if (!supa) return;
-    let token = client.share_token;
+    let token = shareTokenRef.current;
     if (!token) {
       token = crypto.randomUUID();
       await supa.from('clients').update({ share_token: token }).eq('id', client.id);
-      client.share_token = token;
+      shareTokenRef.current = token;
     }
     const url = window.location.origin + window.location.pathname + '#share/' + token;
     try { await navigator.clipboard.writeText(url); } catch {}
+    clearTimeout(shareTimerRef.current);
     setShareLabel('Copied!');
-    setTimeout(() => setShareLabel('Share'), 2000);
+    shareTimerRef.current = setTimeout(() => setShareLabel('Share'), 2000);
   };
+
+  React.useEffect(() => () => clearTimeout(shareTimerRef.current), []);
 
   const enter = () => { clearTimeout(leaveTimer.current); setHovered(true); };
   const leave = () => { leaveTimer.current = setTimeout(() => setHovered(false), 40); };
