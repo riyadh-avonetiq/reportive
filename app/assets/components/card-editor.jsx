@@ -1789,6 +1789,21 @@ const SimpleSetupTab = ({ widgetId, cardId, widgetConfig, onConfigChange, connec
                 ))}
               </div>
             </ESection>
+            <EDivider/>
+            <ESection label="Line style">
+              <div style={{ display: 'flex', background: EP.elevated, borderRadius: 100, padding: 3, border: `1px solid ${EP.edge}` }}>
+                {[['sharp', 'Sharp'], ['smooth', 'Smooth']].map(([val, label]) => (
+                  <button key={val} onClick={() => up({ lineStyle: val })}
+                    style={{ flex: 1, padding: '5px 8px', border: 'none', borderRadius: 100, cursor: 'pointer', textAlign: 'center',
+                      background: (cfg.lineStyle || 'sharp') === val ? EP.teal : 'transparent',
+                      color: (cfg.lineStyle || 'sharp') === val ? '#0C182C' : EP.muted,
+                      fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 600,
+                      transition: 'background .12s, color .12s' }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </ESection>
           </>
         )}
         {widgetType === 'single-stat' && (

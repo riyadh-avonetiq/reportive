@@ -1809,7 +1809,8 @@ function ChartAreaWidget({ instance, p, cfg }) {
       </div>
       <RichArea seriesA={safeSeries} seriesB={safeSeriesB} labelsX={aggLabels}
         tooltipLabels={fullAggLabels}
-        colorA={colorA} colorB={colorB} unitA={unitA} unitB={unitB} fmtY={fmtY} w={460} h={chartH}/>
+        colorA={colorA} colorB={colorB} unitA={unitA} unitB={unitB} fmtY={fmtY}
+        smooth={cfg.lineStyle === 'smooth'} w={460} h={chartH}/>
       {(totalA != null || (hasDual && totalB != null)) && (
         <div style={{ display: 'flex', gap: 20, marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,.07)' }}>
           {totalA != null && (

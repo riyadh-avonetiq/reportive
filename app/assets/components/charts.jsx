@@ -181,6 +181,7 @@ const RichAreaChart = ({
   colorA = '#00C2B8', colorB = '#F8B400',
   fmtY = null,
   tooltipLabels = [],
+  smooth = false,
   w = 540, h = 220,
 }) => {
   const fmt_ = fmtY || fmtNum;
@@ -188,6 +189,21 @@ const RichAreaChart = ({
   const [hoverIdx, setHoverIdx] = React.useState(null);
   const svgRef = React.useRef(null);
   const id = React.useRef(Math.random().toString(36).slice(2)).current;
+  const catmullRom = (pts) => {
+    if (pts.length < 2) return '';
+    return pts.map(([x, y], i) => {
+      if (i === 0) return `M ${x} ${y}`;
+      const p0 = pts[Math.max(i - 2, 0)];
+      const p1 = pts[i - 1];
+      const p2 = pts[i];
+      const p3 = pts[Math.min(i + 1, pts.length - 1)];
+      const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+      const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+      const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+      return `C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x} ${y}`;
+    }).join(' ');
+  };
   const m = { l: 40, r: 36, t: 18, b: 20 };
   const iw = w - m.l - m.r, ih = h - m.t - m.b;
 
@@ -196,8 +212,10 @@ const RichAreaChart = ({
     const max = raw || 1;
     const px = (i) => m.l + (i / (arr.length - 1)) * iw;
     const py = (v) => m.t + ih - (v / max) * ih;
-    const line = arr.map((v, i) => `${i === 0 ? 'M' : 'L'} ${px(i)} ${py(v)}`).join(' ');
-    const area = `${line} L ${px(arr.length - 1)} ${m.t + ih} L ${px(0)} ${m.t + ih} Z`;
+    const pts = arr.map((v, i) => [px(i), py(v)]);
+    const line = smooth ? catmullRom(pts) : pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ');
+    const closedBottom = ` L ${px(arr.length - 1)} ${m.t + ih} L ${px(0)} ${m.t + ih} Z`;
+    const area = line + closedBottom;
     const peakIdx = arr.indexOf(Math.max(...arr));
     return { max, px, py, line, area, peakIdx, color, values: arr };
   };
