@@ -3397,16 +3397,6 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
     >
       {/* Edit mode hint strip — always visible while in edit mode */}
       {editState && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px',
-          borderRadius: 8, marginBottom: 16,
-          background: 'rgba(0,194,184,.05)', border: '1px solid rgba(0,194,184,.14)',
-        }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          <span style={{ fontFamily: T.mono, fontSize: 9, color: teal, letterSpacing: '0.05em' }}>
-            Edit Mode · Click to select · Ctrl+Click multi-select / deselect · Drag to move · Toolbar above widget · Ctrl+Z undo · Ctrl+Shift+Z redo
-          </span>
-        </div>
       )}
 
       {/* Browse drag canvas hint border */}
@@ -5664,7 +5654,7 @@ function ScreenReport({ clientId, onBack, hideBack }) {
               {/* Page title */}
               <div style={{ marginBottom: 28 }}>
                 <h1 style={{ margin: 0, fontFamily: T.display, fontSize: 24, fontWeight: 800, color: fg, letterSpacing: '-0.02em' }}>
-                  Laporan Performa
+                  Performance Report
                 </h1>
                 <div style={{ fontFamily: T.mono, fontSize: 12, color: muted, marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.14em' }}>
                   {p.labelLong} · {client.name}
