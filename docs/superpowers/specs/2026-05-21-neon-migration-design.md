@@ -305,6 +305,54 @@ function _range(daysBack) {
 
 Daily sync: `_range(3)`. Backfill: `_range(180)`. `to` is always yesterday.
 
+### Standard function interface
+
+Every script must implement all functions in this table with exactly these names. Datasource-specific differences in implementation are expected; function names are not negotiable.
+
+**Required in all 4 scripts:**
+
+| Function | Signature | Purpose |
+|---|---|---|
+| `syncDaily` | `()` | Entry point called by trigger. Calls all `_sync*` with `_range(3)` |
+| `syncHistorical` | `()` | Manual backfill. Calls all `_sync*` with `_range(180)` |
+| `testConnection` | `()` | Verify datasource API + Vercel endpoint reachable. Log results |
+| `_sync` | `(source, table, rows, clientId)` | POST rows to Vercel sync endpoint in 500-row batches |
+| `_range` | `(daysBack)` → `{ from, to }` | Date range — `to` always yesterday |
+| `_fmt` | `(date)` → `'YYYY-MM-DD'` | Format Date object to string |
+
+**`createTriggers()` — Apps Script only (ga4, gsc, meta):**
+
+| Function | Signature | Purpose |
+|---|---|---|
+| `createTriggers` | `()` | Delete existing triggers, create daily 07:00 trigger for `syncDaily` |
+
+Not applicable to `gads_sync.js` — Google Ads Script schedule is set in Google Ads UI.
+
+**Datasource-specific sync functions — naming convention `_sync{TableSuffix}`:**
+
+| Script | Functions |
+|---|---|
+| `gads_sync.js` | `_syncTotals`, `_syncDetail`, `_syncGender`, `_syncConversions` |
+| `ga4_sync.js` | `_syncTotals`, `_syncAcquisition`, `_syncAudience`, `_syncPages` |
+| `gsc_sync.js` | `_syncTotals`, `_syncQueries`, `_syncPages`, `_syncCountries`, `_syncDevices` |
+| `meta_sync.js` | `_syncTotals`, `_syncDetail` |
+
+Each `_sync{TableSuffix}` receives a datasource identifier (account name / property / client id) and a range object `{ from, to }`, and calls `_sync()` with the appropriate table name.
+
+**Function call flow:**
+
+```
+syncDaily()
+  └─ _range(3) → { from, to }
+  └─ _syncTotals(identifier, range)   → _sync('source', 'source_totals', rows, clientId)
+  └─ _syncDetail(identifier, range)   → _sync('source', 'source_detail', rows, clientId)
+  └─ ...
+
+syncHistorical()
+  └─ _range(180) → { from, to }
+  └─ (same call chain as syncDaily)
+```
+
 ### Code style
 
 No comments, no section titles, no inline explanations. Pure functional code only.
