@@ -1627,6 +1627,7 @@ function SingleStatWidget({ instance, p, cfg }) {
 }
 
 function ChartAreaWidget({ instance, p, cfg }) {
+  const [agg, setAgg] = React.useState('daily');
   const reg = window.DATA_REGISTRY?.[instance.source] || {};
   const cm0 = (cfg.customMetrics || [])[0];
   if (cm0) {
@@ -1640,38 +1641,179 @@ function ChartAreaWidget({ instance, p, cfg }) {
       </ChartCard>
     );
   }
-  const key = cfg.metric;
-  const def = reg[key] || {};
-  const series = def.series ? (def.series(p) || []) : [];
-  const safeSeries = series.length >= 2 ? series : [0, 0];
-  const title = cfg.name || def.label || key;
-  const totalVal = def.value ? def.value(p) : null;
-  const sub = totalVal != null ? `Total: ${fmtMetricVal(totalVal, def.format)}` : null;
 
-  const n = safeSeries.length;
-  const dmax = Math.max(...safeSeries) || 1;
-  const dmin = Math.min(...safeSeries);
-  const vw = 400, vh = 80;
-  const pxF = (i) => (i / (n - 1)) * (vw - 8) + 4;
-  const pyF = (v) => (vh - 6) - ((v - dmin) / (dmax - dmin || 1)) * (vh - 14);
-  const linePath = safeSeries.map((v, i) => `${i === 0 ? 'M' : 'L'} ${pxF(i).toFixed(1)} ${pyF(v).toFixed(1)}`).join(' ');
-  const areaPath = `${linePath} L ${pxF(n - 1).toFixed(1)} ${vh} L ${pxF(0).toFixed(1)} ${vh} Z`;
-  const gradId = `caw-${instance.id}`;
+  const key  = cfg.metric;
+  const keyB = cfg.metricB || null;
+  const def  = reg[key]  || {};
+  const defB = keyB ? (reg[keyB] || {}) : null;
+  const hasDual = !!defB;
+
+  const rawSeries  = def.series  ? (def.series(p)  || []) : [];
+  const rawLabels  = def.labels  ? (def.labels(p)  || []) : [];
+  const rawSeriesB = defB && defB.series ? (defB.series(p) || []) : null;
+
+  // Size config
+  const sz = (cfg.fontSize || 'm').toLowerCase();
+  const titleFs  = { s: 11, m: 13, l: 15 }[sz] || 13;
+  const statsFs  = { s: 11, m: 14, l: 16 }[sz] || 14;
+  const chartH   = { s: 100, m: 140, l: 170 }[sz] || 140;
+
+  // Number format: auto = smart abbreviation, detail = Indonesian locale (full number)
+  const numFmt = cfg.numFmt || 'auto';
+  const idFmt = (v) => Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const detailFmtY = (v) => {
+    if (!isFinite(v)) return '0';
+    if (Math.abs(v) >= 0.01) return v % 1 === 0 ? idFmt(v) : v.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+    return '0';
+  };
+
+  const autoScale = (series, fmt_) => {
+    if (fmt_ !== 'rupiah' || !series.length) return { scale: 1, unit: '' };
+    const max = Math.max(...series.filter(v => v > 0));
+    if (!isFinite(max) || max === 0) return { scale: 1, unit: '' };
+    if (max >= 1e9) return { scale: 1e9, unit: 'M' };
+    if (max >= 1e6) return { scale: 1e6, unit: 'Jt' };
+    if (max >= 1e3) return { scale: 1e3, unit: 'Rb' };
+    return { scale: 1, unit: '' };
+  };
+
+  let scaleA, unitA, scaleB, unitB, fmtY;
+  if (numFmt === 'detail') {
+    scaleA = 1; unitA = ''; scaleB = 1; unitB = '';
+    fmtY = detailFmtY;
+  } else {
+    const asA = autoScale(rawSeries, def.format);
+    scaleA = asA.scale; unitA = asA.unit;
+    const asB = defB ? autoScale(rawSeriesB || [], defB.format) : { scale: 1, unit: '' };
+    scaleB = asB.scale; unitB = asB.unit;
+    fmtY = null;
+  }
+
+  const labelA = cfg.name || def.label || key;
+  const labelB = defB ? (defB.label || keyB) : null;
+
+  const totalA = def.value  ? def.value(p)  : null;
+  const totalB = defB && defB.value ? defB.value(p) : null;
+  const prevA  = def.prev   ? def.prev(p)   : null;
+  const prevB  = defB && defB.prev ? defB.prev(p) : null;
+  const deltaA = (totalA != null && prevA != null) ? fmt.pctChange(totalA, prevA) : null;
+  const deltaB = (totalB != null && prevB != null) ? fmt.pctChange(totalB, prevB) : null;
+
+  const RichArea = window.RichAreaChart;
+  if (!RichArea) return null;
+
+  const aggregate = (vals, dates, mode) => {
+    if (!vals.length) return { values: [0, 0], labels: [] };
+    if (mode === 'daily') {
+      // Keep up to 20 data points, but show only ~7 date labels (day number only, no month)
+      const step = Math.max(1, Math.ceil(vals.length / 20));
+      const vs = [], ls = [];
+      for (let i = 0; i < vals.length; i += step) { vs.push(vals[i]); ls.push(dates[i] || ''); }
+      const labelStep = Math.max(1, Math.ceil(vs.length / 7));
+      const sparseLabels = vs.map((_, i) => {
+        if (i % labelStep !== 0 && i !== vs.length - 1) return '';
+        const d = ls[i]; if (!d) return '';
+        const pts = d.split('-'); return pts.length >= 3 ? String(parseInt(pts[2], 10)) : d;
+      });
+      return { values: vs, labels: sparseLabels };
+    }
+    if (mode === 'weekly') {
+      const buckets = [], bLabels = [];
+      for (let i = 0; i < vals.length; i += 7) {
+        buckets.push(vals.slice(i, i + 7).reduce((s, v) => s + v, 0));
+        bLabels.push('W' + (Math.floor(i / 7) + 1));
+      }
+      return { values: buckets.length ? buckets : [0, 0], labels: bLabels };
+    }
+    const byMonth = {};
+    vals.forEach((v, i) => { const d = dates[i] || ''; const mk = d.slice(0, 7) || ('M' + i); byMonth[mk] = (byMonth[mk] || 0) + v; });
+    const ks = Object.keys(byMonth).sort();
+    const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return { values: ks.map(k => byMonth[k]), labels: ks.map(k => { const pts = k.split('-'); return pts[1] ? MN[+pts[1] - 1] || k : k; }) };
+  };
+
+  const { values: aggVals, labels: aggLabels } = aggregate(rawSeries, rawLabels, agg);
+  const aggB = rawSeriesB ? aggregate(rawSeriesB, rawLabels, agg) : null;
+  const safeSeries  = aggVals.length >= 2 ? aggVals.map(v => v / scaleA) : null;
+  const safeSeriesB = aggB && aggB.values.length >= 2 ? aggB.values.map(v => v / scaleB) : null;
+
+  if (!safeSeries) {
+    return (
+      <RCard padding={16}>
+        <div style={{ fontFamily: T.display, fontSize: titleFs, fontWeight: 700, color: fg, marginBottom: 10 }}>
+          {cfg.name || def.label || key}
+        </div>
+        <div style={{ height: chartH, display: 'flex', alignItems: 'center',
+          justifyContent: 'center', border: '1px dashed rgba(255,255,255,.1)',
+          borderRadius: 8 }}>
+          <span style={{ fontFamily: T.mono, fontSize: 11, color: muted }}>
+            Insufficient data for this period
+          </span>
+        </div>
+      </RCard>
+    );
+  }
+
+  const colorA = hasDual ? gold : teal;
+  const colorB = teal;
+  const TABS = [{ id: 'daily', label: 'Daily' }, { id: 'weekly', label: 'Weekly' }, { id: 'monthly', label: 'Monthly' }];
+  const aggLabel = TABS.find(t => t.id === agg)?.label || '';
+  const title = labelB ? `${labelA} vs ${labelB} · ${aggLabel}` : labelA;
 
   return (
-    <ChartCard title={title} sub={sub}>
-      <svg viewBox={`0 0 ${vw} ${vh}`} style={{ width: '100%', display: 'block' }}>
-        <defs>
-          <linearGradient id={gradId} x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor={teal} stopOpacity="0.28"/>
-            <stop offset="100%" stopColor={teal} stopOpacity="0"/>
-          </linearGradient>
-        </defs>
-        <path d={areaPath} fill={`url(#${gradId})`}/>
-        <path d={linePath} fill="none" stroke={teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <circle cx={pxF(n - 1)} cy={pyF(safeSeries[n - 1])} r="3.5" fill={teal} stroke="#0A1222" strokeWidth="1.5"/>
-      </svg>
-    </ChartCard>
+    <RCard padding={16}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+        <div style={{ fontFamily: T.display, fontSize: titleFs, fontWeight: 700, color: fg, lineHeight: 1.3, paddingRight: 8 }}>{title}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          {hasDual && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[{ color: colorA, label: labelA, unit: unitA }, { color: colorB, label: labelB, unit: unitB }].map(({ color, label, unit }) => (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }}/>
+                  <span style={{ fontFamily: T.mono, fontSize: 9, color: muted, whiteSpace: 'nowrap' }}>{label}{unit ? ` (${unit})` : ''}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,.07)', borderRadius: 100, padding: 3 }}>
+            {TABS.map(t => (
+              <button key={t.id} onClick={() => setAgg(t.id)} style={{
+                padding: '3px 11px', border: 'none', cursor: 'pointer', borderRadius: 100,
+                fontFamily: T.mono, fontSize: 9.5, fontWeight: 600,
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                background: agg === t.id ? teal : 'transparent',
+                color: agg === t.id ? '#0C182C' : muted,
+                transition: 'background .12s, color .12s',
+              }}>{t.label}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <RichArea seriesA={safeSeries} seriesB={safeSeriesB} labelsX={aggLabels}
+        colorA={colorA} colorB={colorB} unitA={unitA} unitB={unitB} fmtY={fmtY} w={460} h={chartH}/>
+      {(totalA != null || (hasDual && totalB != null)) && (
+        <div style={{ display: 'flex', gap: 20, marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,.07)' }}>
+          {totalA != null && (
+            <div>
+              <div style={{ fontFamily: T.mono, fontSize: 8, color: muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>Total {labelA}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <span style={{ fontFamily: T.mono, fontWeight: 700, fontSize: statsFs, color: colorA }}>{fmtMetricVal(totalA, def.format)}</span>
+                {deltaA != null && <RDelta value={Math.round(deltaA * 10) / 10}/>}
+              </div>
+            </div>
+          )}
+          {hasDual && totalB != null && (
+            <div>
+              <div style={{ fontFamily: T.mono, fontSize: 8, color: muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>Total {labelB}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <span style={{ fontFamily: T.mono, fontWeight: 700, fontSize: statsFs, color: colorB }}>{fmtMetricVal(totalB, defB.format)}</span>
+                {deltaB != null && <RDelta value={Math.round(deltaB * 10) / 10}/>}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </RCard>
   );
 }
 
@@ -3395,10 +3537,6 @@ function DragCanvas({ p, connected, widgetConfigs, editState, layouts, onLayoutC
       onDragOver={e => { if (isBrowseDrag(e)) e.preventDefault(); }}
       onClick={e => { if (e.target === e.currentTarget && editState?.onDeselect) editState.onDeselect(); }}
     >
-      {/* Edit mode hint strip — always visible while in edit mode */}
-      {editState && (
-      )}
-
       {/* Browse drag canvas hint border */}
       {browseDragActive && (
         <div style={{
