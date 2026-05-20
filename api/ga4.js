@@ -12,19 +12,19 @@ export default async function handler(req, res) {
   const t = to || yesterday;
 
   const [totals, acquisition, audience, pages] = await Promise.all([
-    sql`SELECT date, property_id, property_name, total_users, new_users, sessions, engaged_sessions, bounce_rate, engagement_rate, avg_session_duration, event_count FROM ga4_totals WHERE client_id = ${client_id} AND date >= ${f} AND date <= ${t} ORDER BY date`,
-    sql`SELECT date, property_id, channel_group, medium, source, device, country, region, city, total_users, new_users, returning_users, sessions, engaged_sessions, bounce_rate, engagement_rate, avg_session_duration, user_engagement_duration, event_count FROM ga4_acquisition WHERE client_id = ${client_id} AND date >= ${f} AND date <= ${t} ORDER BY date`,
-    sql`SELECT date, property_id, age, gender, country, total_users, sessions, new_users FROM ga4_audience WHERE client_id = ${client_id} AND date >= ${f} AND date <= ${t} ORDER BY date`,
-    sql`SELECT date, property_id, page_path, device, total_users, new_users, sessions, engaged_sessions, bounce_rate, engagement_rate, avg_session_duration, event_count FROM ga4_pages WHERE client_id = ${client_id} AND date >= ${f} AND date <= ${t} ORDER BY date DESC`,
+    sql`SELECT date, property_id, property_name, total_users, new_users, sessions, engaged_sessions, bounce_rate, engagement_rate, avg_session_duration, event_count, synced_at FROM ga4_totals WHERE client_id = ${client_id} AND date >= ${f} AND date <= ${t} ORDER BY date`,
+    sql`SELECT date, property_id, property_name, channel_group, medium, source, device, country, region, city, total_users, new_users, returning_users, sessions, engaged_sessions, bounce_rate, engagement_rate, avg_session_duration, user_engagement_duration, event_count, synced_at FROM ga4_acquisition WHERE client_id = ${client_id} AND date >= ${f} AND date <= ${t} ORDER BY date`,
+    sql`SELECT date, property_id, property_name, age, gender, country, total_users, sessions, new_users, synced_at FROM ga4_audience WHERE client_id = ${client_id} AND date >= ${f} AND date <= ${t} ORDER BY date`,
+    sql`SELECT date, property_id, property_name, page_path, device, total_users, new_users, sessions, engaged_sessions, bounce_rate, engagement_rate, avg_session_duration, event_count, synced_at FROM ga4_pages WHERE client_id = ${client_id} AND date >= ${f} AND date <= ${t} ORDER BY date DESC`,
   ]);
 
   let prev = { totals: [], acquisition: [], audience: [], pages: [] };
   if (prevFrom && prevTo) {
     const [pt, pa, pau, pp] = await Promise.all([
-      sql`SELECT date, property_id, property_name, total_users, new_users, sessions, engaged_sessions, bounce_rate, engagement_rate, avg_session_duration, event_count FROM ga4_totals WHERE client_id = ${client_id} AND date >= ${prevFrom} AND date <= ${prevTo} ORDER BY date`,
-      sql`SELECT date, property_id, channel_group, medium, source, device, country, region, city, total_users, new_users, returning_users, sessions, engaged_sessions, bounce_rate, engagement_rate, avg_session_duration, user_engagement_duration, event_count FROM ga4_acquisition WHERE client_id = ${client_id} AND date >= ${prevFrom} AND date <= ${prevTo} ORDER BY date`,
-      sql`SELECT date, property_id, age, gender, country, total_users, sessions, new_users FROM ga4_audience WHERE client_id = ${client_id} AND date >= ${prevFrom} AND date <= ${prevTo} ORDER BY date`,
-      sql`SELECT date, property_id, page_path, device, total_users, new_users, sessions, engaged_sessions, bounce_rate, engagement_rate, avg_session_duration, event_count FROM ga4_pages WHERE client_id = ${client_id} AND date >= ${prevFrom} AND date <= ${prevTo} ORDER BY date DESC`,
+      sql`SELECT date, property_id, property_name, total_users, new_users, sessions, engaged_sessions, bounce_rate, engagement_rate, avg_session_duration, event_count, synced_at FROM ga4_totals WHERE client_id = ${client_id} AND date >= ${prevFrom} AND date <= ${prevTo} ORDER BY date`,
+      sql`SELECT date, property_id, property_name, channel_group, medium, source, device, country, region, city, total_users, new_users, returning_users, sessions, engaged_sessions, bounce_rate, engagement_rate, avg_session_duration, user_engagement_duration, event_count, synced_at FROM ga4_acquisition WHERE client_id = ${client_id} AND date >= ${prevFrom} AND date <= ${prevTo} ORDER BY date`,
+      sql`SELECT date, property_id, property_name, age, gender, country, total_users, sessions, new_users, synced_at FROM ga4_audience WHERE client_id = ${client_id} AND date >= ${prevFrom} AND date <= ${prevTo} ORDER BY date`,
+      sql`SELECT date, property_id, property_name, page_path, device, total_users, new_users, sessions, engaged_sessions, bounce_rate, engagement_rate, avg_session_duration, event_count, synced_at FROM ga4_pages WHERE client_id = ${client_id} AND date >= ${prevFrom} AND date <= ${prevTo} ORDER BY date DESC`,
     ]);
     prev = { totals: pt, acquisition: pa, audience: pau, pages: pp };
   }
