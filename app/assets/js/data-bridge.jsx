@@ -1,36 +1,4 @@
-// Reportive · Live Data Bridge v10
-// ─────────────────────────────────────────────────────────────────
-// Four Supabase projects:
-//   google  → google_ads + pagespeed   (qmzgincouzpbyfxfddxt)
-//   ga4     → ga4_sessions             (dpthobkylyuajaleykyf)
-//   gsc     → search_console           (dmnnscedufbsphvrrors)
-//   meta/app→ clients, meta_ads        (swklfolveiilajdmuenu)
-//
-// Public surface:
-//   window.LIVE.useLive()   → { loading, data, dateRange, setDateRange,
-//                               account, setAccount, ga4Property, setGa4Property,
-//                               gscProperty, setGscProperty, psiUrl, setPsiUrl,
-//                               _isMock, currentPeriod }
-//   window.LIVE.LiveProvider
-//   window.LIVE.fmt
-
-// ── Supabase clients ────────────────────────────────────────────────
-const SUPA_URL    = 'https://qmzgincouzpbyfxfddxt.supabase.co';
-const SUPA_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtemdpbmNvdXpwYnlmeGZkZHh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTg3NTAsImV4cCI6MjA5MTYzNDc1MH0.cm0NcefIhlvim2dWSJOcTpVyajiYrqsX2uy-35PqMuY';
-
-const GA4_URL     = 'https://dpthobkylyuajaleykyf.supabase.co';
-const GA4_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwdGhvYmt5bHl1YWphbGV5a3lmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MzkxMDYsImV4cCI6MjA5MjQxNTEwNn0.eGomVe5yQDecapanuMG08LdXRrw0Z5vkZdJyVgEQlE8';
-
-const GSC_URL     = 'https://dmnnscedufbsphvrrors.supabase.co';
-const GSC_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRtbm5zY2VkdWZic3BodnJyb3JzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2OTg5NTEsImV4cCI6MjA5MjI3NDk1MX0.CDkwYfwi6h8DqNOZL8d9MPoBYUJmc77tOrubobM4vrg';
-
-const META_URL = 'https://swklfolveiilajdmuenu.supabase.co';
-const META_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3a2xmb2x2ZWlpbGFqZG11ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NDEwMDAsImV4cCI6MjA5MzAxNzAwMH0.ZuxBQkHGwpY82XwA0NQzjqnvCeJH0WUIcp0Bux2K-84';
-
-const _supa     = (window.supabase && window.supabase.createClient) ? window.supabase.createClient(SUPA_URL,  SUPA_KEY)  : null;
-const _ga4Supa  = (window.supabase && window.supabase.createClient) ? window.supabase.createClient(GA4_URL,   GA4_KEY)   : null;
-const _gscSupa  = (window.supabase && window.supabase.createClient) ? window.supabase.createClient(GSC_URL,   GSC_KEY)   : null;
-const _metaSupa = (window.supabase && window.supabase.createClient) ? window.supabase.createClient(META_URL,  META_KEY)  : null;
+// Reportive · Live Data Bridge v11
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -767,443 +735,136 @@ function mockData() {
   };
 }
 
-// Fetch all rows from a Supabase query, paging 1000 at a time to bypass PostgREST max_rows cap.
-async function fetchPaged(q, pageSize) {
-  pageSize = pageSize || 1000;
-  var all = [];
-  var offset = 0;
-  while (true) {
-    var res = await q.range(offset, offset + pageSize - 1);
-    if (res.error || !res.data || res.data.length === 0) break;
-    all = all.concat(res.data);
-    if (res.data.length < pageSize) break;
-    offset += pageSize;
-  }
-  return all;
+async function _get(path, params) {
+  const qs = Object.entries(params)
+    .filter(([, v]) => v != null)
+    .map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v))
+    .join('&');
+  const res = await fetch(path + (qs ? '?' + qs : ''));
+  if (!res.ok) throw new Error(path + ': HTTP ' + res.status);
+  return res.json();
 }
 
-// ── Fetcher ─────────────────────────────────────────────────────────
-// NOTE: Supabase query builder is immutable — .eq()/.gte()/.lte() return
-// new objects. Always reassign: q = q.eq(...).
-async function fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, metaAccount) {
-  if (!_supa) return null;
-  try {
-    // ── Google Ads ──────────────────────────────────────────────
-    // Query from the campaign-level daily view (aggregated server-side) so the
-    // limit is never hit even for accounts with thousands of keyword-level rows.
-    let adsQ = _supa.from('google_ads_daily')
-      .select('day, account_name, campaign_name, campaign_type, spend, impressions, clicks, conversions')
-      .order('day', { ascending: true })
-      .limit(50000);
-    if (account) adsQ = adsQ.eq('account_name', account);
-    if (from)    adsQ = adsQ.gte('day', from);
-    if (to)      adsQ = adsQ.lte('day', to);
+const _addDay = rows => rows.map(r => ({ ...r, day: r.day || r.date }));
 
-    // ── Google Ads Detail (ad_group + keyword level) ────────────
-    // Primary: ads_data (from Google Sheets sync) — same source as google_ads_daily,
-    // gives accurate totals. Fallback: google_ads (direct API, may miss DSA spend).
-    let adsSheetQ = _supa.from('ads_data')
-      .select('day, campaign_name, campaign_type, ad_group, keyword, match_type, spend, impressions, clicks, conversions')
-      .order('day', { ascending: true });
-    if (from) adsSheetQ = adsSheetQ.gte('day', from);
-    if (to)   adsSheetQ = adsSheetQ.lte('day', to);
+async function fetchAll(clientId, from, to) {
+  if (!clientId) return null;
+  const { prevFrom, prevTo } = computePrevRange(from, to);
+  const params = { client_id: clientId };
+  if (from) params.from = from;
+  if (to) params.to = to;
+  if (prevFrom) params.prevFrom = prevFrom;
+  if (prevTo) params.prevTo = prevTo;
 
-    let adsDetailQ = _supa.from('google_ads')
-      .select('day, account_name, campaign_name, campaign_type, ad_group, keyword, match_type, device, spend, impressions, clicks, conversions')
-      .order('day', { ascending: true });
-    if (account) adsDetailQ = adsDetailQ.eq('account_name', account);
-    if (from)    adsDetailQ = adsDetailQ.gte('day', from);
-    if (to)      adsDetailQ = adsDetailQ.lte('day', to);
+  const [gadsR, ga4R, gscR, metaR] = await Promise.allSettled([
+    _get('/api/gads', params),
+    _get('/api/ga4', params),
+    _get('/api/gsc', params),
+    _get('/api/meta', params),
+  ]);
 
-    // ── Google Ads Segments (conversion actions + gender) ───────
-    let adsSegQ = _supa.from('google_ads_seg')
-      .select('day, account_name, campaign_name, segment_type, segment_value, spend, impressions, clicks, conversions')
-      .in('segment_type', ['conversion_action', 'gender'])
-      .order('day', { ascending: true })
-      .limit(50000);
-    if (account) adsSegQ = adsSegQ.eq('account_name', account);
-    if (from)    adsSegQ = adsSegQ.gte('day', from);
-    if (to)      adsSegQ = adsSegQ.lte('day', to);
+  const safe = (r, key) => (r.status === 'fulfilled' && r.value?.[key]) ? r.value[key] : {};
+  const arr = (r, period, key) => safe(r, period)?.[key] || [];
 
-    // ── Meta Ads ────────────────────────────────────────────────
-    // Query from campaign-level view (aggregated server-side) — no LIMIT issue.
-    const metaQ = (_metaSupa && metaAccount !== null)
-      ? (() => {
-          let q = _metaSupa.from('meta_ads_daily')
-            .select('date, account_name, campaign_name, spend, impressions, reach, link_clicks, landing_page_views, leads, complete_registrations, messaging_conv_started, contacts, ig_profile_visits, post_engagements, content_views, purchases, purchase_value, add_to_carts, add_to_cart_value, currency')
-            .order('date', { ascending: true })
-            .limit(20000);
-          if (metaAccount) q = q.eq('account_name', metaAccount);
-          if (from) q = q.gte('date', from);
-          if (to)   q = q.lte('date', to);
-          return q;
-        })()
-      : Promise.resolve({ data: [] });
-
-    // ── Meta Ads Insights (ad-set / ad level for table widget) ──
-    const metaInsightsQ = (_metaSupa && metaAccount !== null)
-      ? (() => {
-          let q = _metaSupa.from('meta_ads_insights')
-            .select('campaign_name, adset_name, ad_name, date, spend, impressions, reach, link_clicks, landing_page_views, leads, complete_registrations, messaging_conv_started, contacts, ig_profile_visits, post_engagements, content_views, purchases, purchase_value, add_to_carts, add_to_cart_value')
-            .order('date', { ascending: true })
-            .limit(20000);
-          if (metaAccount) q = q.eq('account_name', metaAccount);
-          if (from) q = q.gte('date', from);
-          if (to)   q = q.lte('date', to);
-          return q;
-        })()
-      : Promise.resolve({ data: [] });
-
-    // ── GA4 Totals (date-level aggregates for KPI cards + chart) ──
-    const ga4Q = (_ga4Supa && ga4Property !== null)
-      ? (() => {
-          let q = _ga4Supa.from('ga4_totals')
-            .select('date, property_name, sessions, total_users, new_users, bounce_rate, engaged_sessions, engagement_rate, avg_session_duration, event_count')
-            .order('date', { ascending: true })
-            .limit(10000);
-          if (ga4Property) q = q.eq('property_name', ga4Property);
-          if (from) q = q.gte('date', from);
-          if (to)   q = q.lte('date', to);
-          return q;
-        })()
-      : Promise.resolve({ data: [] });
-
-    // ── GA4 Demographics (gender, country) ────────────────────────
-    const ga4DemoQ = (_ga4Supa && ga4Property !== null)
-      ? (() => {
-          let q = _ga4Supa.from('ga4_demographics')
-            .select('*')
-            .order('date', { ascending: false })
-            .limit(5000);
-          if (ga4Property) q = q.eq('property_name', ga4Property);
-          if (from) q = q.gte('date', from);
-          if (to)   q = q.lte('date', to);
-          return q;
-        })()
-      : Promise.resolve({ data: [] });
-
-    // ── GA4 Pages (page_path) ──────────────────────────────────────
-    const ga4PageQ = (_ga4Supa && ga4Property !== null)
-      ? (() => {
-          let q = _ga4Supa.from('ga4_pages')
-            .select('property_name,date,page_path,device,total_users,new_users,sessions,engaged_sessions,bounce_rate,engagement_rate,avg_session_duration,event_count')
-            .order('date', { ascending: false })
-            .limit(2000);
-          if (ga4Property) q = q.eq('property_name', ga4Property);
-          if (from) q = q.gte('date', from);
-          if (to)   q = q.lte('date', to);
-          return q;
-        })()
-      : Promise.resolve({ data: [] });
-
-    // ── GA4 Sessions (device, channel_group, medium, source) ──────
-    // No ORDER BY — requires index: CREATE INDEX ON ga4_sessions (property_name, date DESC)
-    const GA4_SESSION_COLS = 'property_name,date,country,region,city,device,channel_group,medium,source,sessions,total_users,returning_users,new_users,engaged_sessions,event_count,bounce_rate,engagement_rate,avg_session_duration';
-    const ga4SessionQ = (_ga4Supa && ga4Property !== null)
-      ? (() => {
-          let q = _ga4Supa.from('ga4_sessions')
-            .select(GA4_SESSION_COLS)
-            .limit(10000);
-          if (ga4Property) q = q.eq('property_name', ga4Property);
-          if (from) q = q.gte('date', from);
-          if (to)   q = q.lte('date', to);
-          return q;
-        })()
-      : Promise.resolve({ data: [] });
-
-    // ── Search Console ──────────────────────────────────────────
-    // Two-query approach to avoid Supabase's 1000-row PostgREST cap:
-    //   1. search_console_summary → (date, property) level — max ~30 rows/month per property
-    //   2. search_console_daily   → (date, property, query) — top queries only, small limit
-    const gscSummaryQ = (_gscSupa && gscProperty !== null)
-      ? (() => {
-          let q = _gscSupa.from('search_console_summary')
-            .select('date, property, impressions, clicks, ctr, position')
-            .order('date', { ascending: true })
-            .limit(10000);
-          if (gscProperty) q = q.eq('property', gscProperty);
-          if (from) q = q.gte('date', from);
-          if (to)   q = q.lte('date', to);
-          return q;
-        })()
-      : Promise.resolve({ data: [] });
-    const gscQueryQ = (_gscSupa && gscProperty !== null)
-      ? (() => {
-          let q = _gscSupa.from('search_console_daily')
-            .select('date, query, impressions, clicks, position')
-            .order('clicks', { ascending: false })
-            .limit(50);
-          if (gscProperty) q = q.eq('property', gscProperty);
-          if (from) q = q.gte('date', from);
-          if (to)   q = q.lte('date', to);
-          return q;
-        })()
-      : Promise.resolve({ data: [] });
-    const gscPagesQ = (_gscSupa && gscProperty !== null)
-      ? (() => {
-          let q = _gscSupa.from('search_console_pages')
-            .select('page, impressions, clicks, position')
-            .order('clicks', { ascending: false })
-            .limit(200);
-          if (gscProperty) q = q.eq('property', gscProperty);
-          if (from) q = q.gte('date', from);
-          if (to)   q = q.lte('date', to);
-          return q;
-        })()
-      : Promise.resolve({ data: [] });
-
-    // Country and device breakdown — dedicated tables, not search_console_daily
-    const gscCountryQ = (_gscSupa && gscProperty !== null)
-      ? (() => {
-          let q = _gscSupa.from('search_console_countries')
-            .select('country, impressions, clicks, position')
-            .order('clicks', { ascending: false })
-            .limit(200);
-          if (gscProperty) q = q.eq('property', gscProperty);
-          if (from) q = q.gte('date', from);
-          if (to)   q = q.lte('date', to);
-          return q;
-        })()
-      : Promise.resolve({ data: [] });
-    const gscDeviceQ = (_gscSupa && gscProperty !== null)
-      ? (() => {
-          let q = _gscSupa.from('search_console_devices')
-            .select('device, impressions, clicks, position')
-            .order('clicks', { ascending: false })
-            .limit(200);
-          if (gscProperty) q = q.eq('property', gscProperty);
-          if (from) q = q.gte('date', from);
-          if (to)   q = q.lte('date', to);
-          return q;
-        })()
-      : Promise.resolve({ data: [] });
-
-    // ── PageSpeed Insights ──────────────────────────────────────
-    // Fetch latest rows for URL, descending by day.
-    // If a date range is selected, filter within it; if no data found, fall back to latest overall.
-    let psiQ = psiUrl
-      ? (() => {
-          let q = _ga4Supa.from('pagespeed')
-            .select('day, url, strategy, performance_score, seo_score, accessibility_score, best_practices_score, lcp_ms, fcp_ms, cls, inp_ms, tbt_ms, ttfb_ms')
-            .eq('url', psiUrl)
-            .order('day', { ascending: false })
-            .limit(120);
-          if (from) q = q.gte('day', from);
-          if (to)   q = q.lte('day', to);
-          return q;
-        })()
-      : Promise.resolve({ data: [] });
-
-    const [adsR, adsSheetRaw, adsDetailRows, adsSegR, metaR, metaInsightsR, ga4R, ga4DemoR, ga4PageR, ga4SessionR, gscSumR, gscQryR, gscPgsR, gscCtyR, gscDevR, psiR] = await Promise.all([adsQ, fetchPaged(adsSheetQ), fetchPaged(adsDetailQ), adsSegQ, metaQ, metaInsightsQ, ga4Q, ga4DemoQ, ga4PageQ, ga4SessionQ, gscSummaryQ, gscQueryQ, gscPagesQ, gscCountryQ, gscDeviceQ, psiQ]);
-
-    // search_console_summary: accurate daily totals from GSC API (dimensions: date, searchType: web)
-    // Do NOT fall back to search_console_daily — per-query rows inflate impressions 5-10x
-    if (gscSumR.error) console.warn('[Reportive] GSC summary error:',   gscSumR.error.message);
-    if (gscQryR.error) console.warn('[Reportive] GSC queries error:',   gscQryR.error.message);
-    if (gscPgsR.error) console.warn('[Reportive] GSC pages error:',     gscPgsR.error.message);
-    if (gscCtyR.error) console.warn('[Reportive] GSC countries error:', gscCtyR.error.message);
-    if (gscDevR.error) console.warn('[Reportive] GSC devices error:',   gscDevR.error.message);
-    const gscSummaryData = (gscSumR.error || !gscSumR.data) ? [] : gscSumR.data;
-
-
-    if (metaR.error)         console.warn('[Reportive] Meta error:',         metaR.error.message);
-    if (metaInsightsR.error) console.warn('[Reportive] Meta insights error:', metaInsightsR.error.message);
-    if (ga4R.error)          console.warn('[Reportive] GA4 error:',           ga4R.error.message);
-    if (ga4DemoR.error)      console.warn('[Reportive] GA4 demographics error:', ga4DemoR.error.message);
-    if (ga4PageR.error)      console.warn('[Reportive] GA4 pages error:',        ga4PageR.error.message);
-    if (ga4SessionR.error)   console.warn('[Reportive] GA4 sessions error:',     ga4SessionR.error.message);
-
-    const fetchErrors = [];
-    if (metaR && metaR.error)       fetchErrors.push('Meta Ads: ' + metaR.error.message);
-    if (ga4R && ga4R.error)         fetchErrors.push('GA4: ' + ga4R.error.message);
-    if (gscSumR && gscSumR.error)   fetchErrors.push('Search Console: ' + gscSumR.error.message);
-    if (adsR && adsR.error)         fetchErrors.push('Google Ads: ' + adsR.error.message);
-
-    const metaData = metaR.error ? [] : (metaR.data || []);
-    console.log('[Reportive] rows — meta:', metaData.length, '| meta insights:', (metaInsightsR.data || []).length, '| ga4:', (ga4R.data || []).length, '| ga4Demo:', (ga4DemoR.data || []).length, '| ga4Page:', (ga4PageR.data || []).length, '| ga4Session:', (ga4SessionR.data || []).length);
-
-    // PSI fallback: date-range returned nothing → get latest available
-    let psiData = psiR.error ? [] : (psiR.data || []);
-    if (!psiData.length && psiUrl) {
-      try {
-        const fallbackR = await _ga4Supa.from('pagespeed')
-          .select('day, url, strategy, performance_score, seo_score, accessibility_score, best_practices_score, lcp_ms, fcp_ms, cls, inp_ms, tbt_ms, ttfb_ms')
-          .eq('url', psiUrl)
-          .order('day', { ascending: false })
-          .limit(20);
-        psiData = fallbackR.error ? [] : (fallbackR.data || []);
-      } catch (_) { /* ignore */ }
-    }
-    // PSI URL-variant fallback: try with/without trailing slash and http↔https
-    if (!psiData.length && psiUrl) {
-      const variants = [
-        psiUrl.endsWith('/') ? psiUrl.slice(0, -1) : psiUrl + '/',
-        psiUrl.startsWith('https://') ? psiUrl.replace('https://', 'http://') : psiUrl.replace('http://', 'https://'),
-      ].filter(u => u !== psiUrl);
-      for (const variant of variants) {
-        if (psiData.length) break;
-        try {
-          const vR = await _ga4Supa.from('pagespeed')
-            .select('day, url, strategy, performance_score, seo_score, accessibility_score, best_practices_score, lcp_ms, fcp_ms, cls, inp_ms, tbt_ms, ttfb_ms')
-            .eq('url', variant)
-            .order('day', { ascending: false })
-            .limit(20);
-          if (!vR.error && vR.data && vR.data.length) psiData = vR.data;
-        } catch (_) { /* ignore */ }
-      }
-    }
-
-    const adsSheetRows = (adsSheetRaw && adsSheetRaw.length) ? adsSheetRaw : null;
-    return {
-      ads:        adsR.error       ? [] : (adsR.data    || []),
-      adsSheet:   adsSheetRows,
-      adsDetail:  adsDetailRows,
-      adsSeg:     adsSegR.error    ? [] : (adsSegR.data || []),
-      meta:         metaData,
-      metaInsights: metaInsightsR.error ? [] : (metaInsightsR.data || []),
-      ga4:        ga4R.error       ? [] : (ga4R.data       || []),
-      ga4Demo:    ga4DemoR.error    ? [] : (ga4DemoR.data    || []),
-      ga4Page:    ga4PageR.error    ? [] : (ga4PageR.data    || []),
-      ga4Session: ga4SessionR.error ? [] : (ga4SessionR.data || []),
-      gscSummary:   gscSummaryData,
-      gscQueries:   gscQryR.error ? [] : (gscQryR.data || []),
-      gscPages:     gscPgsR.error ? [] : (gscPgsR.data || []),
-      gscCountries: gscCtyR.error ? [] : (gscCtyR.data || []),
-      gscDevices:   gscDevR.error ? [] : (gscDevR.data || []),
-      psi:          psiData,
-      _errors:      fetchErrors,
-    };
-  } catch (e) {
-    console.warn('[Reportive] Fetch failed:', e.message);
-    return null;
-  }
-}
-
-// ── App Settings (Supabase-backed key/value store) ───────────────────
-async function loadAppSetting(key) {
-  // localStorage is the primary store — always available, survives across sessions.
-  // Supabase app_settings is a secondary sync for cross-device; if the table
-  // doesn't exist yet the error is caught silently and localStorage wins.
-  const lsVal = localStorage.getItem('avo_' + key) || null;
-  if (_metaSupa) {
-    try {
-      const { data, error } = await _metaSupa.from('app_settings').select('value').eq('key', key).single();
-      if (!error && data?.value) {
-        localStorage.setItem('avo_' + key, data.value); // keep local in sync
-        return data.value;
-      }
-    } catch {}
-  }
-  return lsVal;
-}
-
-async function saveAppSetting(key, value) {
-  // Always persist locally first so the key survives even if Supabase table
-  // doesn't exist or the insert fails.
-  try { localStorage.setItem('avo_' + key, value); } catch {}
-  if (_metaSupa) {
-    try {
-      await _metaSupa.from('app_settings')
-        .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-    } catch {}
-  }
+  return {
+    ads:            _addDay(arr(gadsR, 'current', 'totals')),
+    adsDetail:      _addDay(arr(gadsR, 'current', 'detail')),
+    adsGender:      arr(gadsR, 'current', 'gender'),
+    adsConversions: arr(gadsR, 'current', 'conversions'),
+    prevAds:            _addDay(arr(gadsR, 'previous', 'totals')),
+    prevAdsDetail:      _addDay(arr(gadsR, 'previous', 'detail')),
+    prevAdsGender:      arr(gadsR, 'previous', 'gender'),
+    prevAdsConversions: arr(gadsR, 'previous', 'conversions'),
+    ga4:            arr(ga4R, 'current', 'totals'),
+    ga4Acquisition: arr(ga4R, 'current', 'acquisition'),
+    ga4Audience:    arr(ga4R, 'current', 'audience'),
+    ga4Page:        arr(ga4R, 'current', 'pages'),
+    prevGa4:            arr(ga4R, 'previous', 'totals'),
+    prevGa4Acquisition: arr(ga4R, 'previous', 'acquisition'),
+    prevGa4Audience:    arr(ga4R, 'previous', 'audience'),
+    prevGa4Page:        arr(ga4R, 'previous', 'pages'),
+    gscSummary:   arr(gscR, 'current', 'totals'),
+    gscQueries:   arr(gscR, 'current', 'queries'),
+    gscPages:     arr(gscR, 'current', 'pages'),
+    gscCountries: arr(gscR, 'current', 'countries'),
+    gscDevices:   arr(gscR, 'current', 'devices'),
+    prevGscSummary: arr(gscR, 'previous', 'totals'),
+    prevGscQueries: arr(gscR, 'previous', 'queries'),
+    prevGscPages:   arr(gscR, 'previous', 'pages'),
+    meta:       arr(metaR, 'current', 'totals'),
+    metaDetail: arr(metaR, 'current', 'detail'),
+    prevMeta:       arr(metaR, 'previous', 'totals'),
+    prevMetaDetail: arr(metaR, 'previous', 'detail'),
+    _errors: [gadsR, ga4R, gscR, metaR]
+      .filter(r => r.status === 'rejected')
+      .map(r => r.reason?.message || 'Fetch error'),
+  };
 }
 
 // ── React context ────────────────────────────────────────────────────
 const DataCtx = React.createContext(null);
 
-function LiveProvider({ children }) {
+function LiveProvider({ clientId, children }) {
   const [state, setState] = React.useState({
     loading: true, error: null, data: null, _isMock: false, fetchError: null,
   });
-  const [account,             setAccount]             = React.useState(localStorage.getItem('avo_account') || '');
-  const [metaAccount,         setMetaAccount]         = React.useState(null);
-  const [ga4Property,         setGa4Property]         = React.useState(null);
-  const [gscProperty,         setGscProperty]         = React.useState(null);
-  const [psiUrl,              setPsiUrl]              = React.useState('');
-  const [psiApiKey,           setPsiApiKey]           = React.useState('');
-  const [dateRange,           setDateRange]           = React.useState({ from: null, to: null });
-  const [_anySourceConnected, _setAnySourceConnected] = React.useState(false);
+  const [dateRange, setDateRange] = React.useState({ from: null, to: null });
+  const [psiUrl, setPsiUrl] = React.useState('');
 
   React.useEffect(() => {
+    if (!clientId) return;
     let cancelled = false;
     setState(s => ({ ...s, loading: true }));
     (async () => {
       const { from, to } = dateRange;
       const { prevFrom, prevTo } = computePrevRange(from, to);
-
-      const [raw, rawPrev] = await Promise.all([
-        fetchAll(account, ga4Property, gscProperty, psiUrl, from, to, metaAccount),
-        (prevFrom && prevTo)
-          ? fetchAll(account, ga4Property, gscProperty, psiUrl, prevFrom, prevTo, metaAccount)
-          : Promise.resolve({ ads: [], adsDetail: [], adsSeg: [], meta: [], ga4: [], gscSummary: [], gscQueries: [], gscPages: [], psi: [] }),
-      ]);
+      const raw = await fetchAll(clientId, from, to);
       if (cancelled) return;
 
       let data, isMock = false;
-      const hasAnyData = raw && (
-        (raw.ads        && raw.ads.length        > 0) ||
-        (raw.meta       && raw.meta.length       > 0) ||
-        (raw.ga4        && raw.ga4.length        > 0) ||
-        (raw.gscSummary && raw.gscSummary.length > 0) ||
-        (raw.psi        && raw.psi.length        > 0)
+      const hasData = raw && (
+        raw.ads.length || raw.ga4.length || raw.gscSummary.length || raw.meta.length
       );
-
-      if (!raw) {
-        data = mockData(); isMock = true;
-      } else if (!hasAnyData && !_anySourceConnected) {
+      if (!raw || !hasData) {
         data = mockData(); isMock = true;
       } else {
+        const segRows = [
+          ...(raw.adsGender      || []).map(r => ({ ...r, segment_type: 'gender' })),
+          ...(raw.adsConversions || []).map(r => ({ ...r, segment_type: 'conversion_action' })),
+        ];
         data = buildData(
-          raw.ads    || [], raw.ga4 || [], raw.psi || [],
-          raw.gscSummary || [], raw.gscQueries || [],
-          rawPrev.ads || [], rawPrev.ga4 || [],
-          rawPrev.gscSummary || [], rawPrev.gscQueries || [],
+          raw.ads, raw.ga4, [],
+          raw.gscSummary, raw.gscQueries,
+          raw.prevAds, raw.prevGa4,
+          raw.prevGscSummary, raw.prevGscQueries,
           from, to, prevFrom, prevTo,
-          raw.meta || [], rawPrev.meta || [],
-          raw.gscPages || [], rawPrev.gscPages || [],
-          raw.adsDetail || [], raw.adsSeg || [],
-          raw.adsSheet || null,
-          raw.gscCountries || [], raw.gscDevices || [],
-          raw.metaInsights || [],
-          raw.ga4Demo || [], raw.ga4Page || [], raw.ga4Session || [],
+          raw.meta, raw.prevMeta,
+          raw.gscPages, raw.prevGscPages,
+          raw.adsDetail, segRows, null,
+          raw.gscCountries, raw.gscDevices,
+          raw.metaDetail,
+          raw.ga4Audience, raw.ga4Page, raw.ga4Acquisition,
         );
       }
       const fetchError = (raw && raw._errors && raw._errors.length) ? raw._errors : null;
       setState({ loading: false, error: null, data, _isMock: isMock, fetchError });
     })();
     return () => { cancelled = true; };
-  }, [account, metaAccount, ga4Property, gscProperty, psiUrl, dateRange, _anySourceConnected]);
-
-  // Persist account filter
-  React.useEffect(() => {
-    if (account) localStorage.setItem('avo_account', account);
-    else         localStorage.removeItem('avo_account');
-  }, [account]);
-
-  // Load PSI API key from Supabase on mount (cross-device persistence)
-  React.useEffect(() => {
-    loadAppSetting('psi_api_key').then(v => { if (v !== null) setPsiApiKey(v); });
-  }, []);
-
-  const savePsiApiKey = React.useCallback(async (newKey) => {
-    setPsiApiKey(newKey);
-    await saveAppSetting('psi_api_key', newKey);
-  }, []);
+  }, [clientId, dateRange]);
 
   const ctx = React.useMemo(() => ({
     ...state,
-    currentPeriod: state.data,   // backward-compat alias for live-cards.jsx
-    accounts: [],                // backward-compat
-    account,              setAccount,
-    metaAccount,          setMetaAccount,
-    ga4Property,          setGa4Property,
-    gscProperty,          setGscProperty,
-    psiUrl,               setPsiUrl,
-    psiApiKey,            savePsiApiKey,
-    dateRange,            setDateRange,
-    _anySourceConnected,  _setAnySourceConnected,
-  }), [state, account, metaAccount, ga4Property, gscProperty, psiUrl, psiApiKey, savePsiApiKey, dateRange, _anySourceConnected]);
+    currentPeriod: state.data,
+    accounts: [],
+    account: '', setAccount: () => {},
+    metaAccount: null, setMetaAccount: () => {},
+    ga4Property: null, setGa4Property: () => {},
+    gscProperty: null, setGscProperty: () => {},
+    psiUrl, setPsiUrl,
+    psiApiKey: '', savePsiApiKey: () => {},
+    dateRange, setDateRange,
+    _anySourceConnected: true, _setAnySourceConnected: () => {},
+  }), [state, psiUrl, dateRange]);
 
   return <DataCtx.Provider value={ctx}>{children}</DataCtx.Provider>;
 }
@@ -1214,6 +875,5 @@ const useLive = () => React.useContext(DataCtx);
 window.LIVE = {
   LiveProvider,
   useLive,
-  _ga4Supa,
   fmt: { rupiahShort: fmtRupiahShort, num: fmtNum, pct: fmtPct, roas: fmtRoas, pctChange },
 };
