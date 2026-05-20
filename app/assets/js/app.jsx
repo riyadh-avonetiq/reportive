@@ -21,6 +21,7 @@ const IS_ADMIN = ROLE === 'admin';
 function parseHash() {
   const h = window.location.hash.replace(/^#/, '') || 'home';
   if (h.startsWith('client/')) return { route: 'client', clientId: h.slice('client/'.length) };
+  if (h.startsWith('share/'))  return { route: 'share',  shareToken: h.slice('share/'.length) };
   if (h === 'access') return { route: 'access' };
   return { route: h };
 }
@@ -88,6 +89,10 @@ function App() {
     return <ScreenAccess onNavigate={navigate}/>;
   }
 
+  if (route.route === 'share') {
+    return <ShareView shareToken={route.shareToken} />;
+  }
+
   if (route.route === 'templates') {
     if (ROLE === 'viewer') return <ScreenHome onOpenClient={onOpenClient} onNavigate={navigate}/>;
   }
@@ -104,6 +109,38 @@ const _AUTH_SUPA = (window.supabase && window.supabase.createClient)
     )
   : null;
 window._layoutSupa = _AUTH_SUPA;
+
+function ShareView({ shareToken }) {
+  const [clientId, setClientId] = React.useState(null);
+  const [notFound, setNotFound] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!shareToken || !_AUTH_SUPA) { setNotFound(true); return; }
+    _AUTH_SUPA.from('clients').select('id').eq('share_token', shareToken).single()
+      .then(({ data, error }) => {
+        if (error || !data) { setNotFound(true); return; }
+        setClientId(data.id);
+      });
+  }, [shareToken]);
+
+  if (notFound) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#060E1A' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+        Link not found or expired.
+      </div>
+    </div>
+  );
+
+  if (!clientId) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#060E1A' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+        Loading…
+      </div>
+    </div>
+  );
+
+  return <ScreenReport clientId={clientId} onBack={() => {}} />;
+}
 
 function Root() {
   // Fetch clients globally so any route can look up a client by ID

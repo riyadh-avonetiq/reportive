@@ -9,6 +9,11 @@
 <!-- Auth gate runs FIRST — redirect happens before any CDN download -->
 <script>
   (function () {
+    var hash = window.location.hash || '';
+    if (hash.indexOf('#share/') === 0) {
+      sessionStorage.setItem('avo_role', 'viewer');
+      return;
+    }
     var role = sessionStorage.getItem('avo_role');
     if (!role) window.location.replace('login.html');
   })();
