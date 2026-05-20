@@ -81,7 +81,11 @@ function App() {
   }, [navigate]);
 
   if (route.route === 'client') {
-    return <ScreenReport clientId={route.clientId} onBack={() => navigate('home')}/>;
+    return (
+      <LiveProvider clientId={route.clientId}>
+        <ScreenReport clientId={route.clientId} onBack={() => navigate('home')}/>
+      </LiveProvider>
+    );
   }
 
   if (route.route === 'access') {
@@ -97,28 +101,21 @@ function App() {
   return <ScreenHome onOpenClient={onOpenClient} onNavigate={navigate}/>;
 }
 
-// ── Auth Supabase client (clients table) ───────────────────────
-const _AUTH_SUPA = (window.supabase && window.supabase.createClient)
-  ? window.supabase.createClient(
-      'https://swklfolveiilajdmuenu.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3a2xmb2x2ZWlpbGFqZG11ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NDEwMDAsImV4cCI6MjA5MzAxNzAwMH0.ZuxBQkHGwpY82XwA0NQzjqnvCeJH0WUIcp0Bux2K-84'
-    )
-  : null;
-window._layoutSupa = _AUTH_SUPA;
-
 function ShareView({ shareToken }) {
   const [clientId, setClientId] = React.useState(null);
   const [notFound, setNotFound] = React.useState(false);
 
   React.useEffect(() => {
-    if (!shareToken || !_AUTH_SUPA) { setNotFound(true); return; }
+    if (!shareToken) { setNotFound(true); return; }
     let mounted = true;
-    _AUTH_SUPA.from('clients').select('id').eq('share_token', shareToken).single()
-      .then(({ data, error }) => {
+    fetch('/api/app/client?share_token=' + encodeURIComponent(shareToken))
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
         if (!mounted) return;
-        if (error || !data) { setNotFound(true); return; }
-        setClientId(data.id);
-      });
+        if (!d || !d.client) { setNotFound(true); return; }
+        setClientId(d.client.id);
+      })
+      .catch(() => { if (mounted) setNotFound(true); });
     return () => { mounted = false; };
   }, [shareToken]);
 
@@ -138,18 +135,14 @@ function ShareView({ shareToken }) {
     </div>
   );
 
-  return <ScreenReport clientId={clientId} onBack={() => {}} hideBack={true} />;
+  return (
+    <LiveProvider clientId={clientId}>
+      <ScreenReport clientId={clientId} onBack={() => {}} hideBack={true} />
+    </LiveProvider>
+  );
 }
 
 function Root() {
-  // Fetch clients globally so any route can look up a client by ID
-  useEffect(() => {
-    if (!_AUTH_SUPA) return;
-    _AUTH_SUPA.from('clients').select('*').order('created_at', { ascending: false })
-      .then(({ data }) => { if (data && data.length > 0) window._avo_clients = data; });
-  }, []);
-
-  // Hide the boot splash on first paint
   useEffect(() => {
     const el = document.getElementById('boot-splash');
     if (!el) return;
@@ -160,9 +153,7 @@ function Root() {
   }, []);
   return (
     <AppErrorBoundary>
-      <LiveProvider>
-        <App/>
-      </LiveProvider>
+      <App/>
     </AppErrorBoundary>
   );
 }
