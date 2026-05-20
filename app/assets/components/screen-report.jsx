@@ -930,9 +930,11 @@ function applyKpiFilters(p, source, filters) {
     var rv = String(row[f.dim] || '').toLowerCase();
     var v  = (f.val || '').toLowerCase();
     if (!v) return true;
-    if (f.op === 'is')     return rv === v;
-    if (f.op === 'not')    return rv !== v;
-    if (f.op === 'starts') return rv.startsWith(v);
+    if (f.op === 'is')        return rv === v;
+    if (f.op === 'not')       return rv !== v;
+    if (f.op === 'starts')    return rv.startsWith(v);
+    if (f.op === 'regex')     { try { return new RegExp(f.val, 'i').test(rv); } catch { return false; } }
+    if (f.op === 'not_regex') { try { return !new RegExp(f.val, 'i').test(rv); } catch { return true; } }
     return rv.includes(v);
   };
   var matchAll = function(row) { return filters.every(function(f) { return !f.val || matchRow(row, f); }); };
@@ -1115,9 +1117,11 @@ function DataTable({ widgetId, widgetConfig, rows, availDims, availMetrics, defa
       const v = (f.val || '').toLowerCase();
       r = r.filter(row => {
         const rv = String(row[f.dim] || '').toLowerCase();
-        if (f.op === 'is')     return rv === v;
-        if (f.op === 'not')    return rv !== v;
-        if (f.op === 'starts') return rv.startsWith(v);
+        if (f.op === 'is')        return rv === v;
+        if (f.op === 'not')       return rv !== v;
+        if (f.op === 'starts')    return rv.startsWith(v);
+        if (f.op === 'regex')     { try { return new RegExp(f.val, 'i').test(rv); } catch { return false; } }
+        if (f.op === 'not_regex') { try { return !new RegExp(f.val, 'i').test(rv); } catch { return true; } }
         return rv.includes(v);
       });
     });
