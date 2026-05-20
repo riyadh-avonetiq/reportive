@@ -4946,6 +4946,7 @@ function ScreenReport({ clientId, onBack }) {
   const widgetLayoutsRef = React.useRef(null);
   // Effective layout ref — always the displayed layout (state OR smart default)
   const effectiveLayoutsRef = React.useRef(null);
+  const saveTimerRef = React.useRef(null);
   const [historyLen, setHistoryLen] = useState(0);
   const [redoLen, setRedoLen] = useState(0);
   const [localConnected, setLocalConnected] = useState(null);
@@ -5022,7 +5023,7 @@ function ScreenReport({ clientId, onBack }) {
     setWidgetLayouts(prev => {
       const allClients = [...(window._avo_clients || []), ...(window.HOME_CLIENTS || [])];
       const _client = allClients.find(c => c.id === clientId);
-      const current = prev || getSmartDefaultLayout(_client?.connected);
+      const current = prev || { rows: [] };
       undoHistory.current = [...undoHistory.current.slice(-19), { configs: null, layout: current }];
       redoHistory.current = [];
       return typeof updater === 'function' ? updater(current) : updater;
@@ -5034,26 +5035,31 @@ function ScreenReport({ clientId, onBack }) {
   // Keep clientIdRef in sync so persist effects can read current clientId without it as a dep
   useEffect(() => { clientIdRef.current = clientId; }, [clientId]);
 
-  // Load persisted configs + layouts when switching clients
+  // Load persisted configs + layouts from Supabase when switching clients
   useEffect(() => {
     setSelectedWidgets([]);
     setClipboard(null);
     setMarquee(null);
-    let configs = {};
-    try {
-      const saved = localStorage.getItem('widgetConfigs_' + clientId);
-      configs = saved ? JSON.parse(saved) : {};
-    } catch {}
-    initConfigRef.current = configs;
-    setWidgetConfigs(configs);
-    let layouts = null;
-    try {
-      const savedLayouts = localStorage.getItem('widgetLayouts_' + clientId);
-      const parsed = savedLayouts ? JSON.parse(savedLayouts) : null;
-      layouts = parsed ? migrateLegacyLayout(parsed) : null;
-    } catch {}
-    initLayoutRef.current = layouts;
-    setWidgetLayouts(layouts);
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    // Reset immediately while fetch is in-flight
+    initConfigRef.current = {};
+    initLayoutRef.current = null;
+    setWidgetConfigs({});
+    setWidgetLayouts(null);
+    if (!window._layoutSupa || !clientId) return;
+    window._layoutSupa
+      .from('report_layouts')
+      .select('layouts, configs')
+      .eq('client_id', clientId)
+      .maybeSingle()
+      .then(({ data }) => {
+        const layouts = data?.layouts ? migrateLegacyLayout(data.layouts) : null;
+        const configs = data?.configs || {};
+        initConfigRef.current = configs;
+        initLayoutRef.current = layouts;
+        setWidgetConfigs(configs);
+        setWidgetLayouts(layouts);
+      });
   }, [clientId]);
 
   // Persist configs on every change (clientId intentionally excluded from deps — accessed via ref)
